@@ -1,0 +1,283 @@
+<%
+  // Safe variable extraction with fallbacks
+  const safeDisplayLabel = (typeof display_label !== 'undefined' && display_label) 
+    ? display_label 
+    : 'Building';
+  
+  const safeBuildingKey = (typeof building_key !== 'undefined' && building_key) 
+    ? building_key 
+    : '';
+  
+  const safeDesc = (typeof building_desc !== 'undefined' && building_desc) 
+    ? building_desc 
+    : '';
+  
+  const safeFilename = (typeof filename !== 'undefined' && filename) 
+    ? filename 
+    : null;
+  
+  const safeElecStart = (typeof elec_start_year !== 'undefined') ? elec_start_year : null;
+  const safeElecEnd = (typeof elec_end_year !== 'undefined') ? elec_end_year : null;
+  const safeWaterStart = (typeof water_start_year !== 'undefined') ? water_start_year : null;
+  const safeWaterEnd = (typeof water_end_year !== 'undefined') ? water_end_year : null;
+  
+  // Helper to format year range
+  function formatYearRange(start, end) {
+    if (!start && !end) return 'N/A';
+    if (start && end && start === end) return String(start);
+    if (start && end) return `${start} - ${end}`;
+    if (start) return `${start} - Present`;
+    if (end) return `Up to ${end}`;
+    return 'N/A';
+  }
+  
+  const elecYearDisplay = formatYearRange(safeElecStart, safeElecEnd);
+  const waterYearDisplay = formatYearRange(safeWaterStart, safeWaterEnd);
+  
+  // Check if data is available
+  const hasElecData = safeElecStart || safeElecEnd;
+  const hasWaterData = safeWaterStart || safeWaterEnd;
+%>
+
+<div class="building-info-panel" data-building-key="<%= safeBuildingKey %>">
+  
+  <!-- Header -->
+  <div class="bip-head">
+    <div class="bip-icon">🏢</div>
+    <div class="bip-title animate__animated animate__headShake animate__infinite" style="--animate-duration: 4s;"><%= safeDisplayLabel %></div>
+    <div class="bip-subtitle">Building Information</div>
+  </div>
+
+  <!-- Image Section - Will grow to fill available space -->
+  <% if (safeFilename) { %>
+  <div class="bip-section bip-section-image">
+    <div class="bip-section-header">📷 Building Image</div>
+    <div class="bip-image-container">
+      <img 
+        src="/uploads/images/Buildings/<%= safeFilename %>" 
+        alt="<%= safeDisplayLabel %>" 
+        class="bip-image"
+        onerror="this.parentElement.innerHTML='<div style=\'padding:20px;text-align:center;color:#9ca3af;height:100%;display:flex;align-items:center;justify-content:center;\'>Image not available</div>'"
+      />
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Data Availability Section -->
+  <div class="bip-section">
+    <div class="bip-section-header">📊 Data Availability</div>
+    <table class="bip-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Year Range</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="<%= hasElecData ? 'bip-row-available' : 'bip-row-unavailable' %>">
+          <td>⚡ Electricity</td>
+          <td><%= elecYearDisplay %></td>
+          <td>
+            <span class="bip-badge <%= hasElecData ? 'bip-badge-available' : 'bip-badge-unavailable' %>">
+              <%= hasElecData ? 'Available' : 'No Data' %>
+            </span>
+          </td>
+        </tr>
+        <tr class="<%= hasWaterData ? 'bip-row-available' : 'bip-row-unavailable' %>">
+          <td>💧 Water</td>
+          <td><%= waterYearDisplay %></td>
+          <td>
+            <span class="bip-badge <%= hasWaterData ? 'bip-badge-available' : 'bip-badge-unavailable' %>">
+              <%= hasWaterData ? 'Available' : 'No Data' %>
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Description Section -->
+  <div class="bip-section">
+    <div class="bip-section-header">📝 Description</div>
+    <% if (safeDesc && safeDesc.trim()) { %>
+      <p class="bip-desc"><%= safeDesc %></p>
+    <% } else { %>
+      <p class="bip-desc bip-desc-empty">No description available for this building.</p>
+    <% } %>
+  </div>
+
+</div>
+
+<style>
+  .building-info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden; /* Changed from auto to hidden - panel doesn't scroll */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .building-info-panel .bip-head {
+    flex-shrink: 0; /* Don't shrink header */
+    text-align: center;
+    padding: 14px 12px;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(37, 99, 235, 0.15);
+  }
+
+  .building-info-panel .bip-icon {
+    font-size: 2.2rem;
+    margin-bottom: 4px;
+  }
+
+  .building-info-panel .bip-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin-bottom: 2px;
+  }
+
+  .building-info-panel .bip-subtitle {
+    font-size: 0.85rem;
+    color: #3b82f6;
+    font-weight: 500;
+  }
+
+  .building-info-panel .bip-section {
+    flex-shrink: 0; /* Don't shrink by default */
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+  }
+
+  /* Image section grows to fill available space */
+  .building-info-panel .bip-section-image {
+    flex: 1 1 auto; /* Grow and shrink to fill space */
+    min-height: 150px; /* Minimum height */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .building-info-panel .bip-section-header {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .building-info-panel .bip-image-container {
+    flex: 1 1 auto; /* Fill remaining space in section */
+    min-height: 0; /* Allow shrinking below content size */
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .building-info-panel .bip-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Cover the entire container */
+    object-position: center; /* Center the image */
+    display: block;
+  }
+
+  .building-info-panel .bip-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .building-info-panel .bip-table th,
+  .building-info-panel .bip-table td {
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .building-info-panel .bip-table th {
+    background: #f3f4f6;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .building-info-panel .bip-table td:first-child,
+  .building-info-panel .bip-table th:first-child {
+    text-align: left;
+  }
+
+  .building-info-panel .bip-row-available {
+    background: #f0fdf4;
+  }
+
+  .building-info-panel .bip-row-unavailable {
+    background: #fef2f2;
+  }
+
+  .building-info-panel .bip-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .building-info-panel .bip-badge-available {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .building-info-panel .bip-badge-unavailable {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .building-info-panel .bip-desc {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #374151;
+    margin: 0;
+  }
+
+  .building-info-panel .bip-desc-empty {
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .building-info-panel .bip-title {
+      font-size: 1.1rem;
+    }
+
+    .building-info-panel .bip-table {
+      font-size: 0.75rem;
+    }
+
+    .building-info-panel .bip-table th,
+    .building-info-panel .bip-table td {
+      padding: 6px 8px;
+    }
+
+    .building-info-panel .bip-section-image {
+      min-height: 120px;
+    }
+  }
+</style>

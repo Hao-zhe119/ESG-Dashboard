@@ -1,0 +1,498 @@
+<%
+  // Helper function to format numbers
+  function formatNum(n) {
+    const num = Number(n || 0);
+    if (!isFinite(num)) return "0";
+    return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+
+  // Calculate percentages
+  const generalPercent = totalWaste > 0 ? ((generalTotal / totalWaste) * 100).toFixed(1) : 0;
+  const recyclablePercent = totalWaste > 0 ? ((recyclableTotal / totalWaste) * 100).toFixed(1) : 0;
+
+  // Find previous year for comparison
+  const sortedYears = (wasteYearlyTotals || []).map(t => t.year).sort((a, b) => a - b);
+  const currentYearIndex = sortedYears.indexOf(Number(fiscalYear));
+  const prevYearData = currentYearIndex > 0 
+    ? wasteYearlyTotals.find(t => t.year === sortedYears[currentYearIndex - 1]) 
+    : null;
+
+  // Calculate year-over-year change in total waste
+  let yoyChange = null;
+  let yoyPercent = null;
+  if (prevYearData && prevYearData.total > 0) {
+    yoyChange = totalWaste - prevYearData.total;
+    yoyPercent = ((yoyChange / prevYearData.total) * 100).toFixed(1);
+  }
+
+  // Calculate recycling rate change
+  let recyclingRateChange = null;
+  if (prevYearData && prevYearData.recyclingRate) {
+    recyclingRateChange = (Number(recyclingRate) - Number(prevYearData.recyclingRate)).toFixed(1);
+  }
+
+  // Determine recycling rate status
+  let recyclingStatus = 'average';
+  const recyclingRateNum = Number(recyclingRate);
+  if (recyclingRateNum >= 50) recyclingStatus = 'excellent';
+  else if (recyclingRateNum >= 30) recyclingStatus = 'good';
+  else if (recyclingRateNum < 20) recyclingStatus = 'low';
+%>
+
+<div class="slug-sandbox waste-info-panel">
+  <!-- Header -->
+  <div class="info-head">
+    <div class="info-icon">♻️</div>
+    <div class="info-title animate__animated animate__headShake animate__infinite" style="--animate-duration: 4s;"">Waste Management</div>
+    <div class="info-subtitle">Fiscal Year <%= fiscalYear || 'N/A' %> (Apr - Mar)</div>
+  </div>
+
+  <!-- Main Stats - Inline -->
+  <div class="info-section stats-inline">
+    <div class="stat-inline-item">
+      <span class="stat-inline-label">🗑️ Total Waste:</span>
+      <span class="stat-inline-value"><%= formatNum(totalWaste) %>kg</span>
+    </div>
+    <div class="stat-inline-divider"></div>
+    <div class="stat-inline-item">
+      <span class="stat-inline-label">♻️ Recycling Rate:</span>
+      <span class="stat-inline-value <%= recyclingStatus %>"><%= recyclingRate %>%</span>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <div class="info-section">
+    <div class="info-section-h">📊 Waste Breakdown</div>
+    
+    <div class="breakdown-item">
+      <div class="breakdown-header">
+        <span class="breakdown-label">🗑️ General Waste</span>
+        <span id="generalWasteValue" class="breakdown-value" data-value="<%= generalTotal %>">0 kg</span>
+      </div>
+      <div class="breakdown-bar">
+        <div id="generalWasteBar" class="breakdown-fill general" data-percent="<%= generalPercent %>" style="width: 0%;"></div>
+      </div>
+      <div id="generalWastePercent" class="breakdown-percent" data-percent="<%= generalPercent %>">0% of total</div>
+    </div>
+    
+    <div class="breakdown-item">
+      <div class="breakdown-header">
+        <span class="breakdown-label">♻️ Recyclable Waste</span>
+        <span id="recyclableWasteValue" class="breakdown-value" data-value="<%= recyclableTotal %>">0 kg</span>
+      </div>
+      <div class="breakdown-bar">
+        <div id="recyclableWasteBar" class="breakdown-fill recyclable" data-percent="<%= recyclablePercent %>" style="width: 0%;"></div>
+      </div>
+      <div id="recyclableWastePercent" class="breakdown-percent" data-percent="<%= recyclablePercent %>">0% of total</div>
+    </div>
+  </div>
+
+  <% if (yoyChange !== null || recyclingRateChange !== null) { %>
+  <!-- Year-over-Year Comparison -->
+  <div class="info-section">
+    <div class="info-section-h">📈 Year-over-Year Change</div>
+    
+    <% if (yoyChange !== null) { %>
+    <div class="yoy-comparison">
+      <div class="yoy-item">
+        <span class="yoy-label">Total Waste:</span>
+        <span class="yoy-badge <%= yoyChange <= 0 ? 'positive' : 'negative' %>">
+          <%= yoyChange <= 0 ? '▼' : '▲' %> <%= Math.abs(yoyPercent) %>%
+        </span>
+        <span class="yoy-note">
+          (<%= yoyChange <= 0 ? '' : '+' %><%= formatNum(yoyChange) %> kg vs FY<%= prevYearData.year %>)
+        </span>
+      </div>
+    </div>
+    <% } %>
+    
+    <% if (recyclingRateChange !== null) { %>
+    <div class="yoy-comparison" style="margin-top: 6px;">
+      <div class="yoy-item">
+        <span class="yoy-label">Recycling Rate:</span>
+        <span class="yoy-badge <%= Number(recyclingRateChange) >= 0 ? 'positive' : 'negative' %>">
+          <%= Number(recyclingRateChange) >= 0 ? '▲' : '▼' %> <%= Math.abs(recyclingRateChange) %>%
+        </span>
+        <span class="yoy-note">
+          (was <%= prevYearData.recyclingRate %>% in FY<%= prevYearData.year %>)
+        </span>
+      </div>
+    </div>
+    <% } %>
+  </div>
+  <% } %>
+
+  <!-- Recycling Progress -->
+  <div class="info-section">
+    <div class="info-section-h">🎯 Recycling Progress</div>
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill <%= recyclingStatus %>" style="width: <%= Math.min(recyclingRate, 100) %>%;"></div>
+        <div class="progress-marker" style="left: 50%;">
+          <span class="marker-label">Target: 50%</span>
+        </div>
+      </div>
+      <div class="progress-labels">
+        <span>0%</span>
+        <span class="current-rate"><%= recyclingRate %>% achieved</span>
+        <span>100%</span>
+      </div>
+    </div>
+    <div class="progress-status <%= recyclingStatus %>">
+      <% if (recyclingStatus === 'excellent') { %>
+        ✅ Excellent! Exceeding recycling targets
+      <% } else if (recyclingStatus === 'good') { %>
+        👍 Good progress towards recycling goals
+      <% } else if (recyclingStatus === 'average') { %>
+        📊 Working towards improved recycling
+      <% } else { %>
+        ⚠️ Recycling rate needs improvement
+      <% } %>
+    </div>
+  </div>
+
+  <% if (wasteYearlyTotals && wasteYearlyTotals.length > 1) { %>
+  <!-- Historical Data -->
+  <div class="info-section">
+    <div class="info-section-h">📅 Historical Summary</div>
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>FY</th>
+          <th>General</th>
+          <th>Recycled</th>
+          <th>Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% wasteYearlyTotals.sort((a, b) => b.year - a.year).forEach(function(item) { %>
+        <tr class="<%= item.year === Number(fiscalYear) ? 'current-year' : '' %>">
+          <td><%= item.year %></td>
+          <td><%= formatNum(item.generalWaste) %></td>
+          <td><%= formatNum(item.recyclableWaste) %></td>
+          <td><strong><%= item.recyclingRate %>%</strong></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</div>
+
+<style>
+.waste-info-panel {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #1f2937;
+  padding: 0;
+}
+
+.waste-info-panel .info-head {
+  text-align: center;
+  padding: 10px 8px;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.waste-info-panel .info-icon {
+  font-size: 2rem;
+  margin-bottom: 2px;
+}
+
+.waste-info-panel .info-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #065f46;
+  margin-bottom: 2px;
+}
+
+.waste-info-panel .info-subtitle {
+  font-size: 0.85rem;
+  color: #047857;
+  font-weight: 500;
+}
+
+.waste-info-panel .info-section {
+  margin-bottom: 10px;
+  padding: 8px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.waste-info-panel .info-section-h {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Inline Stats */
+.waste-info-panel .stats-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+.waste-info-panel .stat-inline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.waste-info-panel .stat-inline-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.waste-info-panel .stat-inline-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.waste-info-panel .stat-inline-value.excellent {
+  color: #059669;
+}
+
+.waste-info-panel .stat-inline-value.good {
+  color: #16a34a;
+}
+
+.waste-info-panel .stat-inline-value.average {
+  color: #d97706;
+}
+
+.waste-info-panel .stat-inline-value.low {
+  color: #dc2626;
+}
+
+.waste-info-panel .stat-inline-divider {
+  width: 1px;
+  height: 24px;
+  background: #9ca3af;
+}
+
+.waste-info-panel .breakdown-item {
+  margin-bottom: 8px;
+}
+
+.waste-info-panel .breakdown-item:last-child {
+  margin-bottom: 0;
+}
+
+.waste-info-panel .breakdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.waste-info-panel .breakdown-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.waste-info-panel .breakdown-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.waste-info-panel .breakdown-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.waste-info-panel .breakdown-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.waste-info-panel .breakdown-fill.general {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.waste-info-panel .breakdown-fill.recyclable {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.waste-info-panel .breakdown-percent {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.waste-info-panel .yoy-comparison {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.waste-info-panel .yoy-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.waste-info-panel .yoy-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.waste-info-panel .yoy-badge {
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.waste-info-panel .yoy-badge.positive {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.waste-info-panel .yoy-badge.negative {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.waste-info-panel .yoy-note {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.waste-info-panel .progress-container {
+  margin: 6px 0;
+}
+
+.waste-info-panel .progress-bar {
+  position: relative;
+  height: 16px;
+  background: #e5e7eb;
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.waste-info-panel .progress-fill {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.5s ease;
+}
+
+.waste-info-panel .progress-fill.excellent {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.waste-info-panel .progress-fill.good {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.waste-info-panel .progress-fill.average {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.waste-info-panel .progress-fill.low {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.waste-info-panel .progress-marker {
+  position: absolute;
+  top: -4px;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 24px;
+  background: #374151;
+}
+
+.waste-info-panel .progress-marker .marker-label {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.waste-info-panel .progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.waste-info-panel .progress-labels .current-rate {
+  font-weight: 600;
+  color: #374151;
+}
+
+.waste-info-panel .progress-status {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 5px;
+  border-radius: 6px;
+  margin-top: 6px;
+}
+
+.waste-info-panel .progress-status.excellent {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.waste-info-panel .progress-status.good {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.waste-info-panel .progress-status.average {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.waste-info-panel .progress-status.low {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.waste-info-panel .info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.waste-info-panel .info-table th,
+.waste-info-panel .info-table td {
+  padding: 4px 6px;
+  text-align: right;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.waste-info-panel .info-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+  color: #374151;
+}
+
+.waste-info-panel .info-table th:first-child,
+.waste-info-panel .info-table td:first-child {
+  text-align: left;
+}
+
+.waste-info-panel .info-table tr.current-year {
+  background: #d1fae5;
+}
+</style>

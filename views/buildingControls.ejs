@@ -1,0 +1,1533 @@
+<!-- buildingControls.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Building Controls</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    :root{
+      --bg:#0f1318;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --cardBg:#ffffff;
+      --cardText:#111827;
+      --active:#60a5fa;
+
+      /* Side navigation rails width (reserved space) */
+      --sideRail: 110px;
+
+      /* Max width of the centered grid group */
+      --gridMaxW: 1400px;
+
+      /* Top / Bottom split */
+      --topPanelH: 46%;
+      --bottomPanelH: 54%;
+
+      /* Button styling */
+      --btnBg: rgba(255,255,255,0.12);
+      --btnBd: rgba(255,255,255,0.25);
+      --btnBgHover: rgba(96,165,250,0.18);
+      --btnBdHover: rgba(96,165,250,0.45);
+
+      /* Panels */
+      --panelBg: rgba(255,255,255,0.06);
+      --panelBd: rgba(255,255,255,0.10);
+    }
+
+    html,body{
+      margin:0;
+      padding:0;
+      height:100%;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Arial,sans-serif;
+      overflow:hidden;
+    }
+
+    body{
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      box-sizing:border-box;
+    }
+
+    /* ============================================================
+       HEADER
+    ============================================================ */
+    .header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex: 0 0 auto;
+    }
+
+    .header h2{
+      margin:0;
+      font-size:22px;
+      font-weight:700;
+    }
+
+    .subtitle{
+      font-size:14px;
+      color:var(--muted);
+      margin-top:2px;
+    }
+
+    .nav-btn{
+      background:var(--btnBg);
+      border:1px solid var(--btnBd);
+      color:#fff;
+      padding:10px 18px;
+      border-radius:999px;
+      font-size:16px;
+      cursor:pointer;
+      user-select:none;
+      transition: background .12s ease, border-color .12s ease, transform .12s ease;
+    }
+    .nav-btn:hover{
+      background: var(--btnBgHover);
+      border-color: var(--btnBdHover);
+      transform: translateY(-1px);
+    }
+    .nav-btn:disabled{
+      opacity:.35;
+      cursor:default;
+      transform:none;
+    }
+
+    .close-btn{
+      min-width:42px;
+      text-align:center;
+      padding:8px 14px;
+    }
+
+    /* ============================================================
+       MAIN LAYOUT
+    ============================================================ */
+    .main{
+      flex:1;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .top-panel{
+      flex: 0 0 var(--topPanelH);
+      min-height:0;
+      background: var(--panelBg);
+      border: 1px solid var(--panelBd);
+      border-radius: 16px;
+      padding: 12px;
+      box-sizing:border-box;
+
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      overflow:hidden;
+    }
+
+    .bottom-panel{
+      flex: 1;
+      min-height:0;
+      background: var(--panelBg);
+      border: 1px solid var(--panelBd);
+      border-radius: 16px;
+      padding: 12px;
+      box-sizing:border-box;
+
+      overflow:hidden;
+      position:relative;
+    }
+
+    /* ============================================================
+       TOP PANEL CONTENT
+    ============================================================ */
+    .top-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .top-row .left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .top-row .right{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .mini-label{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .pill-group{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .pill{
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:14px;
+      border:1px solid rgba(255,255,255,0.20);
+      background: rgba(255,255,255,0.08);
+      color:#fff;
+      cursor:pointer;
+      user-select:none;
+      transition: background .12s ease, border-color .12s ease, transform .12s ease, opacity .12s ease;
+      outline:none;
+    }
+    .pill:hover{
+      background: rgba(96,165,250,0.18);
+      border-color: rgba(96,165,250,0.45);
+      transform: translateY(-1px);
+    }
+    .pill.active{
+      background: rgba(96,165,250,0.25);
+      border-color: rgba(96,165,250,0.70);
+      box-shadow: 0 0 0 2px rgba(96,165,250,0.18);
+    }
+    .pill.disabled{
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
+      text-decoration: line-through;
+    }
+    .pill.hidden{
+      display: none;
+    }
+
+    .hint{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.2;
+    }
+
+    /* ============================================================
+       BOTTOM VIEWS WRAPPER (page5..page9)
+    ============================================================ */
+    .view{
+      height:100%;
+      min-height:0;
+      display:none;
+      overflow:hidden;
+    }
+    .view.active{ display:block; }
+
+    /* ============================================================
+       PAGE 5 (BUILDINGS): SLIDER AREA WITH SIDE NAV RAILS
+    ============================================================ */
+    .slider-area{
+      height:100%;
+      min-height:0;
+      position:relative;
+
+      /* Reserve room for left/right nav rails */
+      padding-left: var(--sideRail);
+      padding-right: var(--sideRail);
+      box-sizing:border-box;
+    }
+
+    /* Side rails */
+    .side-rail{
+      position:absolute;
+      top:0;
+      bottom:0;
+      width: var(--sideRail);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+    }
+    .side-rail.left{ left:0; }
+    .side-rail.right{ right:0; }
+
+    /* Actual buttons inside rails should be clickable */
+    .side-rail button{
+      pointer-events:auto;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      font-size: 26px;
+      padding: 0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 10px 22px rgba(0,0,0,.35);
+    }
+
+    /* Slider viewport */
+    .slider-wrap{
+      height:100%;
+      overflow:hidden;
+      min-height:0;
+      position:relative;
+    }
+
+    .slider{
+      display:flex;
+      height:100%;
+      transition:transform .45s ease;
+      will-change: transform;
+    }
+
+    .slide{
+      flex:0 0 100%;
+      overflow:hidden;
+      min-height:0;
+      box-sizing:border-box;
+      padding-right:4px;
+    }
+
+    /* ============================================================
+       CENTERED GRID CONTAINER
+    ============================================================ */
+    .grid-center{
+      height:100%;
+      min-height:0;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      box-sizing: border-box;
+    }
+
+    .grid-inner{
+      width:100%;
+      max-width: var(--gridMaxW);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+    }
+
+    /* ============================================================
+       MATCH PAGE 3 GRID
+    ============================================================ */
+    .multi-building-grid{
+      display:grid;
+      grid-template-columns:repeat(6,minmax(0,1fr));
+      gap:14px;
+      align-content:start;
+      width:100%;
+    }
+
+    @media (max-width:1400px){
+      :root{ --gridMaxW: 1200px; }
+      .multi-building-grid{ grid-template-columns:repeat(5,1fr); }
+    }
+    @media (max-width:1200px){
+      :root{ --gridMaxW: 980px; }
+      .multi-building-grid{ grid-template-columns:repeat(4,1fr); }
+    }
+    @media (max-width:992px){
+      :root{ --gridMaxW: 760px; --sideRail: 90px; }
+      .multi-building-grid{ grid-template-columns:repeat(3,1fr); }
+    }
+    @media (max-width:768px){
+      :root{ --gridMaxW: 520px; --sideRail: 76px; }
+      .multi-building-grid{ grid-template-columns:repeat(2,1fr); }
+      .side-rail button{ width:56px; height:56px; font-size:22px; }
+    }
+
+    /* ============================================================
+       BUILDING CARD
+    ============================================================ */
+    .building-card{
+      background:var(--cardBg);
+      color:var(--cardText);
+      border-radius:14px;
+      padding:14px 16px;
+      min-height: 84px;
+      box-shadow:0 10px 22px rgba(0,0,0,.18);
+      border:2px solid transparent;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      user-select:none;
+      min-width:0;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+
+    .building-card.active{
+      border-color:var(--active);
+      box-shadow:0 0 0 2px rgba(96,165,250,.25), 0 10px 22px rgba(0,0,0,.18);
+    }
+
+    .building-card:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 28px rgba(0,0,0,.25);
+    }
+
+    .building-name{
+      font-size:20px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      margin:0 0 2px 0;
+      font-weight:400;
+    }
+
+    .building-metric{
+      font-size:15px;
+      margin:0;
+      line-height:1.15;
+      color:rgba(17,24,39,.78);
+      white-space:normal;
+      overflow:visible;
+      text-overflow:unset;
+      word-break:break-word;
+    }
+
+    /* ============================================================
+       PAGE 7/8/9/10 CONTROL PANELS (generic)
+    ============================================================ */
+    .control-wrap{
+      height:100%;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      overflow-y:auto;
+    }
+
+    .control-card{
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 12px;
+      box-sizing:border-box;
+    }
+
+    .control-title{
+      font-weight:800;
+      font-size:16px;
+      margin:0 0 8px 0;
+    }
+
+    .control-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .small-btn{
+      padding:10px 14px;
+      border-radius: 999px;
+      font-size:14px;
+    }
+
+    .toggle-btn.active{
+      background: rgba(96,165,250,0.25);
+      border-color: rgba(96,165,250,0.70);
+      box-shadow: 0 0 0 2px rgba(96,165,250,0.18);
+    }
+
+    .range{
+      width: 260px;
+      max-width: 100%;
+    }
+
+    .value-chip{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      font-size: 13px;
+      color:#fff;
+    }
+
+    /* Dynamic Solar/Waste year cards grid */
+    .year-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));
+      gap:12px;
+    }
+
+    .year-card{
+      background:var(--cardBg);
+      color:var(--cardText);
+      border-radius:14px;
+      padding:14px 16px;
+      min-height: 70px;
+      box-shadow:0 10px 22px rgba(0,0,0,.18);
+      border:2px solid transparent;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      user-select:none;
+      min-width:0;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+
+    .year-card.active{
+      border-color:var(--active);
+      box-shadow:0 0 0 2px rgba(96,165,250,.25), 0 10px 22px rgba(0,0,0,.18);
+    }
+
+    .year-card:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 28px rgba(0,0,0,.25);
+    }
+
+    .year-card .year-title{
+      font-size:20px;
+      font-weight:600;
+      margin:0;
+    }
+
+    .year-card .year-subtitle{
+      font-size:13px;
+      color:rgba(17,24,39,.65);
+      margin:0;
+    }
+
+    .no-data-msg{
+      color:var(--muted);
+      font-size:14px;
+      padding:12px 0;
+    }
+
+    .skipped-notice{
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.30);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: #fca5a5;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .skipped-notice strong{
+      color: #f87171;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ============================================================
+       HEADER
+  ============================================================ -->
+  <div class="header">
+    <div>
+      <h2>Controls</h2>
+      <div class="subtitle" id="headerSubtitle">Control the main dashboard (Pages 1-10)</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- ============================================================
+         TOP HALF: DASHBOARD PAGE NAV + PAGE SELECTOR
+    ============================================================ -->
+    <div class="top-panel">
+      <div class="top-row">
+        <div class="left">
+          <button id="dashPrevPageBtn" class="nav-btn" type="button">Prev Page</button>
+          <button id="dashNextPageBtn" class="nav-btn" type="button">Next Page</button>
+        </div>
+
+        <div class="right">
+          <div class="mini-label">Quick Page</div>
+          <div class="pill-group" aria-label="Dashboard pages">
+            <button class="pill" data-page="1" type="button">1 - Welcome</button>
+            <button class="pill" data-page="2" type="button">2 - Overview</button>
+            <button class="pill" data-page="3" type="button">3 - Electricity</button>
+            <button class="pill" data-page="4" type="button">4 - Water</button>
+            <button class="pill" data-page="5" type="button">5 - Infographics</button>
+            <button class="pill" data-page="6" type="button">6 - Solar</button>
+            <button class="pill" data-page="7" type="button">7 - Waste</button>
+            <button class="pill" data-page="8" type="button">8 - Video</button>
+            <button class="pill" data-page="9" type="button">9 - Images</button>
+            <button class="pill" data-page="10" type="button">10 - Thank You</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hint" id="topHint">
+        Select a page above. The bottom panel will switch controls to match that page.
+      </div>
+    </div>
+
+    <!-- ============================================================
+         BOTTOM HALF: PAGE-SPECIFIC CONTROLS
+    ============================================================ -->
+    <div class="bottom-panel">
+
+      <!-- =========================
+           VIEW: NAV-ONLY (Pages 1-4, 10)
+      ========================== -->
+      <div id="view-nav" class="view">
+        <div class="control-wrap">
+          <div class="control-card">
+            <div class="control-title">Navigation</div>
+            <div class="hint">
+              This page has no extra controls. Use <b>Prev/Next Page</b> or <b>Quick Page</b> above.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================
+           VIEW: PAGE 5 (BUILDING DETAILS) - BUILDING PICKER
+      ========================== -->
+      <div id="view-page5" class="view">
+        <div class="slider-area">
+          <!-- Left navigation rail -->
+          <div class="side-rail left">
+            <button id="prevBtn" class="nav-btn" type="button" aria-label="Previous group">&#9664;</button>
+          </div>
+
+          <!-- Slider viewport -->
+          <div class="slider-wrap">
+            <div id="slider" class="slider">
+              <!-- GROUP 1 -->
+              <div class="slide">
+                <div class="grid-center">
+                  <div class="grid-inner">
+                    <div id="grid1" class="multi-building-grid"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- GROUP 2 -->
+              <div class="slide">
+                <div class="grid-center">
+                  <div class="grid-inner">
+                    <div id="grid2" class="multi-building-grid"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right navigation rail -->
+          <div class="side-rail right">
+            <button id="nextBtn" class="nav-btn" type="button" aria-label="Next group">&#9654;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================
+           VIEW: PAGE 6 (SOLAR) - DYNAMIC YEAR CARDS
+      ========================== -->
+      <div id="view-page6" class="view">
+        <div class="control-wrap">
+          <div class="control-card">
+            <div class="control-title">Solar Year</div>
+
+            <div id="solarYearGrid" class="year-grid" style="margin-top:10px;">
+              <div class="no-data-msg">Loading years...</div>
+            </div>
+
+            <div class="hint" style="margin-top:10px;">
+              Tap a year card to switch the Solar year (Page 6).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================
+           VIEW: PAGE 7 (WASTE) - DYNAMIC FY YEAR CARDS
+      ========================== -->
+      <div id="view-page7" class="view">
+        <div class="control-wrap">
+          <div class="control-card">
+            <div class="control-title">Waste Fiscal Year (FY)</div>
+
+            <div id="wasteYearGrid" class="year-grid" style="margin-top:10px;">
+              <div class="no-data-msg">Loading years...</div>
+            </div>
+
+            <div class="hint" style="margin-top:10px;">
+              Tap a FY card to switch the Waste FY (Page 7).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================
+           VIEW: PAGE 8 (VIDEO)
+      ========================== -->
+      <div id="view-page8" class="view">
+        <div class="control-wrap">
+          <div id="videoSkippedNotice" class="skipped-notice" style="display:none;">
+            <strong>Page Skipped:</strong> No videos have been uploaded. This page is automatically skipped in the dashboard.
+          </div>
+          <div class="control-card">
+            <div class="control-title">Video Controls</div>
+            <div class="control-row">
+              <button id="vidPlayPauseBtn" class="nav-btn small-btn" type="button">Play / Pause</button>
+              <button id="vidNextBtn" class="nav-btn small-btn" type="button">Next Video</button>
+            </div>
+
+            <div class="control-row" style="margin-top:10px;">
+              <div class="mini-label">Seek</div>
+              <input id="vidSeek" class="range" type="range" min="0" max="1000" value="0" />
+              <span class="value-chip" id="vidTimeChip">-</span>
+            </div>
+
+            <div class="hint" style="margin-top:8px;">
+              Use Play/Pause or Next Video to control the main dashboard video.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================
+           VIEW: PAGE 9 (IMAGES)
+      ========================== -->
+      <div id="view-page9" class="view">
+        <div class="control-wrap">
+          <div id="imagesSkippedNotice" class="skipped-notice" style="display:none;">
+            <strong>Page Skipped:</strong> No images have been uploaded. This page is automatically skipped in the dashboard.
+          </div>
+          <div class="control-card">
+            <div class="control-title">Image Carousel Controls</div>
+            <div class="control-row">
+              <button id="imgPrevBtn" class="nav-btn small-btn" type="button">Prev Image</button>
+              <button id="imgNextBtn" class="nav-btn small-btn" type="button">Next Image</button>
+              <span class="value-chip" id="imgSlideChip" style="margin-left:auto;">-</span>
+            </div>
+
+            <div class="hint" style="margin-top:8px;">
+              Use Prev/Next to control the main dashboard image carousel.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Close the popup when this file is opened without a parent dashboard window.
+    if (!window.opener) window.close();
+
+    // ============================================================
+    // MEDIA AVAILABILITY STATE
+    // ============================================================
+    let hasVideos = true;  // Assume true until told otherwise
+    let hasImages = true;  // Assume true until told otherwise
+    let enabledPages = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // Default all enabled
+
+    // ============================================================
+    // POSTMESSAGE HELPERS (to main dashboard)
+    // ============================================================
+
+    function postToMain(payload){
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(payload, window.location.origin);
+      }
+    }
+
+    function goToPageThen(page, payload, delayMs){
+      // Only navigate if page is enabled
+      if (!enabledPages.includes(Number(page))) {
+        console.warn("Page " + page + " is not enabled, skipping navigation");
+        return;
+      }
+      postToMain({ type: "NAV_PAGE", page });
+      setTimeout(() => postToMain(payload), Number(delayMs || 120));
+    }
+
+    // ============================================================
+    // UPDATE UI BASED ON MEDIA AVAILABILITY
+    // ============================================================
+
+    function updateMediaAvailabilityUI(){
+      const videoPill = document.querySelector('.pill[data-page="8"]');
+      const imagesPill = document.querySelector('.pill[data-page="9"]');
+      const videoNotice = document.getElementById("videoSkippedNotice");
+      const imagesNotice = document.getElementById("imagesSkippedNotice");
+      const headerSubtitle = document.getElementById("headerSubtitle");
+
+      // Update Page 8 (Video) pill
+      if (videoPill) {
+        if (hasVideos) {
+          videoPill.classList.remove("disabled");
+          videoPill.title = "";
+        } else {
+          videoPill.classList.add("disabled");
+          videoPill.title = "No videos uploaded - page skipped";
+        }
+      }
+
+      // Update Page 9 (Images) pill
+      if (imagesPill) {
+        if (hasImages) {
+          imagesPill.classList.remove("disabled");
+          imagesPill.title = "";
+        } else {
+          imagesPill.classList.add("disabled");
+          imagesPill.title = "No images uploaded - page skipped";
+        }
+      }
+
+      // Update skipped notices
+      if (videoNotice) {
+        videoNotice.style.display = hasVideos ? "none" : "block";
+      }
+      if (imagesNotice) {
+        imagesNotice.style.display = hasImages ? "none" : "block";
+      }
+
+      // Update header subtitle
+      if (headerSubtitle) {
+        const totalPages = enabledPages.length;
+        const skippedCount = 10 - totalPages;
+        if (skippedCount > 0) {
+          headerSubtitle.textContent = "Control the main dashboard (" + totalPages + " pages active, " + skippedCount + " skipped)";
+        } else {
+          headerSubtitle.textContent = "Control the main dashboard (Pages 1-10)";
+        }
+      }
+
+      console.log("Media availability updated:", { hasVideos, hasImages, enabledPages });
+    }
+
+    // ============================================================
+    // TOP HALF: DASHBOARD PAGE NAVIGATION (page numbers are 1..10)
+    // ============================================================
+
+    const dashPrevPageBtn = document.getElementById("dashPrevPageBtn");
+    const dashNextPageBtn = document.getElementById("dashNextPageBtn");
+    const topHint = document.getElementById("topHint");
+    const pagePills = Array.from(document.querySelectorAll(".pill[data-page]"));
+
+    let selectedDashboardPage = 1;
+
+    // ============================================================
+    // RELIABLE PAGE NAVIGATION
+    // ============================================================
+
+    let pendingNavPage = null;
+    let pendingNavTimer = null;
+    let pendingNavRetryTimer = null;
+    let navLockUntil = 0;
+
+    function clearPendingNav(){
+      pendingNavPage = null;
+      if (pendingNavTimer) { clearTimeout(pendingNavTimer); pendingNavTimer = null; }
+      if (pendingNavRetryTimer) { clearTimeout(pendingNavRetryTimer); pendingNavRetryTimer = null; }
+    }
+
+    function sendGoToPageReliable(page){
+      const pageNumber = Number(page);
+
+      // Check if page is enabled
+      if (!enabledPages.includes(pageNumber)) {
+        console.warn("Page " + pageNumber + " is not enabled, skipping navigation");
+        return;
+      }
+
+      const now = Date.now();
+      if (now < navLockUntil) return;
+      navLockUntil = now + 120;
+
+      pendingNavPage = pageNumber;
+
+      postToMain({ type: "NAV_PAGE", page: pageNumber });
+
+      if (pendingNavRetryTimer) clearTimeout(pendingNavRetryTimer);
+      pendingNavRetryTimer = setTimeout(() => {
+        if (pendingNavPage === pageNumber) {
+          postToMain({ type: "NAV_PAGE", page: pageNumber });
+        }
+      }, 260);
+
+      if (pendingNavTimer) clearTimeout(pendingNavTimer);
+      pendingNavTimer = setTimeout(() => {
+        clearPendingNav();
+      }, 1200);
+    }
+
+    function setActivePill(page){
+      pagePills.forEach(pill => {
+        const pillPageNum = Number(pill.dataset.page);
+        const isActive = pillPageNum === Number(page);
+        const isEnabled = enabledPages.includes(pillPageNum);
+        
+        pill.classList.toggle("active", isActive);
+        pill.classList.toggle("disabled", !isEnabled);
+      });
+    }
+
+    function showViewForPage(page){
+      const pageNumber = Number(page);
+      const views = [5,6,7,8,9];
+
+      views.forEach(viewNumber => {
+        const viewElement = document.getElementById("view-page" + viewNumber);
+        if (viewElement) viewElement.classList.toggle("active", viewNumber === pageNumber);
+      });
+
+      const navView = document.getElementById("view-nav");
+      if (navView) navView.classList.toggle("active", !(pageNumber >= 5 && pageNumber <= 9));
+    }
+
+    function getPageName(page){
+      const names = {
+        1: "Welcome",
+        2: "Overview",
+        3: "Electricity",
+        4: "Water",
+        5: "Building Details",
+        6: "Solar",
+        7: "Waste",
+        8: "Video",
+        9: "Images",
+        10: "Thank You"
+      };
+      return names[page] || "Unknown";
+    }
+
+    function selectDashboardPage(page, alsoTellMain){
+      selectedDashboardPage = Math.max(1, Math.min(10, Number(page || 1)));
+
+      setActivePill(selectedDashboardPage);
+      showViewForPage(selectedDashboardPage);
+
+      if (topHint) {
+        const name = getPageName(selectedDashboardPage);
+        const isEnabled = enabledPages.includes(selectedDashboardPage);
+        
+        if (isEnabled) {
+          topHint.textContent = "Selected Page " + selectedDashboardPage + " - " + name + ".";
+        } else {
+          topHint.textContent = "Page " + selectedDashboardPage + " (" + name + ") is skipped (no content).";
+        }
+      }
+
+      if (alsoTellMain && enabledPages.includes(selectedDashboardPage)) {
+        sendGoToPageReliable(selectedDashboardPage);
+      }
+    }
+
+    // Fixed: Use NAV_PREV and NAV_NEXT to match index.ejs listener
+    if (dashPrevPageBtn) dashPrevPageBtn.addEventListener("click", () => postToMain({ type: "NAV_PREV" }));
+    if (dashNextPageBtn) dashNextPageBtn.addEventListener("click", () => postToMain({ type: "NAV_NEXT" }));
+
+    pagePills.forEach(button => {
+      button.addEventListener("click", () => {
+        const pageNumber = Number(button.dataset.page);
+        
+        // Check if page is enabled
+        if (!enabledPages.includes(pageNumber)) {
+          console.warn("Page " + pageNumber + " is disabled");
+          return;
+        }
+        
+        selectDashboardPage(pageNumber, false);
+        sendGoToPageReliable(pageNumber);
+      });
+
+      button.addEventListener("keydown", (keyEvent) => {
+        if (keyEvent.key !== "Enter") return;
+        const pageNumber = Number(button.dataset.page);
+        
+        // Check if page is enabled
+        if (!enabledPages.includes(pageNumber)) {
+          console.warn("Page " + pageNumber + " is disabled");
+          return;
+        }
+        
+        selectDashboardPage(pageNumber, false);
+        sendGoToPageReliable(pageNumber);
+      });
+    });
+
+    // ============================================================
+    // PAGE 5: BUILDING ORDER (Building Details page)
+    // ============================================================
+
+    const page1Buildings = [
+      "E1","E2","E3","E4","E5","E6",
+      "W1","W2","W3","W4","W5","W6"
+    ];
+
+    const page2Buildings = [
+      "ALC",
+      "BLK 43",
+      "ECMC",
+      "GREEN HOUSE",
+      "RPC",
+      "RPIC",
+      "SPORTS COMPLEX",
+      "THE ARCH",
+      "TRCC",
+      "XLC"
+    ];
+
+    // ============================================================
+    // PAGE 5: DISPLAY LABELS + DESCRIPTIONS
+    // ============================================================
+
+    const BUILDING_UI = {
+      "ALC": { title: "ALC", desc: "Adventure Learning Centre" },
+      "BLK 43": { title: "SIT", desc: "Singapore Institute of Technology Building" },
+
+      "E1": { title: "E1", desc: "Centre for Educational Development (CED)" },
+      "E2": { title: "E2", desc: "School of Technology for Arts, Media and Design (STA)" },
+      "E3": { title: "E3", desc: "School of Business (SBZ)" },
+      "E4": { title: "E4", desc: "School of Business (SBZ)" },
+      "E5": { title: "E5", desc: "School of Sports and Health (SSH)" },
+      "E6": { title: "E6", desc: "School of Infocomm (SOI)" },
+
+      "ECMC": { title: "ECMC", desc: "Energy-Centre Multi-Story Carpark" },
+      "GREEN HOUSE": { title: "Green House", desc: "Green House" },
+      "RPC": { title: "RPC", desc: "Republic Polytechnic Centre" },
+      "RPIC": { title: "RPIC", desc: "Republic Polytechnic Industry Centre" },
+      "SPORTS COMPLEX": { title: "Sports Complex", desc: "Sports Complex" },
+      "THE ARCH": { title: "The Arch", desc: "Aerospace Hub" },
+      "TRCC": { title: "TRCC", desc: "The Republic Cultural Centre" },
+
+      "W1": { title: "W1", desc: "School of Engineering (SEG)" },
+      "W2": { title: "W2", desc: "School of Engineering (SEG)" },
+      "W3": { title: "W3", desc: "School of Applied Science (SAS)" },
+      "W4": { title: "W4", desc: "School of Hospitality (SOH)" },
+      "W5": { title: "W5", desc: "Applied Science (SAS)" },
+      "W6": { title: "W6", desc: "School of Infocomm (SOI)" },
+
+      "XLC": { title: "XLC", desc: "Xperiential Learning Centre" }
+    };
+
+    function uiTitleFor(code){
+      return (BUILDING_UI[code] && BUILDING_UI[code].title) ? BUILDING_UI[code].title : code;
+    }
+
+    function uiDescFor(code){
+      return (BUILDING_UI[code] && BUILDING_UI[code].desc) ? BUILDING_UI[code].desc : "";
+    }
+
+    // ============================================================
+    // PAGE 5: GRID RENDERING
+    // ============================================================
+
+    const grid1 = document.getElementById("grid1");
+    const grid2 = document.getElementById("grid2");
+    const buildingCards = {};
+
+    function createCard(buildingCode){
+      const card = document.createElement("div");
+      card.className = "building-card";
+      card.dataset.building = buildingCode;
+
+      const title = uiTitleFor(buildingCode);
+      const desc = uiDescFor(buildingCode);
+
+      card.innerHTML = '<div class="building-name">' + title + '</div>' +
+        (desc ? '<p class="building-metric">' + desc + '</p>' : '');
+
+      card.addEventListener("click", () => {
+        postToMain({ type: "NAV_PAGE", page: 5 });
+        setTimeout(() => {
+          postToMain({ type: "SET_BUILDING", building: buildingCode });
+        }, 100);
+      });
+
+      buildingCards[buildingCode] = card;
+      return card;
+    }
+
+    if (grid1) page1Buildings.forEach(buildingCode => grid1.appendChild(createCard(buildingCode)));
+    if (grid2) page2Buildings.forEach(buildingCode => grid2.appendChild(createCard(buildingCode)));
+
+    // ============================================================
+    // PAGE 5: SLIDER NAVIGATION
+    // ============================================================
+
+    const sliderEl = document.getElementById("slider");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    let currentSlide = 0;
+
+    function updateSlider(){
+      if (sliderEl) sliderEl.style.transform = "translateX(-" + (currentSlide * 100) + "%)";
+      if (prevBtn) prevBtn.disabled = currentSlide === 0;
+      if (nextBtn) nextBtn.disabled = currentSlide === 1;
+    }
+
+    function goToSlide(slideIndex){
+      currentSlide = Math.max(0, Math.min(1, slideIndex));
+      updateSlider();
+    }
+
+    if (prevBtn) prevBtn.addEventListener("click", () => goToSlide(currentSlide - 1));
+    if (nextBtn) nextBtn.addEventListener("click", () => goToSlide(currentSlide + 1));
+    updateSlider();
+
+    // ============================================================
+    // PAGE 6: DYNAMIC SOLAR YEAR CARDS
+    // ============================================================
+
+    const solarYearGrid = document.getElementById("solarYearGrid");
+    let solarYears = [];
+    let activeSolarYear = null;
+    const solarYearCards = {};
+
+    function renderSolarYearCards(){
+      if (!solarYearGrid) return;
+      solarYearGrid.innerHTML = "";
+
+      if (solarYears.length === 0) {
+        solarYearGrid.innerHTML = '<div class="no-data-msg">No years available</div>';
+        return;
+      }
+
+      // Sort years ascending
+      const sortedYears = solarYears.slice().sort((a, b) => a - b);
+
+      sortedYears.forEach(year => {
+        const card = document.createElement("div");
+        card.className = "year-card";
+        card.dataset.year = year;
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+
+        if (activeSolarYear !== null && Number(year) === Number(activeSolarYear)) {
+          card.classList.add("active");
+        }
+
+        card.innerHTML = '<div class="year-title">' + year + '</div>' +
+          '<div class="year-subtitle">Solar Data</div>';
+
+        card.addEventListener("click", () => {
+          selectSolarYear(year);
+        });
+
+        card.addEventListener("keydown", (keyEvent) => {
+          if (keyEvent.key === "Enter") selectSolarYear(year);
+        });
+
+        solarYearCards[year] = card;
+        solarYearGrid.appendChild(card);
+      });
+    }
+
+    function selectSolarYear(year){
+      activeSolarYear = year;
+
+      // Update active state on all cards
+      Object.keys(solarYearCards).forEach(yearKey => {
+        const card = solarYearCards[yearKey];
+        if (card) {
+          card.classList.toggle("active", Number(yearKey) === Number(year));
+        }
+      });
+
+      // Send message to main dashboard
+      goToPageThen(6, { type: "SET_SOLAR_YEAR", year: year }, 120);
+    }
+
+    function setSolarActiveFromExternal(year){
+      activeSolarYear = year;
+      Object.keys(solarYearCards).forEach(yearKey => {
+        const card = solarYearCards[yearKey];
+        if (card) {
+          card.classList.toggle("active", Number(yearKey) === Number(year));
+        }
+      });
+    }
+
+    // ============================================================
+    // PAGE 7: DYNAMIC WASTE FY YEAR CARDS
+    // ============================================================
+
+    const wasteYearGrid = document.getElementById("wasteYearGrid");
+    let wasteYears = [];
+    let activeWasteYear = null;
+    const wasteYearCards = {};
+
+    function renderWasteYearCards(){
+      if (!wasteYearGrid) return;
+      wasteYearGrid.innerHTML = "";
+
+      if (wasteYears.length === 0) {
+        wasteYearGrid.innerHTML = '<div class="no-data-msg">No years available</div>';
+        return;
+      }
+
+      // Sort years ascending
+      const sortedYears = wasteYears.slice().sort((a, b) => a - b);
+
+      sortedYears.forEach(year => {
+        const card = document.createElement("div");
+        card.className = "year-card";
+        card.dataset.year = year;
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+
+        if (activeWasteYear !== null && Number(year) === Number(activeWasteYear)) {
+          card.classList.add("active");
+        }
+
+        card.innerHTML = '<div class="year-title">FY ' + year + '</div>' +
+          '<div class="year-subtitle">Apr ' + year + ' - Mar ' + (year + 1) + '</div>';
+
+        card.addEventListener("click", () => {
+          selectWasteYear(year);
+        });
+
+        card.addEventListener("keydown", (keyEvent) => {
+          if (keyEvent.key === "Enter") selectWasteYear(year);
+        });
+
+        wasteYearCards[year] = card;
+        wasteYearGrid.appendChild(card);
+      });
+    }
+
+    function selectWasteYear(year){
+      activeWasteYear = year;
+
+      // Update active state on all cards
+      Object.keys(wasteYearCards).forEach(yearKey => {
+        const card = wasteYearCards[yearKey];
+        if (card) {
+          card.classList.toggle("active", Number(yearKey) === Number(year));
+        }
+      });
+
+      // Send message to main dashboard
+      goToPageThen(7, { type: "SET_WASTE_YEAR", year: year }, 120);
+    }
+
+    function setWasteActiveFromExternal(year){
+      activeWasteYear = year;
+      Object.keys(wasteYearCards).forEach(yearKey => {
+        const card = wasteYearCards[yearKey];
+        if (card) {
+          card.classList.toggle("active", Number(yearKey) === Number(year));
+        }
+      });
+    }
+
+    // ============================================================
+    // PAGE 8: VIDEO CONTROLS
+    // ============================================================
+
+    const vidPlayPauseBtn = document.getElementById("vidPlayPauseBtn");
+    const vidNextBtn = document.getElementById("vidNextBtn");
+    const vidSeek = document.getElementById("vidSeek");
+    const vidTimeChip = document.getElementById("vidTimeChip");
+
+    let userIsSeeking = false;
+    let seekLockUntil = 0;
+    let nextVideoLockUntil = 0;
+
+    function lockSeekUi(milliseconds){
+      seekLockUntil = Date.now() + (milliseconds || 900);
+    }
+
+    function formatTimeAsMinutesSeconds(totalSeconds){
+      totalSeconds = Math.max(0, Math.floor(totalSeconds || 0));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return minutes + ":" + seconds;
+    }
+
+    if (vidPlayPauseBtn) vidPlayPauseBtn.addEventListener("click", () => {
+      if (!hasVideos) return;
+      goToPageThen(8, { type: "VIDEO_PLAY_PAUSE" }, 80);
+    });
+
+    if (vidNextBtn) vidNextBtn.addEventListener("click", (clickEvent) => {
+      clickEvent.preventDefault();
+      clickEvent.stopPropagation();
+
+      if (!hasVideos) return;
+
+      const now = Date.now();
+      if (now < nextVideoLockUntil) return;
+      nextVideoLockUntil = now + 900;
+
+      postToMain({ type: "NAV_PAGE", page: 8 });
+
+      setTimeout(() => {
+        postToMain({ type: "VIDEO_NEXT" });
+      }, 250);
+    });
+
+    if (vidSeek) {
+      vidSeek.value = "0";
+
+      const beginSeek = () => { userIsSeeking = true; };
+      const endSeek = () => { userIsSeeking = false; };
+
+      vidSeek.addEventListener("pointerdown", beginSeek);
+      vidSeek.addEventListener("mousedown", beginSeek);
+      vidSeek.addEventListener("touchstart", beginSeek, { passive: true });
+
+      vidSeek.addEventListener("pointerup", endSeek);
+      vidSeek.addEventListener("mouseup", endSeek);
+      vidSeek.addEventListener("touchend", endSeek, { passive: true });
+
+      vidSeek.addEventListener("input", () => {
+        lockSeekUi(350);
+      });
+
+      vidSeek.addEventListener("change", () => {
+        if (!hasVideos) return;
+        const seekValue = Math.max(0, Math.min(1000, Number(vidSeek.value || 0)));
+        postToMain({ type: "NAV_PAGE", page: 8 });
+        postToMain({ type: "VIDEO_SEEK", ratio: seekValue / 1000 });
+        lockSeekUi(1100);
+      });
+    }
+
+    // ============================================================
+    // PAGE 9: IMAGE CAROUSEL CONTROLS
+    // ============================================================
+
+    const imgPrevBtn = document.getElementById("imgPrevBtn");
+    const imgNextBtn = document.getElementById("imgNextBtn");
+    const imgSlideChip = document.getElementById("imgSlideChip");
+
+    let imgTotal = 1;
+    let imgIndex = 0;
+
+    function refreshImgUi(){
+      const totalImages = Math.max(1, Number(imgTotal || 1));
+      const currentIndex = Math.max(0, Math.min(totalImages - 1, Number(imgIndex || 0)));
+      imgTotal = totalImages;
+      imgIndex = currentIndex;
+      if (imgSlideChip) {
+        if (hasImages) {
+          imgSlideChip.textContent = (currentIndex + 1) + " / " + totalImages;
+        } else {
+          imgSlideChip.textContent = "No images";
+        }
+      }
+    }
+
+    if (imgPrevBtn) imgPrevBtn.addEventListener("click", () => {
+      if (!hasImages) return;
+      goToPageThen(9, { type: "CAROUSEL_PREV" }, 60);
+    });
+
+    if (imgNextBtn) imgNextBtn.addEventListener("click", () => {
+      if (!hasImages) return;
+      goToPageThen(9, { type: "CAROUSEL_NEXT" }, 60);
+    });
+
+    refreshImgUi();
+
+    // ============================================================
+    // RECEIVE LIVE STATE FROM MAIN DASHBOARD
+    // ============================================================
+
+    window.addEventListener("message", (messageEvent) => {
+      if (messageEvent.origin !== window.location.origin) return;
+      if (!messageEvent.data) return;
+
+      if (messageEvent.data.type === "BUILDING_UPDATE") {
+        const building = messageEvent.data.building;
+
+        Object.values(buildingCards).forEach(cardElement => cardElement.classList.remove("active"));
+        const selectedCard = buildingCards[building];
+        if (!selectedCard) return;
+
+        selectedCard.classList.add("active");
+
+        currentSlide = page1Buildings.includes(building) ? 0 : 1;
+        updateSlider();
+        return;
+      }
+
+      if (messageEvent.data.type === "DASHBOARD_PAGE_UPDATE") {
+        const currentPage = Number(messageEvent.data.page);
+
+        // Update media availability
+        if (typeof messageEvent.data.hasVideos === "boolean") {
+          hasVideos = messageEvent.data.hasVideos;
+        }
+        if (typeof messageEvent.data.hasImages === "boolean") {
+          hasImages = messageEvent.data.hasImages;
+        }
+        if (Array.isArray(messageEvent.data.enabledPages)) {
+          enabledPages = messageEvent.data.enabledPages.slice();
+        }
+
+        // Update UI based on media availability
+        updateMediaAvailabilityUI();
+
+        if (pendingNavPage != null && Number(currentPage) === Number(pendingNavPage)) {
+          clearPendingNav();
+        }
+
+        if (currentPage >= 1 && currentPage <= 10) {
+          selectDashboardPage(currentPage, false);
+        }
+        return;
+      }
+
+      if (messageEvent.data.type === "DASHBOARD_META") {
+        // Handle media availability
+        if (typeof messageEvent.data.hasVideos === "boolean") {
+          hasVideos = messageEvent.data.hasVideos;
+        }
+        if (typeof messageEvent.data.hasImages === "boolean") {
+          hasImages = messageEvent.data.hasImages;
+        }
+        if (Array.isArray(messageEvent.data.enabledPages)) {
+          enabledPages = messageEvent.data.enabledPages.slice();
+        }
+
+        // Update UI based on media availability
+        updateMediaAvailabilityUI();
+
+        // Handle allYears array for multi-year support
+        if (messageEvent.data.allYears && Array.isArray(messageEvent.data.allYears)) {
+          const years = messageEvent.data.allYears.slice().sort((a, b) => a - b);
+          
+          // Set solar years
+          solarYears = years.slice();
+          renderSolarYearCards();
+          
+          // Set waste years
+          wasteYears = years.slice();
+          renderWasteYearCards();
+
+          // Set default active year to newest if not set
+          if (activeSolarYear === null && years.length > 0) {
+            activeSolarYear = years[years.length - 1];
+            setSolarActiveFromExternal(activeSolarYear);
+          }
+          if (activeWasteYear === null && years.length > 0) {
+            activeWasteYear = years[years.length - 1];
+            setWasteActiveFromExternal(activeWasteYear);
+          }
+        }
+
+        // Use oldestYear and newestYear if available for default selection
+        if (messageEvent.data.newestYear != null) {
+          if (activeSolarYear === null) {
+            activeSolarYear = messageEvent.data.newestYear;
+            setSolarActiveFromExternal(activeSolarYear);
+          }
+          if (activeWasteYear === null) {
+            activeWasteYear = messageEvent.data.newestYear;
+            setWasteActiveFromExternal(activeWasteYear);
+          }
+        }
+
+        const currentPage = Number(messageEvent.data.currentPage);
+
+        if (pendingNavPage != null && Number(currentPage) === Number(pendingNavPage)) {
+          clearPendingNav();
+        }
+
+        if (currentPage >= 1 && currentPage <= 10) {
+          selectDashboardPage(currentPage, false);
+        }
+        return;
+      }
+
+      if (messageEvent.data.type === "SOLAR_STATE") {
+        const solarYear = messageEvent.data.year;
+        setSolarActiveFromExternal(solarYear);
+        return;
+      }
+
+      if (messageEvent.data.type === "WASTE_STATE") {
+        const wasteYear = messageEvent.data.year;
+        setWasteActiveFromExternal(wasteYear);
+        return;
+      }
+
+      if (messageEvent.data.type === "CAROUSEL_STATE") {
+        imgIndex = Number(messageEvent.data.index ?? imgIndex);
+        imgTotal = Number(messageEvent.data.total ?? imgTotal);
+        refreshImgUi();
+        return;
+      }
+
+      if (messageEvent.data.type === "VIDEO_STATE") {
+        const currentTime = Number(messageEvent.data.currentTime);
+        const duration = Number(messageEvent.data.duration);
+
+        const allowSeekUiUpdate = (!userIsSeeking) && (Date.now() > seekLockUntil);
+
+        if (allowSeekUiUpdate && isFinite(currentTime) && isFinite(duration) && duration > 0 && vidSeek) {
+          const seekRatio = Math.max(0, Math.min(1, currentTime / duration));
+          vidSeek.value = String(Math.round(seekRatio * 1000));
+          if (vidTimeChip) vidTimeChip.textContent = formatTimeAsMinutesSeconds(currentTime) + " / " + formatTimeAsMinutesSeconds(duration);
+        } else {
+          if (isFinite(currentTime) && isFinite(duration) && duration > 0 && vidTimeChip) {
+            vidTimeChip.textContent = formatTimeAsMinutesSeconds(currentTime) + " / " + formatTimeAsMinutesSeconds(duration);
+          }
+        }
+        return;
+      }
+    });
+
+    // ============================================================
+    // REQUEST INITIAL STATE FROM MAIN DASHBOARD
+    // ============================================================
+
+    postToMain({ type: "REQUEST_CURRENT_BUILDING" });
+    postToMain({ type: "REQUEST_STATE" });
+
+    selectDashboardPage(1, false);
+
+    // Initial render with empty state
+    renderSolarYearCards();
+    renderWasteYearCards();
+    updateMediaAvailabilityUI();
+
+    let retryAttempts = 0;
+    const metaTimer = setInterval(() => {
+      retryAttempts++;
+      const haveYears = (solarYears.length > 0 || wasteYears.length > 0);
+      if (haveYears || retryAttempts >= 10) {
+        clearInterval(metaTimer);
+        return;
+      }
+      postToMain({ type: "REQUEST_STATE" });
+    }, 450);
+
+    // Touch swipe for building slider
+    let touchStartX = null;
+    const sliderWrapElement = document.querySelector(".slider-wrap");
+    if (sliderWrapElement) {
+      sliderWrapElement.addEventListener("touchstart", (touchEvent) => {
+        touchStartX = touchEvent.touches && touchEvent.touches[0] ? touchEvent.touches[0].clientX : null;
+      }, { passive: true });
+
+      sliderWrapElement.addEventListener("touchend", (touchEvent) => {
+        if (touchStartX == null) return;
+        const touchEndX = touchEvent.changedTouches && touchEvent.changedTouches[0] ? touchEvent.changedTouches[0].clientX : touchStartX;
+        const deltaX = touchEndX - touchStartX;
+        if (Math.abs(deltaX) > 60) {
+          goToSlide(currentSlide + (deltaX < 0 ? 1 : -1));
+        }
+        touchStartX = null;
+      }, { passive: true });
+    }
+
+    console.log("Building Controls initialized");
+  </script>
+</body>
+</html>

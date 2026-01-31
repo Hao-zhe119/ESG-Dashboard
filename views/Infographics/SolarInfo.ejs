@@ -1,0 +1,419 @@
+<%
+  // Helper function to format numbers
+  function formatNum(n) {
+    const num = Number(n || 0);
+    if (!isFinite(num)) return "0";
+    return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+
+  // Calculate percentages
+  const urbanPercent = totalSolar > 0 ? ((urbanTotal / totalSolar) * 100).toFixed(1) : 0;
+  const ghPercent = totalSolar > 0 ? ((greenhouseTotal / totalSolar) * 100).toFixed(1) : 0;
+
+  // Find previous year for comparison
+  const sortedYears = (solarYearlyTotals || []).map(t => t.year).sort((a, b) => a - b);
+  const currentYearIndex = sortedYears.indexOf(Number(year));
+  const prevYearData = currentYearIndex > 0 
+    ? solarYearlyTotals.find(t => t.year === sortedYears[currentYearIndex - 1]) 
+    : null;
+
+  // Calculate year-over-year change
+  let yoyChange = null;
+  let yoyPercent = null;
+  if (prevYearData && prevYearData.total > 0) {
+    yoyChange = totalSolar - prevYearData.total;
+    yoyPercent = ((yoyChange / prevYearData.total) * 100).toFixed(1);
+  }
+
+  // Environmental impact calculations
+  const co2Avoided = (totalSolar * 0.4 / 1000).toFixed(1);
+  const treesEquivalent = Math.round((totalSolar * 0.4) / 21);
+  const homesPowered = (totalSolar / 10000).toFixed(1);
+%>
+
+<div class="slug-sandbox solar-info-panel">
+  <!-- Header -->
+  <div class="info-head">
+    <div class="info-icon">☀️</div>
+    <div class="info-title animate__animated animate__headShake animate__infinite" style="--animate-duration: 4s;"">Solar Energy Generation</div>
+    <div class="info-subtitle">Calendar Year <%= year || 'N/A' %></div>
+  </div>
+
+  <!-- Main Stats -->
+  <div class="info-section stats-grid">
+    <div class="stat-card primary">
+      <div id="solarTotalValue" class="stat-value" data-total="<%= totalSolar %>">0</div>
+      <div class="stat-label">Total Generation (kWh)</div>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <div class="info-section">
+    <div class="info-section-h">📊 Generation Breakdown</div>
+    
+    <div class="breakdown-item">
+      <div class="breakdown-header">
+        <span class="breakdown-label">🏙️ Urban Renewables</span>
+        <span id="urbanValue" class="breakdown-value" data-value="<%= urbanTotal %>">0 kWh</span>
+      </div>
+      <div class="breakdown-bar">
+        <div id="urbanBar" class="breakdown-fill urban" data-percent="<%= urbanPercent %>" style="width: 0%;"></div>
+      </div>
+      <div id="urbanPercent" class="breakdown-percent" data-percent="<%= urbanPercent %>">0% of total</div>
+    </div>
+    
+    <div class="breakdown-item">
+      <div class="breakdown-header">
+        <span class="breakdown-label">🌿 Green House</span>
+        <span id="greenhouseValue" class="breakdown-value" data-value="<%= greenhouseTotal %>">0 kWh</span>
+      </div>
+      <div class="breakdown-bar">
+        <div id="greenhouseBar" class="breakdown-fill greenhouse" data-percent="<%= ghPercent %>" style="width: 0%;"></div>
+      </div>
+      <div id="greenhousePercent" class="breakdown-percent" data-percent="<%= ghPercent %>">0% of total</div>
+    </div>
+  </div>
+
+  <% if (yoyChange !== null) { %>
+  <!-- Year-over-Year Comparison -->
+  <div class="info-section">
+    <div class="info-section-h">📈 Year-over-Year Change</div>
+    <div class="yoy-comparison">
+      <div class="yoy-badge <%= yoyChange >= 0 ? 'positive' : 'negative' %>">
+        <%= yoyChange >= 0 ? '▲' : '▼' %> <%= Math.abs(yoyPercent) %>%
+      </div>
+      <div class="yoy-detail">
+        <% if (yoyChange >= 0) { %>
+          <span class="positive">+<%= formatNum(yoyChange) %> kWh</span> vs <%= prevYearData.year %>
+        <% } else { %>
+          <span class="negative"><%= formatNum(yoyChange) %> kWh</span> vs <%= prevYearData.year %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <% if (solarYearlyTotals && solarYearlyTotals.length > 1) { %>
+  <!-- Historical Data -->
+  <div class="info-section">
+    <div class="info-section-h">📅 Historical Summary</div>
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Urban</th>
+          <th>Green House</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% solarYearlyTotals.sort((a, b) => b.year - a.year).slice(0, 5).forEach(function(item) { %>
+        <tr class="<%= item.year === Number(year) ? 'current-year' : '' %>">
+          <td><%= item.year %></td>
+          <td><%= formatNum(item.urbanRenewables) %></td>
+          <td><%= formatNum(item.greenHouse) %></td>
+          <td><strong><%= formatNum(item.total) %></strong></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+
+  <!-- Environmental Impact -->
+  <div class="info-section">
+    <div class="info-section-h">🌍 Environmental Impact</div>
+    <ul class="info-bullets impact-list">
+      <li>🌳 CO₂ Avoided: <strong><%= co2Avoided %> tonnes</strong></li>
+      <li>🏠 Equivalent to powering <strong><%= homesPowered %> homes</strong> for a year</li>
+      <li>🌲 Equal to <strong><%= formatNum(treesEquivalent) %> trees</strong> planted</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+.solar-info-panel {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #1f2937;
+  padding: 0;
+}
+
+.solar-info-panel .info-head {
+  text-align: center;
+  padding: 10px 8px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.solar-info-panel .info-icon {
+  font-size: 2rem;
+  margin-bottom: 2px;
+}
+
+.solar-info-panel .info-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 2px;
+}
+
+.solar-info-panel .info-subtitle {
+  font-size: 0.85rem;
+  color: #b45309;
+  font-weight: 500;
+}
+
+.solar-info-panel .info-section {
+  margin-bottom: 10px;
+  padding: 8px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.solar-info-panel .info-section-h {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.solar-info-panel .stats-grid {
+  display: flex;
+  justify-content: center;
+}
+
+.solar-info-panel .stat-card {
+  text-align: center;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border-radius: 10px;
+  color: white;
+}
+
+.solar-info-panel .stat-card .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.solar-info-panel .stat-card .stat-label {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.solar-info-panel .breakdown-item {
+  margin-bottom: 8px;
+}
+
+.solar-info-panel .breakdown-item:last-child {
+  margin-bottom: 0;
+}
+
+.solar-info-panel .breakdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.solar-info-panel .breakdown-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.solar-info-panel .breakdown-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.solar-info-panel .breakdown-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.solar-info-panel .breakdown-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.solar-info-panel .breakdown-fill.urban {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.solar-info-panel .breakdown-fill.greenhouse {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.solar-info-panel .breakdown-percent {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.solar-info-panel .yoy-comparison {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.solar-info-panel .yoy-badge {
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.solar-info-panel .yoy-badge.positive {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.solar-info-panel .yoy-badge.negative {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.solar-info-panel .yoy-detail {
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.solar-info-panel .yoy-detail .positive {
+  color: #166534;
+  font-weight: 600;
+}
+
+.solar-info-panel .yoy-detail .negative {
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.solar-info-panel .info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.solar-info-panel .info-table th,
+.solar-info-panel .info-table td {
+  padding: 4px 6px;
+  text-align: right;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.solar-info-panel .info-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+  color: #374151;
+}
+
+.solar-info-panel .info-table th:first-child,
+.solar-info-panel .info-table td:first-child {
+  text-align: left;
+}
+
+.solar-info-panel .info-table tr.current-year {
+  background: #fef3c7;
+}
+
+.solar-info-panel .info-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.solar-info-panel .info-bullets li {
+  padding: 4px 0;
+  font-size: 0.8rem;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.solar-info-panel .info-bullets li:last-child {
+  border-bottom: none;
+}
+
+.solar-info-panel .impact-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+</style>
+
+<script>
+(function() {
+  setTimeout(function() {
+    const duration = 1000;
+    const startTime = Date.now();
+    
+    // Get all elements
+    const totalElement = document.getElementById('solarTotalValue');
+    const urbanValueElement = document.getElementById('urbanValue');
+    const urbanBarElement = document.getElementById('urbanBar');
+    const urbanPercentElement = document.getElementById('urbanPercent');
+    const greenhouseValueElement = document.getElementById('greenhouseValue');
+    const greenhouseBarElement = document.getElementById('greenhouseBar');
+    const greenhousePercentElement = document.getElementById('greenhousePercent');
+    
+    // Parse target values
+    const totalTarget = parseInt(totalElement?.getAttribute('data-total')) || 0;
+    const urbanTarget = parseInt(urbanValueElement?.getAttribute('data-value')) || 0;
+    const urbanPercentTarget = parseFloat(urbanBarElement?.getAttribute('data-percent')) || 0;
+    const greenhouseTarget = parseInt(greenhouseValueElement?.getAttribute('data-value')) || 0;
+    const greenhousePercentTarget = parseFloat(greenhouseBarElement?.getAttribute('data-percent')) || 0;
+    
+    function formatNumber(num) {
+      return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+    
+    function easeOutQuart(t) {
+      return 1 - Math.pow(1 - t, 4);
+    }
+    
+    function animate() {
+      const now = Date.now();
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = easeOutQuart(progress);
+      
+      // Animate total
+      if (totalElement) {
+        totalElement.textContent = formatNumber(Math.floor(eased * totalTarget));
+      }
+      
+      // Animate Urban
+      if (urbanValueElement) {
+        urbanValueElement.textContent = formatNumber(Math.floor(eased * urbanTarget)) + ' kWh';
+      }
+      if (urbanBarElement) {
+        urbanBarElement.style.width = (eased * urbanPercentTarget) + '%';
+      }
+      if (urbanPercentElement) {
+        urbanPercentElement.textContent = (eased * urbanPercentTarget).toFixed(1) + '% of total';
+      }
+      
+      // Animate Greenhouse
+      if (greenhouseValueElement) {
+        greenhouseValueElement.textContent = formatNumber(Math.floor(eased * greenhouseTarget)) + ' kWh';
+      }
+      if (greenhouseBarElement) {
+        greenhouseBarElement.style.width = (eased * greenhousePercentTarget) + '%';
+      }
+      if (greenhousePercentElement) {
+        greenhousePercentElement.textContent = (eased * greenhousePercentTarget).toFixed(1) + '% of total';
+      }
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    }
+    
+    requestAnimationFrame(animate);
+  }, 100);
+})();
+</script>

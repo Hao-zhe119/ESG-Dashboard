@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+
+  <style>
+  :root {
+    --navH: 56px;
+    --sideW: 260px;
+    --bg: #0b0f14;
+    --sideBg: #12161c;
+    --bd: rgba(255,255,255,.08);
+    --txt: #e5e7eb;
+    --muted: rgba(255,255,255,.65);
+    --cardBg: #0f141b;
+    --pill: rgba(255,255,255,.08);
+    --pillActive: rgba(255,255,255,.14);
+  }
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1030;
+  }
+
+  body {
+    padding-top: var(--navH);
+  }
+
+  body { background: var(--bg); color: var(--txt); }
+  .admin-shell { min-height: calc(100vh - var(--navH)); }
+
+  .admin-side {
+    width: var(--sideW);
+    background: var(--sideBg);
+    border-right: 1px solid var(--bd);
+  }
+
+  .admin-side .nav-link {
+    color: rgba(255,255,255,.78);
+    border-radius: 12px;
+    padding: .65rem .75rem;
+    user-select: none;
+  }
+
+  .admin-side .nav-link:hover { color: #fff; background: var(--pill); }
+  .admin-side .nav-link.active { color: #fff; background: var(--pillActive); }
+
+  .admin-main { padding: 24px; }
+  .section-card {
+    background: var(--cardBg);
+    border: 1px solid var(--bd);
+    border-radius: 16px;
+    padding: 18px;
+  }
+  .section-meta { color: var(--muted); font-size: .9rem; }
+  .table-dark { --bs-table-bg: transparent; }
+
+  .media-sortable {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .media-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 2px solid rgba(255,255,255,.22);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  }
+
+  .drag-handle {
+    cursor: grab;
+    font-size: 20px;
+    opacity: .75;
+    user-select: none;
+    width: 24px;
+    text-align: center;
+    line-height: 1;
+  }
+  .drag-handle:active { cursor: grabbing; }
+
+  .media-thumb {
+    width: 54px;
+    height: 54px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.04);
+    object-fit: cover;
+    overflow: hidden;
+    flex: 0 0 auto;
+  }
+
+  .media-thumb video {
+    width: 54px;
+    height: 54px;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+  }
+
+  .media-body { flex: 1; min-width: 0; }
+  .media-body strong {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .media-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .save-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.04);
+    color: rgba(255,255,255,.8);
+    font-size: .85rem;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+  }
+
+  .save-chip.saving {
+    border-color: #f59e0b;
+    background: rgba(245,158,11,.15);
+    color: #fbbf24;
+  }
+
+  .save-chip.saved {
+    border-color: #10b981;
+    background: rgba(16,185,129,.15);
+    color: #34d399;
+  }
+
+  .save-chip.error {
+    border-color: #ef4444;
+    background: rgba(239,68,68,.15);
+    color: #f87171;
+  }
+
+  .upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+    margin-bottom: 18px;
+  }
+
+  .upload-card {
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 14px;
+    padding: 14px;
+    background: rgba(255,255,255,.03);
+  }
+
+  .building-year-row {
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    background: rgba(255,255,255,.03);
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .building-year-row.saving {
+    border-color: #f59e0b;
+    background: rgba(245,158,11,.08);
+  }
+
+  .building-year-row.saved {
+    border-color: #10b981;
+    background: rgba(16,185,129,.08);
+  }
+
+  .building-year-row.error {
+    border-color: #ef4444;
+    background: rgba(239,68,68,.08);
+  }
+
+  .building-year-row .building-name {
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+
+  .data-type-label {
+    font-weight: 500;
+    color: #9ca3af;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+
+  .data-type-label .available-years {
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: #60a5fa;
+  }
+
+  .year-select option:disabled {
+    color: #6b7280;
+    background-color: rgba(107,114,128,.2);
+  }
+
+  .range-status {
+    font-size: 0.8rem;
+    transition: color 0.3s ease;
+  }
+
+  .range-status.updated {
+    color: #34d399 !important;
+  }
+
+  .config-badge {
+    transition: all 0.3s ease;
+  }
+
+  /* Timer Panel Styles */
+  .timer-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    background: rgba(255,255,255,.03);
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .timer-row:hover {
+    border-color: rgba(255,255,255,.20);
+    background: rgba(255,255,255,.05);
+  }
+
+  .timer-row.saving {
+    border-color: #f59e0b;
+    background: rgba(245,158,11,.08);
+  }
+
+  .timer-row.saved {
+    border-color: #10b981;
+    background: rgba(16,185,129,.08);
+  }
+
+  .timer-row.error {
+    border-color: #ef4444;
+    background: rgba(239,68,68,.08);
+  }
+
+  .timer-page-number {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    font-weight: 600;
+    color: #60a5fa;
+    flex-shrink: 0;
+  }
+
+  .timer-page-name {
+    flex: 1;
+    font-weight: 500;
+    color: #e5e7eb;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .timer-input-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .timer-input {
+    width: 50px;
+    text-align: center;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 8px;
+    color: #fff;
+    padding: 6px 8px;
+    font-size: 0.95rem;
+    font-family: 'Courier New', monospace;
+  }
+
+  .timer-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.15);
+  }
+
+  .timer-input.invalid {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+  }
+
+  .timer-separator {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.5);
+  }
+
+  .timer-seconds-display {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,.5);
+    min-width: 70px;
+    text-align: right;
+  }
+
+  .timer-seconds-display.updated {
+    color: #34d399;
+  }
+
+  @media (max-width: 991.98px) {
+    .admin-side {
+      width: 100%;
+      position: sticky;
+      top: var(--navH);
+      z-index: 1020;
+      height: auto !important;
+    }
+    .admin-main { padding: 16px; }
+    .media-row { align-items: flex-start; }
+    .media-controls { width: 100%; justify-content: flex-start; }
+    .upload-grid { grid-template-columns: 1fr; }
+    .timer-row { flex-wrap: wrap; }
+    .timer-page-name { width: 100%; order: -1; margin-bottom: 8px; }
+  }
+
+  @keyframes sectionSlideUp {
+    from { opacity: 0; transform: translateY(50px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .admin-section {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .admin-section.animate-in {
+    animation: sectionSlideUp 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  </style>
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-sm bg-dark navbar-dark" style="height: var(--navH);">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">ESG Dashboard</a>
+      <div class="collapse navbar-collapse justify-content-end">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="btn btn-outline-light" href="/logout">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid admin-shell px-0">
+    <div class="d-flex flex-column flex-lg-row" style="min-height: calc(100vh - var(--navH));">
+
+      <!-- Sidebar -->
+      <aside class="admin-side p-3 position-sticky"
+             style="top: var(--navH); height: calc(100vh - var(--navH)); overflow:auto;">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="fw-semibold text-white">Admin</div>
+          <span class="badge bg-success">ESG</span>
+        </div>
+
+        <nav class="nav nav-pills flex-column gap-1" id="adminNav">
+          <a class="nav-link active" href="#" data-target="sec-dashboard-settings">Dashboard Settings</a>
+          <a class="nav-link" href="#" data-target="sec-building-description">Building Description</a>
+          <a class="nav-link" href="#" data-target="sec-video-settings">Video Settings</a>
+          <a class="nav-link" href="#" data-target="sec-manage-media">Manage Media</a>
+          <a class="nav-link" href="#" data-target="sec-upload-graph">Data Management</a>
+        </nav>
+
+        <hr class="border-secondary my-3">
+        <div class="section-meta">Choose a section to display information</div>
+      </aside>
+
+      <!-- Main -->
+      <main class="admin-main flex-grow-1">
+        <div class="container" style="max-width: 1100px;">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 class="mb-0 text-white">Admin Dashboard</h2>
+          </div>
+
+          <!-- Dashboard Settings -->
+          <section id="sec-dashboard-settings" class="section-card mb-4 admin-section">
+            <h4>Dashboard Settings</h4>
+            
+            <!-- Dashboard Mode Panel -->
+            <div class="mb-4">
+              <h5 class="text-white mb-3">Dashboard Mode</h5>
+              <form action="/admin/dashboard-mode" method="POST" class="row g-2 align-items-center">
+                <div class="col-auto">
+                  <select class="form-select" name="dashboard_mode" style="min-width: 220px;">
+                    <option value="auto" <%= (typeof dashboardMode !== "undefined" && dashboardMode === "auto") ? "selected" : "" %>>
+                      Auto Mode
+                    </option>
+                    <option value="interactive" <%= (typeof dashboardMode !== "undefined" && dashboardMode === "interactive") ? "selected" : "" %>>
+                      Interactive Mode
+                    </option>
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <button type="submit" class="btn btn-primary">Save Mode</button>
+                </div>
+                <div class="col-12">
+                  <small class="text-muted">
+                    Auto: timed kiosk flow with progress bars. Interactive: no progress bars and no timed auto-advance.
+                  </small>
+                </div>
+              </form>
+            </div>
+
+            <hr class="border-secondary my-4">
+
+            <!-- Timer Settings Panel -->
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+              <h5 class="text-white mb-0">Page Timer Settings</h5>
+              <span class="save-chip" id="timerSaveChip">Auto-save enabled</span>
+            </div>
+
+            <div class="alert alert-secondary mb-3">
+              <strong>Configure Page Timers:</strong> Set the display duration for each dashboard page in <strong>MM:SS</strong> format.
+              Changes are <strong>saved automatically</strong>. These timers are used in Auto Mode.
+            </div>
+
+            <div id="timerSettingsContainer">
+              <% 
+                const hasTimers = typeof timers !== "undefined" && Array.isArray(timers) && timers.length > 0;
+              %>
+              
+              <% if (!hasTimers) { %>
+                <div class="alert alert-info">
+                  <h6 class="alert-heading mb-2">No Timer Data Available</h6>
+                  <p class="mb-0">Timer settings will appear here once the timers table is populated in the database.</p>
+                </div>
+              <% } else { %>
+                <% timers.forEach(function(timer) { 
+                  const totalSeconds = timer.duration_seconds || 0;
+                  const minutes = Math.floor(totalSeconds / 60);
+                  const seconds = totalSeconds % 60;
+                  const mmStr = String(minutes).padStart(2, '0');
+                  const ssStr = String(seconds).padStart(2, '0');
+                %>
+                  <div class="timer-row" data-timer-id="<%= timer.timer_id %>" data-page-number="<%= timer.page_number %>">
+                    <div class="timer-page-number"><%= timer.page_number %></div>
+                    <div class="timer-page-name" title="<%= timer.page_name %>"><%= timer.page_name %></div>
+                    <div class="timer-input-group">
+                      <input 
+                        type="text" 
+                        class="timer-input timer-minutes" 
+                        value="<%= mmStr %>" 
+                        maxlength="2" 
+                        placeholder="MM"
+                        data-timer-id="<%= timer.timer_id %>"
+                        aria-label="Minutes for <%= timer.page_name %>">
+                      <span class="timer-separator">:</span>
+                      <input 
+                        type="text" 
+                        class="timer-input timer-seconds" 
+                        value="<%= ssStr %>" 
+                        maxlength="2" 
+                        placeholder="SS"
+                        data-timer-id="<%= timer.timer_id %>"
+                        aria-label="Seconds for <%= timer.page_name %>">
+                    </div>
+                    <div class="timer-seconds-display" data-timer-id="<%= timer.timer_id %>">
+                      (<%= totalSeconds %>s)
+                    </div>
+                  </div>
+                <% }); %>
+              <% } %>
+            </div>
+
+            <% if (hasTimers) { %>
+              <div class="mt-3">
+                <small class="text-muted">
+                  <strong>Note:</strong> Minutes (MM) can be 0-99, Seconds (SS) must be 0-59. 
+                  Total duration is calculated as (MM × 60) + SS seconds.
+                </small>
+              </div>
+            <% } %>
+          </section>
+
+          <!-- Building Description -->
+          <section id="sec-building-description" class="section-card mb-4 admin-section d-none">
+            <h4>Building Description</h4>
+
+            <div class="alert alert-secondary">
+              Add / edit the building description shown on the dashboard pages.
+            </div>
+
+            <form action="/admin/building-description" method="POST" enctype="multipart/form-data" class="row g-3" id="buildingDescForm">
+
+              <div class="col-12">
+                <div class="d-flex align-items-end justify-content-between flex-wrap gap-2">
+                  <div style="flex: 1 1 360px; min-width: 280px;">
+                    <label class="form-label">Building</label>
+
+                    <select
+                      class="form-select"
+                      name="building_id"
+                      id="buildingSelect"
+                      required
+                      <%= ((typeof buildingsLoadError !== "undefined" && buildingsLoadError) || !(typeof buildings !== "undefined" && Array.isArray(buildings) && buildings.length)) ? "disabled" : "" %>>
+                      <% if (typeof buildingsLoadError !== "undefined" && buildingsLoadError) { %>
+                        <option value="">Unable to display building info (load failed)</option>
+                      <% } else if (!(typeof buildings !== "undefined" && Array.isArray(buildings) && buildings.length)) { %>
+                        <option value="">Unable to display building info (no records)</option>
+                      <% } else { %>
+                        <% buildings.forEach(function(b){ %>
+                          <option value="<%= b.id %>"><%= b.name %></option>
+                        <% }); %>
+                      <% } %>
+                    </select>
+
+                    <% if ((typeof buildingsLoadError !== "undefined" && buildingsLoadError) || !(typeof buildings !== "undefined" && Array.isArray(buildings) && buildings.length)) { %>
+                      <small class="text-warning d-block mt-2">
+                        Unable to display building info from building_info.
+                      </small>
+                    <% } %>
+                  </div>
+
+                  <div class="ms-auto">
+                    <button
+                      type="button"
+                      id="manageLabelsBtn"
+                      class="btn btn-outline-info btn-sm"
+                      style="height: 38px;"
+                      <%= ((typeof buildingsLoadError !== "undefined" && buildingsLoadError) || !(typeof buildings !== "undefined" && Array.isArray(buildings) && buildings.length)) ? "disabled" : "" %>>
+                      Manage Labels
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Description</label>
+                <textarea
+                  class="form-control"
+                  id="buildingDescBox"
+                  name="description"
+                  rows="6"
+                  placeholder="Enter building description..."
+                  required></textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Building Image</label>
+                <input type="file" class="form-control" id="imgfile" name="imgfile" accept=".jpg,.jpeg,.png,.webp">
+
+                <div class="mt-2">
+                  <img
+                    id="buildingImagePreview"
+                    src=""
+                    alt=""
+                    style="max-width:225px;height:auto;display:none;border-radius:8px;border:1px solid rgba(255,255,255,.08);" />
+                </div>
+              </div>
+
+              <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary"
+                  <%= ((typeof buildingsLoadError !== "undefined" && buildingsLoadError) || !(typeof buildings !== "undefined" && Array.isArray(buildings) && buildings.length)) ? "disabled" : "" %>>
+                  Save Description
+                </button>
+              </div>
+            </form>
+
+            <!-- Manage Labels Modal -->
+            <div class="modal fade" id="labelsModal" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content" style="background:#0f1318; color:#e5e7eb; border:1px solid rgba(255,255,255,.12); border-radius:16px;">
+
+                  <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,.12);">
+                    <div>
+                      <div class="modal-title h5 mb-0">Manage Labels</div>
+                      <div class="text-muted small">Edit display names and card labels for dashboard.</div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+
+                  <form action="/admin/building-labels" method="POST">
+                    <div class="modal-body">
+                      <% (typeof buildingsMeta !== "undefined" && Array.isArray(buildingsMeta) ? buildingsMeta : []).forEach(function(b){ %>
+                        <div class="p-3 mb-3" style="border:1px solid rgba(255,255,255,.10); border-radius:12px; background: rgba(255,255,255,.02);">
+
+                          <div class="mb-3">
+                            <label class="form-label mb-1">Building</label>
+                            <input
+                              class="form-control"
+                              value="<%= b.name %>"
+                              readonly
+                              style="background: rgba(255,255,255,.06); color: rgba(229,231,235,.85); border: 1px solid rgba(255,255,255,.10); cursor:not-allowed;">
+                          </div>
+
+                          <div class="mb-3">
+                            <label class="form-label mb-1">Display Name</label>
+                            <input
+                              class="form-control form-control-sm"
+                              name="labels[<%= b.id %>]"
+                              value="<%= (b.display_label || '') %>"
+                              placeholder="e.g. E1 - School of Infocomm"
+                              style="height: 34px;">
+                            <small class="text-muted">Used for dashboard animated title.</small>
+                          </div>
+
+                          <div>
+                            <label class="form-label mb-1">Card Label</label>
+                            <input
+                              class="form-control form-control-sm"
+                              name="card_labels[<%= b.id %>]"
+                              value="<%= (b.card_label || '') %>"
+                              placeholder="e.g. E1 Building"
+                              style="height: 34px;">
+                            <small class="text-muted">Used for page 2 building cards.</small>
+                          </div>
+
+                        </div>
+                      <% }); %>
+                    </div>
+
+                    <div class="modal-footer" style="border-top:1px solid rgba(255,255,255,.12);">
+                      <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">Close</button>
+                      <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    </div>
+                  </form>
+
+                </div>
+              </div>
+            </div>
+
+            <style>
+              .select2-dropdown.building-dd .select2-results__options {
+                max-height: 324px;
+                overflow-y: auto;
+              }
+
+              #labelsModal .modal-dialog {
+                display: flex;
+                align-items: center;
+                min-height: calc(100% - 1rem);
+                max-width: 800px;
+                margin: 1.75rem auto;
+              }
+              #labelsModal .modal-content {
+                max-height: 85vh;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+              }
+              #labelsModal .modal-header,
+              #labelsModal .modal-footer {
+                flex-shrink: 0;
+              }
+              #labelsModal .modal-body {
+                flex: 1 1 auto;
+                overflow-y: auto;
+                min-height: 0;
+                max-height: 60vh;
+              }
+            </style>
+
+            <script>
+              (function () {
+                const BUILDINGS_META = <%- JSON.stringify((typeof buildingsMeta !== "undefined" ? buildingsMeta : [])) %>;
+                const META_BY_ID = {};
+                (BUILDINGS_META || []).forEach(b => { META_BY_ID[String(b.id)] = b; });
+
+                const sel = document.getElementById("buildingSelect");
+                const descBox = document.getElementById("buildingDescBox");
+                const imgInput = document.getElementById("imgfile");
+                const imgPreview = document.getElementById("buildingImagePreview");
+                const buildingDescForm = document.getElementById("buildingDescForm");
+                
+                // LocalStorage key for persisting selected building
+                const BUILDING_SELECT_KEY = "admin_selected_building_id";
+
+                function setPreviewFromFilename(filename) {
+                  const f = String(filename || "").trim();
+                  if (!f) {
+                    imgPreview.style.display = "none";
+                    imgPreview.src = "";
+                    return;
+                  }
+                  imgPreview.src = "/uploads/images/Buildings/" + encodeURIComponent(f);
+                  imgPreview.style.display = "block";
+                }
+
+                function applyMeta(id) {
+                  const b = META_BY_ID[String(id)];
+                  if (!b) return;
+
+                  if (descBox) descBox.value = String(b.description || "");
+                  if (imgPreview) setPreviewFromFilename(b.filename || "");
+                }
+
+                // Save selected building before form submission
+                function saveSelectionBeforeSubmit() {
+                  if (sel && sel.value) {
+                    localStorage.setItem(BUILDING_SELECT_KEY, sel.value);
+                  }
+                }
+
+                // Restore saved building selection on page load
+                function restoreSavedSelection() {
+                  const savedId = localStorage.getItem(BUILDING_SELECT_KEY);
+                  if (!savedId || !sel) return false;
+                  
+                  // Check if this option exists in the dropdown
+                  const optionExists = Array.from(sel.options).some(opt => opt.value === savedId);
+                  if (optionExists) {
+                    sel.value = savedId;
+                    applyMeta(savedId);
+                    
+                    // Clear the stored value after restoring
+                    localStorage.removeItem(BUILDING_SELECT_KEY);
+                    return true;
+                  }
+                  
+                  localStorage.removeItem(BUILDING_SELECT_KEY);
+                  return false;
+                }
+
+                // Setup form submission persistence
+                if (buildingDescForm) {
+                  buildingDescForm.addEventListener("submit", saveSelectionBeforeSubmit);
+                }
+
+                if (sel) {
+                  sel.addEventListener("change", () => applyMeta(sel.value));
+                  
+                  // Try to restore saved selection first
+                  const restored = restoreSavedSelection();
+                  
+                  // If no saved selection, apply default
+                  if (!restored && sel.value) {
+                    applyMeta(sel.value);
+                  }
+                }
+
+                if (imgInput) {
+                  imgInput.addEventListener("change", function () {
+                    const file = this.files && this.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                      imgPreview.src = e.target.result;
+                      imgPreview.style.display = "block";
+                    };
+                    reader.readAsDataURL(file);
+                  });
+                }
+
+                if (window.jQuery && jQuery.fn && jQuery.fn.select2) {
+                  jQuery(function($){
+                    const $sel = $("#buildingSelect");
+                    if ($sel.length) {
+                      $sel.select2({
+                        width: "100%",
+                        dropdownCssClass: "building-dd",
+                        placeholder: "Select a building",
+                        minimumResultsForSearch: 0
+                      });
+                      
+                      // After Select2 initializes, check for saved selection
+                      const savedId = localStorage.getItem(BUILDING_SELECT_KEY);
+                      if (savedId) {
+                        const optionExists = Array.from($sel[0].options).some(opt => opt.value === savedId);
+                        if (optionExists) {
+                          $sel.val(savedId).trigger('change');
+                          applyMeta(savedId);
+                          localStorage.removeItem(BUILDING_SELECT_KEY);
+                        }
+                      }
+                    }
+                  });
+                }
+
+                const btn = document.getElementById("manageLabelsBtn");
+                if (btn) {
+                  btn.addEventListener("click", function () {
+                    const modalEl = document.getElementById("labelsModal");
+                    if (!modalEl) return;
+
+                    if (modalEl.parentElement !== document.body) {
+                      document.body.appendChild(modalEl);
+                    }
+
+                    const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    m.show();
+                  });
+                }
+              })();
+            </script>
+          </section>
+
+          <!-- Video Settings -->
+          <section id="sec-video-settings" class="section-card mb-4 admin-section d-none">
+            <h4>Video Settings (Main Dashboard)</h4>
+
+            <div class="alert alert-secondary">
+              Controls here are <b>volume + mute only</b>.
+              These settings are saved and should be applied by the dashboard video on load.
+            </div>
+
+            <div class="card bg-dark text-white border-secondary">
+              <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                  <button type="button" id="videoMuteBtn" class="btn btn-outline-warning">Mute</button>
+                  <button type="button" id="videoUnmuteBtn" class="btn btn-outline-success">Unmute</button>
+                  <span class="ms-auto badge bg-secondary" id="videoMuteStateChip">Unmuted</span>
+                </div>
+
+                <hr class="border-secondary my-3" />
+
+                <div class="row g-3 align-items-center">
+                  <div class="col-md-2">
+                    <label for="adminVideoVolume" class="col-form-label">Volume</label>
+                  </div>
+                  <div class="col-md-8">
+                    <input type="range" class="form-range" min="0" max="100" value="50" id="adminVideoVolume" />
+                  </div>
+                  <div class="col-md-2">
+                    <span class="badge bg-secondary" id="adminVideoVolumeChip">50%</span>
+                  </div>
+                </div>
+
+                <small class="text-muted d-block mt-2">
+                  Note: some browsers may not allow audio changes until the dashboard has had a user interaction at least once.
+                </small>
+
+                <small class="text-muted d-block mt-2">
+                  If your dashboard is open in another tab/window, settings will update live <u>only if this Admin page was opened from the dashboard</u>.
+                  Otherwise, the dashboard should still pick up these settings on its next load via localStorage.
+                </small>
+              </div>
+            </div>
+          </section>
+
+          <!-- Manage Media -->
+          <section id="sec-manage-media" class="section-card mb-4 admin-section d-none">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+              <h4 class="mb-0">Manage Media</h4>
+              <span class="save-chip" id="mediaSaveChip">Idle</span>
+            </div>
+
+            <div class="upload-grid">
+              <div class="upload-card">
+                <h5 class="mb-2">Upload Image</h5>
+                <div id="imageStatus" class="alert d-none"></div>
+                <form id="imageForm" enctype="multipart/form-data">
+                  <input type="file" class="form-control" id="imageFile" name="imageFile" accept=".jpg,.jpeg,.png,.webp">
+                  <small id="imageFileName" class="text-muted d-block mt-2 mb-2"></small>
+                  <button type="submit" class="btn btn-primary">Upload Image</button>
+                  <small class="text-muted d-block mt-2">Saves to: <code>public/uploads/images/carousel</code></small>
+                </form>
+              </div>
+
+              <div class="upload-card">
+                <h5 class="mb-2">Upload Video</h5>
+                <div id="videoStatus" class="alert d-none"></div>
+                <form id="videoForm" enctype="multipart/form-data">
+                  <input type="file" class="form-control" id="videoFile" name="videoFile" accept=".mp4,.mkv,.avi">
+                  <small id="videoFileName" class="text-muted d-block mt-2 mb-2"></small>
+                  <button type="submit" class="btn btn-primary">Upload Video</button>
+                  <small class="text-muted d-block mt-2">Saves to: <code>public/uploads/videos</code></small>
+                </form>
+              </div>
+            </div>
+
+            <div class="alert alert-warning">
+              <strong>Warning:</strong> Deleted items <strong><u>cannot</u></strong> be recovered once removed. Reupload will be required.
+            </div>
+
+            <h5 class="text-white mb-3">Carousel Images</h5>
+
+            <% if (typeof mediaImages !== "undefined" && Array.isArray(mediaImages) && mediaImages.length) { %>
+              <div id="imageSortable" class="media-sortable" data-media-type="image">
+                <% mediaImages.forEach(function(item){ %>
+                  <div class="media-row" data-id="<%= item.id %>">
+                    <div class="drag-handle" title="Drag to reorder">||</div>
+                    <div class="media-thumb" aria-hidden="true">
+                      <img src="/uploads/images/carousel/<%= item.filename %>" alt="" class="media-thumb" />
+                    </div>
+                    <div class="media-body">
+                      <strong title="<%= item.filename %>"><%= item.filename %></strong>
+                      <div class="text-muted small">
+                        Enabled: <span class="enabled-label"><%= item.is_enabled ? "Yes" : "No" %></span>
+                      </div>
+                    </div>
+                    <div class="media-controls">
+                      <a class="btn btn-sm btn-outline-info"
+                         href="/uploads/images/carousel/<%= item.filename %>"
+                         target="_blank" rel="noopener noreferrer">Preview</a>
+                      <input type="hidden" class="sort-input" value="">
+                      <select class="form-select form-select-sm enabled-select" style="width:auto;">
+                        <option value="1" <%= item.is_enabled ? "selected" : "" %>>On</option>
+                        <option value="0" <%= !item.is_enabled ? "selected" : "" %>>Off</option>
+                      </select>
+                      <form action="/admin/media/<%= item.id %>/delete" method="POST"
+                            onsubmit="return confirm('Are you sure you want to delete this item? Continue?');">
+                        <input type="hidden" name="media_type" value="image">
+                        <button class="btn btn-sm btn-danger" type="submit">X</button>
+                      </form>
+                    </div>
+                  </div>
+                <% }); %>
+              </div>
+            <% } else { %>
+              <p class="text-muted">No image records found in database.</p>
+            <% } %>
+
+            <hr class="border-secondary my-4">
+
+            <h5 class="text-white mb-3">Videos</h5>
+
+            <% if (typeof mediaVideos !== "undefined" && Array.isArray(mediaVideos) && mediaVideos.length) { %>
+              <div id="videoSortable" class="media-sortable" data-media-type="video">
+                <% mediaVideos.forEach(function(item){ %>
+                  <div class="media-row" data-id="<%= item.id %>">
+                    <div class="drag-handle" title="Drag to reorder">||</div>
+                    <div class="media-thumb" aria-hidden="true">
+                      <video preload="metadata" muted playsinline>
+                        <source src="/uploads/videos/<%= item.filename %>#t=0.1" type="video/mp4">
+                      </video>
+                    </div>
+                    <div class="media-body">
+                      <strong title="<%= item.filename %>"><%= item.filename %></strong>
+                      <div class="text-muted small">
+                        Enabled: <span class="enabled-label"><%= item.is_enabled ? "Yes" : "No" %></span>
+                      </div>
+                    </div>
+                    <div class="media-controls">
+                      <a class="btn btn-sm btn-outline-info"
+                         href="/uploads/videos/<%= item.filename %>"
+                         target="_blank" rel="noopener noreferrer">Preview</a>
+                      <input type="hidden" class="sort-input" value="">
+                      <select class="form-select form-select-sm enabled-select" style="width:auto;">
+                        <option value="1" <%= item.is_enabled ? "selected" : "" %>>On</option>
+                        <option value="0" <%= !item.is_enabled ? "selected" : "" %>>Off</option>
+                      </select>
+                      <form action="/admin/media/<%= item.id %>/delete" method="POST"
+                            onsubmit="return confirm('Are you sure you want to delete this item? Continue?');">
+                        <input type="hidden" name="media_type" value="video">
+                        <button class="btn btn-sm btn-danger" type="submit">X</button>
+                      </form>
+                    </div>
+                  </div>
+                <% }); %>
+              </div>
+            <% } else { %>
+              <p class="text-muted">No video records found in database.</p>
+            <% } %>
+          </section>
+
+          <!-- Upload Graph Data (XLSX) + Building Year Ranges -->
+          <section id="sec-upload-graph" class="section-card mb-4 admin-section d-none">
+            <h4>Upload Graph Data</h4>
+            <div id="xlsxStatus" class="alert d-none"></div>
+
+            <form id="xlsxForm" enctype="multipart/form-data">
+              <input type="file" class="form-control" id="xlsxFile" name="xlsxFile" accept=".xlsx,.xls">
+              <small id="xlsxFileName" class="text-muted d-block mt-2 mb-2"></small>
+
+              <div class="d-flex align-items-center gap-2">
+                <button type="submit" class="btn btn-primary">Upload XLSX</button>
+                <button type="button" id="clearDataBtn" class="btn btn-danger">Clear All Data</button>
+              </div>
+
+              <small class="text-muted d-block mt-2">Saved to: <code>public/uploads/excel</code></small>
+            </form>
+
+            <hr class="border-secondary my-4">
+
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+              <h5 class="text-white mb-0">Building Year Ranges (Electricity and Water)</h5>
+              <span class="save-chip" id="yearRangeSaveChip">Auto-save enabled</span>
+            </div>
+
+            <%
+              const hasBuildings = typeof buildingsMeta !== "undefined" && Array.isArray(buildingsMeta) && buildingsMeta.length > 0;
+              const hasYears = typeof allYears !== "undefined" && Array.isArray(allYears) && allYears.length > 0;
+              const shouldShowYearRanges = hasBuildings && hasYears;
+              
+              const elecYearsRaw = (typeof electricityYears !== "undefined" && Array.isArray(electricityYears)) 
+                ? electricityYears 
+                : (typeof allYears !== "undefined" ? allYears : []);
+              
+              const waterYearsRaw = (typeof waterYears !== "undefined" && Array.isArray(waterYears)) 
+                ? waterYears 
+                : (typeof allYears !== "undefined" ? allYears : []);
+              
+              const elecYearsAsInts = elecYearsRaw.map(y => parseInt(y, 10)).filter(y => !isNaN(y)).sort((a, b) => a - b);
+              const waterYearsAsInts = waterYearsRaw.map(y => parseInt(y, 10)).filter(y => !isNaN(y)).sort((a, b) => a - b);
+              
+              const elecMinYear = elecYearsAsInts.length > 0 ? elecYearsAsInts[0] : null;
+              const elecMaxYear = elecYearsAsInts.length > 0 ? elecYearsAsInts[elecYearsAsInts.length - 1] : null;
+              const waterMinYear = waterYearsAsInts.length > 0 ? waterYearsAsInts[0] : null;
+              const waterMaxYear = waterYearsAsInts.length > 0 ? waterYearsAsInts[waterYearsAsInts.length - 1] : null;
+              
+              const yearsAsInts = hasYears ? allYears.map(y => parseInt(y, 10)).filter(y => !isNaN(y)) : [];
+              
+              const sortedBuildings = hasBuildings 
+                ? buildingsMeta.slice().sort((a, b) => {
+                    const labelA = (a.display_label || a.name || "").toLowerCase();
+                    const labelB = (b.display_label || b.name || "").toLowerCase();
+                    return labelA.localeCompare(labelB);
+                  })
+                : [];
+            %>
+
+            <% if (!shouldShowYearRanges) { %>
+              <div class="alert alert-info">
+                <h6 class="alert-heading mb-2">No Data Available Yet</h6>
+                <p class="mb-2">The year ranges configuration will appear here after you upload your first XLSX file.</p>
+                <hr class="border-light opacity-25 my-2">
+                <p class="mb-0 small">
+                  <strong>Getting Started:</strong>
+                </p>
+                <ol class="mb-0 mt-2 small">
+                  <li>Upload an XLSX file using the form above</li>
+                  <li>The system will automatically detect year ranges for each building's electricity and water data</li>
+                  <li>This section will update to show configurable year ranges</li>
+                  <li>You can then customize these ranges as needed</li>
+                </ol>
+              </div>
+
+            <% } else { %>
+
+              <div class="alert alert-secondary mb-3">
+                <strong>Configure Year Ranges:</strong> Set separate year ranges for electricity and water data for each building. 
+                Changes are <strong>saved automatically</strong>. Invalid options are greyed out based on your selection.
+                <br><br>
+                <small>
+                  <strong>Available Years in Database:</strong><br>
+                  - Electricity Data: <%= elecYearsAsInts.join(", ") || "None" %><br>
+                  - Water Data: <%= waterYearsAsInts.join(", ") || "None" %>
+                </small>
+              </div>
+
+              <div id="yearRangesContainer">
+                
+                <% sortedBuildings.forEach(function(building, index){ 
+                  const displayName = (building.display_label && building.display_label.trim()) 
+                    ? building.display_label.trim() 
+                    : (building.name || "Unknown Building");
+                  
+                  const elecStart = building.elec_startyear ? parseInt(building.elec_startyear, 10) : null;
+                  const elecEnd = building.elec_endyear ? parseInt(building.elec_endyear, 10) : null;
+                  const waterStart = building.water_startyear ? parseInt(building.water_startyear, 10) : null;
+                  const waterEnd = building.water_endyear ? parseInt(building.water_endyear, 10) : null;
+                  
+                  const elecStartFinal = (elecStart !== null && !isNaN(elecStart)) ? elecStart : elecMinYear;
+                  const elecEndFinal = (elecEnd !== null && !isNaN(elecEnd)) ? elecEnd : elecMaxYear;
+                  const waterStartFinal = (waterStart !== null && !isNaN(waterStart)) ? waterStart : waterMinYear;
+                  const waterEndFinal = (waterEnd !== null && !isNaN(waterEnd)) ? waterEnd : waterMaxYear;
+                  
+                  const elecIsFullRange = (elecStartFinal === elecMinYear && elecEndFinal === elecMaxYear);
+                  const waterIsFullRange = (waterStartFinal === waterMinYear && waterEndFinal === waterMaxYear);
+                  const isCustomRange = !elecIsFullRange || !waterIsFullRange;
+                %>
+                  <div class="building-year-row" data-building-id="<%= building.id %>">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <div class="building-name">
+                        <span class="badge bg-primary me-2"><%= index + 1 %></span>
+                        <%= displayName %>
+                      </div>
+                      <span class="badge config-badge <%= isCustomRange ? 'bg-success' : 'bg-secondary' %>">
+                        <%= isCustomRange ? 'Custom Range' : 'Full Range' %>
+                      </span>
+                    </div>
+                    
+                    <div class="mb-3">
+                      <div class="data-type-label">
+                        Electricity Data
+                        <span class="available-years">(Available: <%= elecYearsAsInts.join(", ") || "None" %>)</span>
+                      </div>
+                      <% if (elecYearsAsInts.length > 0) { %>
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label class="form-label">From Year</label>
+                            <select class="form-select year-select" 
+                                    id="elec-start-<%= building.id %>"
+                                    data-building-id="<%= building.id %>"
+                                    data-type="elec"
+                                    data-direction="start">
+                              <% elecYearsAsInts.forEach(function(year){ %>
+                                <option value="<%= year %>" <%= (elecStartFinal === year) ? "selected" : "" %>>
+                                  <%= year %>
+                                </option>
+                              <% }); %>
+                            </select>
+                          </div>
+
+                          <div class="col-md-6">
+                            <label class="form-label">To Year</label>
+                            <select class="form-select year-select" 
+                                    id="elec-end-<%= building.id %>"
+                                    data-building-id="<%= building.id %>"
+                                    data-type="elec"
+                                    data-direction="end">
+                              <% elecYearsAsInts.forEach(function(year){ %>
+                                <option value="<%= year %>" <%= (elecEndFinal === year) ? "selected" : "" %>>
+                                  <%= year %>
+                                </option>
+                              <% }); %>
+                            </select>
+                          </div>
+                        </div>
+                        <small class="range-status text-muted d-block mt-1" data-building-id="<%= building.id %>" data-type="elec">
+                          Current: <%= elecStartFinal %> - <%= elecEndFinal %>
+                        </small>
+                      <% } else { %>
+                        <div class="text-muted small">No electricity data available</div>
+                      <% } %>
+                    </div>
+
+                    <div>
+                      <div class="data-type-label">
+                        Water Data
+                        <span class="available-years">(Available: <%= waterYearsAsInts.join(", ") || "None" %>)</span>
+                      </div>
+                      <% if (waterYearsAsInts.length > 0) { %>
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label class="form-label">From Year</label>
+                            <select class="form-select year-select" 
+                                    id="water-start-<%= building.id %>"
+                                    data-building-id="<%= building.id %>"
+                                    data-type="water"
+                                    data-direction="start">
+                              <% waterYearsAsInts.forEach(function(year){ %>
+                                <option value="<%= year %>" <%= (waterStartFinal === year) ? "selected" : "" %>>
+                                  <%= year %>
+                                </option>
+                              <% }); %>
+                            </select>
+                          </div>
+
+                          <div class="col-md-6">
+                            <label class="form-label">To Year</label>
+                            <select class="form-select year-select" 
+                                    id="water-end-<%= building.id %>"
+                                    data-building-id="<%= building.id %>"
+                                    data-type="water"
+                                    data-direction="end">
+                              <% waterYearsAsInts.forEach(function(year){ %>
+                                <option value="<%= year %>" <%= (waterEndFinal === year) ? "selected" : "" %>>
+                                  <%= year %>
+                                </option>
+                              <% }); %>
+                            </select>
+                          </div>
+                        </div>
+                        <small class="range-status text-muted d-block mt-1" data-building-id="<%= building.id %>" data-type="water">
+                          Current: <%= waterStartFinal %> - <%= waterEndFinal %>
+                        </small>
+                      <% } else { %>
+                        <div class="text-muted small">No water data available</div>
+                      <% } %>
+                    </div>
+
+                  </div>
+                <% }); %>
+
+              </div>
+
+            <% } %>
+
+          </section>
+
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+  <script>
+  $(document).ready(function() {
+
+    // ============================================================
+    // Sidebar: show ONLY the clicked section + remember in URL hash
+    // ============================================================
+    const $links = $("#adminNav .nav-link");
+    const $sections = $(".admin-section");
+
+    function showSection(id) {
+      $sections.addClass("d-none").removeClass("animate-in");
+
+      const $target = $("#" + id);
+      if (!$target.length) return;
+
+      void $target[0].offsetHeight;
+
+      $target.removeClass("d-none").addClass("animate-in");
+    }
+
+    function setActiveNavBySection(id) {
+      $links.removeClass("active");
+      $links.filter('[data-target="' + id + '"]').addClass("active");
+    }
+
+    $links.on("click", function(e) {
+      e.preventDefault();
+      const id = $(this).data("target");
+      showSection(id);
+      setActiveNavBySection(id);
+
+      if (id) location.hash = id;
+
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch(_e) { window.scrollTo(0, 0); }
+    });
+
+    const initial = (location.hash || "").replace("#", "");
+    if (initial && document.getElementById(initial)) {
+      showSection(initial);
+      setActiveNavBySection(initial);
+    } else {
+      showSection("sec-dashboard-settings");
+      setActiveNavBySection("sec-dashboard-settings");
+      location.hash = "sec-dashboard-settings";
+    }
+
+    $(document).on("submit", 'form[action*="/admin/media/"][action$="/delete"]', function() {
+      const sectionHash = (location.hash || "#sec-dashboard-settings");
+      this.action = this.action.split("#")[0] + sectionHash;
+    });
+
+    // ============================================================
+    // TIMER SETTINGS: AUTO-SAVE WITH MM:SS INPUT
+    // ============================================================
+    const $timerSaveChip = $("#timerSaveChip");
+    let timerAutosaveTimer = null;
+
+    function setTimerChip(state) {
+      $timerSaveChip.removeClass("saving saved error");
+      if (state === "saving") {
+        $timerSaveChip.addClass("saving").text("Saving...");
+      } else if (state === "saved") {
+        $timerSaveChip.addClass("saved").text("Saved");
+      } else if (state === "error") {
+        $timerSaveChip.addClass("error").text("Error saving");
+      } else {
+        $timerSaveChip.text("Auto-save enabled");
+      }
+    }
+
+    function getTimerSeconds($row) {
+      const $minInput = $row.find(".timer-minutes");
+      const $secInput = $row.find(".timer-seconds");
+      
+      let minutes = parseInt($minInput.val(), 10) || 0;
+      let seconds = parseInt($secInput.val(), 10) || 0;
+      
+      minutes = Math.max(0, Math.min(99, minutes));
+      seconds = Math.max(0, Math.min(59, seconds));
+      
+      return (minutes * 60) + seconds;
+    }
+
+    function updateSecondsDisplay($row) {
+      const timerId = $row.data("timer-id");
+      const totalSeconds = getTimerSeconds($row);
+      const $display = $(`.timer-seconds-display[data-timer-id="${timerId}"]`);
+      
+      $display.text(`(${totalSeconds}s)`);
+      $display.addClass("updated");
+      
+      setTimeout(function() {
+        $display.removeClass("updated");
+      }, 1500);
+    }
+
+    async function saveTimer($row) {
+      const timerId = $row.data("timer-id");
+      const totalSeconds = getTimerSeconds($row);
+      
+      $row.removeClass("saved error").addClass("saving");
+      setTimerChip("saving");
+      
+      try {
+        const response = await fetch("/admin/timers/" + timerId, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ duration_seconds: totalSeconds })
+        });
+        
+        if (!response.ok) {
+          throw new Error("Save failed: " + response.statusText);
+        }
+        
+        $row.removeClass("saving").addClass("saved");
+        setTimerChip("saved");
+        
+        setTimeout(function() {
+          $row.removeClass("saved");
+          setTimerChip("idle");
+        }, 1500);
+        
+      } catch (error) {
+        console.error("Timer save error:", error);
+        $row.removeClass("saving").addClass("error");
+        setTimerChip("error");
+        
+        setTimeout(function() {
+          $row.removeClass("error");
+          setTimerChip("idle");
+        }, 3000);
+      }
+    }
+
+    function scheduleTimerAutosave($row) {
+      if (timerAutosaveTimer) {
+        clearTimeout(timerAutosaveTimer);
+      }
+      
+      timerAutosaveTimer = setTimeout(function() {
+        saveTimer($row);
+      }, 800);
+    }
+
+    $(document).on("focus", ".timer-minutes, .timer-seconds", function() {
+      const input = this;
+      setTimeout(function() {
+        input.select();
+      }, 0);
+    });
+
+    $(document).on("input", ".timer-minutes", function() {
+      const $input = $(this);
+      const $row = $input.closest(".timer-row");
+      
+      let val = $input.val().replace(/\D/g, '');
+      
+      if (val.length > 2) {
+        val = val.slice(-2);
+      }
+      
+      let num = parseInt(val, 10) || 0;
+      if (num > 99) {
+        num = 99;
+        val = '99';
+      }
+      
+      $input.val(val);
+      
+      updateSecondsDisplay($row);
+      scheduleTimerAutosave($row);
+    });
+
+    $(document).on("input", ".timer-seconds", function() {
+      const $input = $(this);
+      const $row = $input.closest(".timer-row");
+      
+      let val = $input.val().replace(/\D/g, '');
+      
+      if (val.length > 2) {
+        val = val.slice(-2);
+      }
+      
+      let num = parseInt(val, 10) || 0;
+      if (num > 59) {
+        num = 59;
+        val = '59';
+        $input.addClass("invalid");
+      } else {
+        $input.removeClass("invalid");
+      }
+      
+      $input.val(val);
+      
+      updateSecondsDisplay($row);
+      scheduleTimerAutosave($row);
+    });
+
+    $(document).on("blur", ".timer-minutes", function() {
+      const $input = $(this);
+      let val = $input.val().replace(/\D/g, '');
+      let num = parseInt(val, 10) || 0;
+      num = Math.min(99, Math.max(0, num));
+      $input.val(String(num).padStart(2, '0'));
+    });
+
+    $(document).on("blur", ".timer-seconds", function() {
+      const $input = $(this);
+      let val = $input.val().replace(/\D/g, '');
+      let num = parseInt(val, 10) || 0;
+      num = Math.min(59, Math.max(0, num));
+      $input.val(String(num).padStart(2, '0'));
+      
+      if (num > 59) {
+        $input.addClass("invalid");
+      } else {
+        $input.removeClass("invalid");
+      }
+    });
+
+    $(document).on("keydown", ".timer-minutes, .timer-seconds", function(e) {
+      const $input = $(this);
+      const $row = $input.closest(".timer-row");
+      const isMinutes = $input.hasClass("timer-minutes");
+      
+      const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+      
+      if (allowedKeys.includes(e.key)) {
+        if ((e.key === 'Tab' && !e.shiftKey) || e.key === ':') {
+          if (isMinutes) {
+            e.preventDefault();
+            $row.find(".timer-seconds").focus();
+          }
+        }
+        if (e.key === 'Tab' && e.shiftKey) {
+          if (!isMinutes) {
+            e.preventDefault();
+            $row.find(".timer-minutes").focus();
+          }
+        }
+        return;
+      }
+      
+      if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
+        return;
+      }
+      
+      if (!/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        return;
+      }
+    });
+
+    $(document).on("keypress", ".timer-minutes", function(e) {
+      if (e.key === ':') {
+        e.preventDefault();
+        $(this).closest(".timer-row").find(".timer-seconds").focus();
+      }
+    });
+
+    // ============================================================
+    // Select2 (guarded)
+    // ============================================================
+    if ($("#graphSelect").length) {
+      $("#graphSelect").select2({
+        placeholder: "Select Graph(s)",
+        allowClear: true,
+        closeOnSelect: false
+      });
+    }
+
+    // ============================================================
+    // Manage Media: AUTOSAVE always ON (drag reorder + on/off change)
+    // ============================================================
+    const $mediaSaveChip = $("#mediaSaveChip");
+    let autosaveTimer = null;
+
+    function setMediaChip(state) {
+      $mediaSaveChip.removeClass("saving saved error");
+      if (state === "saving") {
+        $mediaSaveChip.addClass("saving").text("Saving...");
+      } else if (state === "saved") {
+        $mediaSaveChip.addClass("saved").text("Saved");
+      } else if (state === "error") {
+        $mediaSaveChip.addClass("error").text("Error");
+      } else {
+        $mediaSaveChip.text("Idle");
+      }
+    }
+
+    function updateHiddenSortInputs(el) {
+      $(el).children(".media-row").each(function(i) {
+        $(this).find(".sort-input").val(i + 1);
+      });
+    }
+
+    function setEnabledLabel(rowEl, val) {
+      const label = rowEl.querySelector(".enabled-label");
+      if (!label) return;
+      label.textContent = (String(val) === "1") ? "Yes" : "No";
+    }
+
+    function syncAllEnabledLabels(listEl) {
+      if (!listEl) return;
+      listEl.querySelectorAll(".media-row").forEach(row => {
+        const sel = row.querySelector(".enabled-select");
+        if (sel) setEnabledLabel(row, sel.value);
+      });
+    }
+
+    async function postUpdateRow(rowEl, mediaType) {
+      const id = rowEl.getAttribute("data-id");
+      const sortOrder = $(rowEl).find(".sort-input").val() || "1";
+      const isEnabled = $(rowEl).find(".enabled-select").val() || "1";
+
+      const url = "/admin/media/" + encodeURIComponent(id) + "/update";
+
+      const body = new URLSearchParams();
+      body.set("media_type", mediaType);
+      body.set("sort_order", sortOrder);
+      body.set("is_enabled", isEnabled);
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: body.toString()
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error("Update failed for id=" + id + " " + t);
+      }
+    }
+
+    async function autosaveList(el) {
+      if (!el) return;
+
+      const mediaType = el.getAttribute("data-media-type") || "";
+      const rows = Array.from(el.querySelectorAll(".media-row"));
+
+      updateHiddenSortInputs(el);
+      syncAllEnabledLabels(el);
+
+      setMediaChip("saving");
+
+      try {
+        for (const row of rows) {
+          await postUpdateRow(row, mediaType);
+        }
+        setMediaChip("saved");
+        setTimeout(() => setMediaChip("idle"), 1200);
+      } catch(e) {
+        console.error(e);
+        setMediaChip("error");
+        setTimeout(() => setMediaChip("idle"), 2000);
+      }
+    }
+
+    function refreshIfListWasEmpty(mediaType) {
+      const wasEmpty =
+        (mediaType === "image" && $("#imageSortable").length === 0) ||
+        (mediaType === "video" && $("#videoSortable").length === 0);
+
+      if (wasEmpty) {
+        location.reload();
+        return true;
+      }
+      return false;
+    }
+
+    function scheduleAutosave(el) {
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => autosaveList(el), 350);
+    }
+
+    function initSortable(el) {
+      if (!el) return;
+
+      updateHiddenSortInputs(el);
+      syncAllEnabledLabels(el);
+
+      new Sortable(el, {
+        animation: 150,
+        handle: ".drag-handle",
+        onEnd: function() {
+          updateHiddenSortInputs(el);
+          syncAllEnabledLabels(el);
+          scheduleAutosave(el);
+        }
+      });
+    }
+
+    initSortable(document.getElementById("imageSortable"));
+    initSortable(document.getElementById("videoSortable"));
+
+    $(document).on("change", ".enabled-select", function() {
+      const rowEl = this.closest(".media-row");
+      const listEl = this.closest(".media-sortable");
+      if (!rowEl || !listEl) return;
+
+      setEnabledLabel(rowEl, this.value);
+      updateHiddenSortInputs(listEl);
+      scheduleAutosave(listEl);
+    });
+
+    // ----------------------------
+    // LIVE REFRESH HELPERS
+    // ----------------------------
+    async function fetchMediaJson(type) {
+      const res = await fetch("/admin/media/json?type=" + encodeURIComponent(type), {
+        headers: { "Accept": "application/json" }
+      });
+      if (!res.ok) throw new Error("Failed to fetch media json for " + type);
+      return await res.json();
+    }
+
+    function rowHtmlForItem(item) {
+      const id = item.id;
+      const type = String(item.media_type || "").toLowerCase();
+      const filename = item.filename;
+
+      const enabledYesNo = item.is_enabled ? "Yes" : "No";
+      const onSel  = item.is_enabled ? "selected" : "";
+      const offSel = !item.is_enabled ? "selected" : "";
+
+      let thumb = "";
+      let previewHref = "";
+
+      if (type === "image") {
+        thumb = '<div class="media-thumb" aria-hidden="true"><img src="/uploads/images/carousel/' + filename + '" alt="" class="media-thumb" /></div>';
+        previewHref = '/uploads/images/carousel/' + filename;
+      } else {
+        thumb = '<div class="media-thumb" aria-hidden="true"><video preload="metadata" muted playsinline><source src="/uploads/videos/' + filename + '#t=0.1" type="video/mp4"></video></div>';
+        previewHref = '/uploads/videos/' + filename;
+      }
+
+      return '<div class="media-row" data-id="' + id + '">' +
+        '<div class="drag-handle" title="Drag to reorder">||</div>' +
+        thumb +
+        '<div class="media-body"><strong title="' + filename + '">' + filename + '</strong><div class="text-muted small">Enabled: <span class="enabled-label">' + enabledYesNo + '</span></div></div>' +
+        '<div class="media-controls">' +
+        '<a class="btn btn-sm btn-outline-info" href="' + previewHref + '" target="_blank" rel="noopener noreferrer">Preview</a>' +
+        '<input type="hidden" class="sort-input" value="">' +
+        '<select class="form-select form-select-sm enabled-select" style="width:auto;"><option value="1" ' + onSel + '>On</option><option value="0" ' + offSel + '>Off</option></select>' +
+        '<form action="/admin/media/' + id + '/delete" method="POST" onsubmit="return confirm(\'Are you sure you want to delete this item? Continue?\');"><input type="hidden" name="media_type" value="' + type + '"><button class="btn btn-sm btn-danger" type="submit">X</button></form>' +
+        '</div></div>';
+    }
+
+    async function refreshMediaList(type) {
+      const listEl = (type === "image")
+        ? document.getElementById("imageSortable")
+        : document.getElementById("videoSortable");
+
+      if (!listEl) return;
+
+      const json = await fetchMediaJson(type);
+      const items = Array.isArray(json.items) ? json.items : [];
+
+      listEl.innerHTML = items.map(rowHtmlForItem).join("");
+
+      initSortable(listEl);
+      updateHiddenSortInputs(listEl);
+      syncAllEnabledLabels(listEl);
+    }
+
+    // ============================================================
+    // Upload Video (inside Manage Media) + refresh list
+    // ============================================================
+    $("#videoFile").on("change", function() {
+      let name = this.files.length ? this.files[0].name : "";
+      $("#videoFileName").text(name ? "Selected: " + name : "");
+    });
+
+    $("#videoForm").on("submit", function(e) {
+      e.preventDefault();
+      let fileInput = $("#videoFile")[0].files[0];
+      if (!fileInput) { showVideoStatus("Please select a video file before uploading.", "danger"); return; }
+
+      let formData = new FormData();
+      formData.append("videoFile", fileInput);
+
+      $.ajax({
+        url: "/uploads/videos",
+        method: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: async function(response) {
+          showVideoStatus(response, "success");
+          $("#videoFile").val("");
+          $("#videoFileName").text("");
+
+          if (refreshIfListWasEmpty("video")) return;
+
+          try {
+            await refreshMediaList("video");
+          } catch (_e) {
+            console.error(_e);
+          }
+        },
+        error: function(err) {
+          let msg = "Upload failed. Please try again.";
+          if (err && err.responseText) msg = err.responseText;
+          showVideoStatus(msg, "danger");
+        }
+      });
+    });
+
+    function showVideoStatus(message, type) {
+      $("#videoStatus")
+        .removeClass("d-none")
+        .removeClass("alert-success alert-danger")
+        .addClass("alert-" + type)
+        .text(message);
+    }
+
+    // ============================================================
+    // Upload Image (inside Manage Media) + refresh list
+    // ============================================================
+    $("#imageFile").on("change", function() {
+      let name = this.files.length ? this.files[0].name : "";
+      $("#imageFileName").text(name ? "Selected: " + name : "");
+    });
+
+    $("#imageForm").on("submit", function(e) {
+      e.preventDefault();
+      let fileInput = $("#imageFile")[0].files[0];
+      if (!fileInput) { showImageStatus("Please select an image file before uploading.", "danger"); return; }
+
+      let formData = new FormData();
+      formData.append("imageFile", fileInput);
+
+      $.ajax({
+        url: "/uploads/image/carousel",
+        method: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: async function(response) {
+          showImageStatus(response, "success");
+          $("#imageFile").val("");
+          $("#imageFileName").text("");
+
+          if (refreshIfListWasEmpty("image")) return;
+
+          try { await refreshMediaList("image"); } catch (_e) { console.error(_e); }
+        },
+        error: function(err) {
+          let msg = "Upload failed. Please try again.";
+          if (err && err.responseText) msg = err.responseText;
+          showImageStatus(msg, "danger");
+        }
+      });
+    });
+
+    function showImageStatus(message, type) {
+      $("#imageStatus")
+        .removeClass("d-none")
+        .removeClass("alert-success alert-danger")
+        .addClass("alert-" + type)
+        .text(message);
+    }
+
+    // ============================================================
+    // Video Settings (Volume + Mute only)
+    // ============================================================
+    const LS_KEY = "esg_video_settings";
+    let videoSettings = { volume: 0.5, muted: false };
+
+    function clamp01(n) {
+      n = Number(n);
+      if (!isFinite(n)) return 0;
+      return Math.max(0, Math.min(1, n));
+    }
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (s && typeof s === "object") {
+          if (typeof s.volume !== "undefined") videoSettings.volume = clamp01(s.volume);
+          if (typeof s.muted  !== "undefined") videoSettings.muted  = !!s.muted;
+        }
+      } catch(_e) {}
+    }
+
+    function saveSettings() {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(videoSettings)); } catch(_e) {}
+    }
+
+    function setAdminUIFromSettings() {
+      const pct = Math.round(videoSettings.volume * 100);
+      $("#adminVideoVolume").val(String(pct));
+      $("#adminVideoVolumeChip").text(pct + "%");
+      $("#videoMuteStateChip").text(videoSettings.muted ? "Muted" : "Unmuted");
+    }
+
+    function getDashboardWindowIfLinked() {
+      try { if (window.opener && !window.opener.closed) return window.opener; } catch(_e) {}
+      return null;
+    }
+
+    function pushToDashboardIfPossible() {
+      const w = getDashboardWindowIfLinked();
+      if (!w) return false;
+      try {
+        w.postMessage({ type: "VIDEO_SET_VOLUME", volume: videoSettings.volume }, window.location.origin);
+        w.postMessage({ type: "VIDEO_SET_MUTED", muted: videoSettings.muted }, window.location.origin);
+        return true;
+      } catch(_e) {
+        return false;
+      }
+    }
+
+    function applySettings() {
+      saveSettings();
+      setAdminUIFromSettings();
+      pushToDashboardIfPossible();
+    }
+
+    loadSettings();
+    setAdminUIFromSettings();
+    pushToDashboardIfPossible();
+
+    $("#videoMuteBtn").on("click", function() { videoSettings.muted = true; applySettings(); });
+    $("#videoUnmuteBtn").on("click", function() { videoSettings.muted = false; applySettings(); });
+
+    $("#adminVideoVolume").on("input change", function() {
+      const pct = Math.max(0, Math.min(100, Number($(this).val() || 0)));
+      const v = clamp01(pct / 100);
+      videoSettings.volume = v;
+      if (v > 0) videoSettings.muted = false;
+      applySettings();
+    });
+
+    window.addEventListener("message", (ev) => {
+      if (ev.origin !== window.location.origin) return;
+      const data = ev.data || {};
+      if (data.type === "DASHBOARD_READY") pushToDashboardIfPossible();
+    });
+
+    // ============================================================
+    // Upload XLSX + Auto-reload to display year ranges
+    // ============================================================
+    $("#xlsxFile").on("change", function() {
+      let name = this.files.length ? this.files[0].name : "";
+      $("#xlsxFileName").text(name ? "Selected: " + name : "");
+    });
+
+    $("#xlsxForm").on("submit", function(e) {
+      e.preventDefault();
+      let fileInput = $("#xlsxFile")[0].files[0];
+      
+      if (!fileInput) { 
+        showStatus("Please select an Excel file before uploading.", "danger"); 
+        return; 
+      }
+
+      const $submitBtn = $(this).find('button[type="submit"]');
+      const originalBtnText = $submitBtn.text();
+      $submitBtn.prop("disabled", true).text("Uploading & Processing...");
+      
+      showStatus("Uploading and processing XLSX file. This may take a moment...", "info");
+
+      let formData = new FormData();
+      formData.append("xlsxFile", fileInput);
+
+      $.ajax({
+        url: "/upload/xlsx",
+        method: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        timeout: 120000,
+        success: function(response) { 
+          showStatus(response + " | Refreshing page to display year ranges...", "success");
+          
+          $("#xlsxFile").val("");
+          $("#xlsxFileName").text("");
+          
+          setTimeout(function() {
+            window.location.href = window.location.pathname + "#sec-upload-graph";
+            window.location.reload();
+          }, 1500);
+        },
+        error: function(err) { 
+          let msg = "Upload failed. Please try again.";
+          if (err && err.responseText) {
+            msg = err.responseText;
+          } else if (err.statusText) {
+            msg = "Upload failed: " + err.statusText;
+          }
+          
+          showStatus(msg, "danger");
+          $submitBtn.prop("disabled", false).text(originalBtnText);
+          $("#xlsxFile").val("");
+          $("#xlsxFileName").text("");
+        }
+      });
+    });
+
+    $("#clearDataBtn").on("click", function() {
+      const confirmed = confirm(
+        "WARNING: This will permanently delete ALL data:\n\n" +
+        "- All electricity records\n" +
+        "- All water usage records\n" +
+        "- All solar generation data\n" +
+        "- All waste management data\n" +
+        "- Year range configurations\n\n" +
+        "This action CANNOT be undone!\n\n" +
+        "Are you absolutely sure you want to continue?"
+      );
+      
+      if (!confirmed) return;
+      
+      const $btn = $(this);
+      const originalText = $btn.text();
+      $btn.prop("disabled", true).text("Clearing...");
+      showStatus("Clearing all data...", "info");
+      
+      $.ajax({
+        url: "/clear/all",
+        method: "POST",
+        success: function(response) { 
+          showStatus("All data cleared successfully. Refreshing page...", "success");
+          
+          setTimeout(function() {
+            window.location.href = window.location.pathname + "#sec-upload-graph";
+            window.location.reload();
+          }, 1500);
+        },
+        error: function(err) { 
+          let msg = "Failed to clear data.";
+          if (err && err.responseText) msg = err.responseText;
+          
+          showStatus(msg, "danger");
+          $btn.prop("disabled", false).text(originalText);
+        }
+      });
+    });
+
+    function showStatus(message, type) {
+      const $status = $("#xlsxStatus");
+      
+      $status
+        .removeClass("d-none alert-success alert-danger alert-warning alert-info")
+        .addClass("alert-" + type)
+        .html(message);
+      
+      if (type === "success" && !message.includes("Refreshing")) {
+        setTimeout(function() {
+          $status.addClass("d-none");
+        }, 10000);
+      }
+    }
+
+    // ============================================================
+    // YEAR RANGES: AUTO-SAVE + DYNAMIC DROPDOWN VALIDATION
+    // ============================================================
+    const $yearRangeSaveChip = $("#yearRangeSaveChip");
+    let yearRangeAutosaveTimer = null;
+
+    const ELEC_YEARS = <%- JSON.stringify(typeof elecYearsAsInts !== "undefined" ? elecYearsAsInts : []) %>;
+    const WATER_YEARS = <%- JSON.stringify(typeof waterYearsAsInts !== "undefined" ? waterYearsAsInts : []) %>;
+    const ELEC_MIN = ELEC_YEARS.length > 0 ? ELEC_YEARS[0] : null;
+    const ELEC_MAX = ELEC_YEARS.length > 0 ? ELEC_YEARS[ELEC_YEARS.length - 1] : null;
+    const WATER_MIN = WATER_YEARS.length > 0 ? WATER_YEARS[0] : null;
+    const WATER_MAX = WATER_YEARS.length > 0 ? WATER_YEARS[WATER_YEARS.length - 1] : null;
+
+    function setYearRangeChip(state) {
+      $yearRangeSaveChip.removeClass("saving saved error");
+      if (state === "saving") {
+        $yearRangeSaveChip.addClass("saving").text("Saving...");
+      } else if (state === "saved") {
+        $yearRangeSaveChip.addClass("saved").text("Saved");
+      } else if (state === "error") {
+        $yearRangeSaveChip.addClass("error").text("Error saving");
+      } else {
+        $yearRangeSaveChip.text("Auto-save enabled");
+      }
+    }
+
+    function updateDropdownConstraints(buildingId, dataType) {
+      const $startSelect = $("#" + dataType + "-start-" + buildingId);
+      const $endSelect = $("#" + dataType + "-end-" + buildingId);
+      
+      if (!$startSelect.length || !$endSelect.length) return;
+      
+      const startVal = $startSelect.val();
+      const endVal = $endSelect.val();
+      
+      const startYear = startVal ? parseInt(startVal, 10) : null;
+      const endYear = endVal ? parseInt(endVal, 10) : null;
+      
+      $endSelect.find("option").each(function() {
+        const optVal = $(this).val();
+        const optYear = parseInt(optVal, 10);
+        if (startYear !== null && optYear < startYear) {
+          $(this).prop("disabled", true);
+        } else {
+          $(this).prop("disabled", false);
+        }
+      });
+      
+      $startSelect.find("option").each(function() {
+        const optVal = $(this).val();
+        const optYear = parseInt(optVal, 10);
+        if (endYear !== null && optYear > endYear) {
+          $(this).prop("disabled", true);
+        } else {
+          $(this).prop("disabled", false);
+        }
+      });
+    }
+
+    function updateRangeStatusText(buildingId, dataType) {
+      const $startSelect = $("#" + dataType + "-start-" + buildingId);
+      const $endSelect = $("#" + dataType + "-end-" + buildingId);
+      const $status = $(".range-status[data-building-id='" + buildingId + "'][data-type='" + dataType + "']");
+      
+      if (!$startSelect.length || !$endSelect.length || !$status.length) return;
+      
+      const startVal = $startSelect.val();
+      const endVal = $endSelect.val();
+      
+      const text = "Current: " + startVal + " - " + endVal;
+      
+      $status.text(text);
+      
+      $status.addClass("updated");
+      setTimeout(function() {
+        $status.removeClass("updated");
+      }, 1500);
+    }
+
+    function updateConfigBadge(buildingId) {
+      const $row = $(".building-year-row[data-building-id='" + buildingId + "']");
+      const $badge = $row.find(".config-badge");
+      
+      const elecStart = parseInt($("#elec-start-" + buildingId).val(), 10);
+      const elecEnd = parseInt($("#elec-end-" + buildingId).val(), 10);
+      const waterStart = parseInt($("#water-start-" + buildingId).val(), 10);
+      const waterEnd = parseInt($("#water-end-" + buildingId).val(), 10);
+      
+      const elecIsFullRange = (isNaN(elecStart) && isNaN(elecEnd)) || (elecStart === ELEC_MIN && elecEnd === ELEC_MAX);
+      const waterIsFullRange = (isNaN(waterStart) && isNaN(waterEnd)) || (waterStart === WATER_MIN && waterEnd === WATER_MAX);
+      const isCustomRange = !elecIsFullRange || !waterIsFullRange;
+      
+      $badge
+        .removeClass("bg-success bg-secondary")
+        .addClass(isCustomRange ? "bg-success" : "bg-secondary")
+        .text(isCustomRange ? "Custom Range" : "Full Range");
+    }
+
+    function collectYearRangeData() {
+      const data = {
+        elec_startyears: {},
+        elec_endyears: {},
+        water_startyears: {},
+        water_endyears: {}
+      };
+      
+      $(".building-year-row").each(function() {
+        const buildingId = $(this).data("building-id");
+        
+        data.elec_startyears[buildingId] = $("#elec-start-" + buildingId).val() || "";
+        data.elec_endyears[buildingId] = $("#elec-end-" + buildingId).val() || "";
+        data.water_startyears[buildingId] = $("#water-start-" + buildingId).val() || "";
+        data.water_endyears[buildingId] = $("#water-end-" + buildingId).val() || "";
+      });
+      
+      return data;
+    }
+
+    function buildFormData(data) {
+      const params = new URLSearchParams();
+      
+      for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+          const obj = data[key];
+          for (const id in obj) {
+            if (obj.hasOwnProperty(id)) {
+              params.append(key + "[" + id + "]", obj[id]);
+            }
+          }
+        }
+      }
+      
+      return params.toString();
+    }
+
+    async function autosaveYearRanges(buildingId) {
+      const $row = $(".building-year-row[data-building-id='" + buildingId + "']");
+      
+      $row.removeClass("saved error").addClass("saving");
+      setYearRangeChip("saving");
+      
+      const data = collectYearRangeData();
+      
+      try {
+        const response = await fetch("/admin/building-year-ranges", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+          },
+          body: buildFormData(data)
+        });
+        
+        if (!response.ok) {
+          throw new Error("Save failed: " + response.statusText);
+        }
+        
+        $row.removeClass("saving").addClass("saved");
+        setYearRangeChip("saved");
+        
+        setTimeout(function() {
+          $row.removeClass("saved");
+          setYearRangeChip("idle");
+        }, 1500);
+        
+      } catch (error) {
+        console.error("Year range save error:", error);
+        $row.removeClass("saving").addClass("error");
+        setYearRangeChip("error");
+        
+        setTimeout(function() {
+          $row.removeClass("error");
+          setYearRangeChip("idle");
+        }, 3000);
+      }
+    }
+
+    function scheduleYearRangeAutosave(buildingId) {
+      if (yearRangeAutosaveTimer) {
+        clearTimeout(yearRangeAutosaveTimer);
+      }
+      
+      yearRangeAutosaveTimer = setTimeout(function() {
+        autosaveYearRanges(buildingId);
+      }, 600);
+    }
+
+    function initializeAllDropdownConstraints() {
+      $(".building-year-row").each(function() {
+        const buildingId = $(this).data("building-id");
+        updateDropdownConstraints(buildingId, "elec");
+        updateDropdownConstraints(buildingId, "water");
+      });
+    }
+
+    $(document).on("change", ".year-select", function() {
+      const $select = $(this);
+      const buildingId = $select.data("building-id");
+      const dataType = $select.data("type");
+      
+      updateDropdownConstraints(buildingId, dataType);
+      updateRangeStatusText(buildingId, dataType);
+      updateConfigBadge(buildingId);
+      scheduleYearRangeAutosave(buildingId);
+    });
+
+    initializeAllDropdownConstraints();
+
+    // ============================================================
+    // Building Image Preview (local file selection)
+    // ============================================================
+    $("#imgfile").on("change", function() {
+      const file = this.files && this.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        $("#buildingImagePreview").attr("src", e.target.result).show();
+      };
+      reader.readAsDataURL(file);
+    });
+
+  });
+  </script>
+
+</body>
+</html>

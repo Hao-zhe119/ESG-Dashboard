@@ -1,0 +1,4461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RP ESG Dashboard</title>
+
+  <!-- Bootstrap + Animate.css -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+  --navH: 56px;
+  --pad: clamp(12px, 1.1vw, 20px);
+  --gap: clamp(10px, 1.2vw, 18px);
+  --progH: clamp(6px, 0.7vh, 10px);
+  --bFs: clamp(12px, 0.9vw, 16px);
+  --vh: 1vh;
+  --arrowGutter: clamp(72px, 5.5vw, 130px);
+  --stageAvailH: calc((var(--vh) * 100) - var(--navH) - var(--progH) - (var(--pad) * 2) - 24px);
+  --stageMaxW: 92vw;
+  --stageW: min(var(--stageMaxW), calc(var(--stageAvailH) * (16 / 9)));
+  --bg: #0f1318;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --panel: #161b22;
+  --panelBorder: rgba(255,255,255,0.10);
+  --shadow: 0 10px 24px rgba(0,0,0,0.45);
+  --accent: #60a5fa;
+  --listRow: rgba(255,255,255,0.04);
+  --listRowAlt: rgba(255,255,255,0.02);
+  --listRowHover: rgba(96,165,250,0.16);
+  --listRowActive: rgba(52,211,153,0.18);
+  --progressBg: rgba(255,255,255,0.10);
+  --progressFill: #34d399;
+  --cardBg: #ffffff;
+  --cardText: #111827;
+  --pageBreathTB: 4px;
+  --threeBreathTB: 4px;
+
+  /* ========================================
+     SHARED PANEL RATIOS (Pages 5, 6, 7)
+     Change these 4 values to adjust all 3 pages
+     ======================================== */
+  --panel-ratio-left: 0.75;
+  --panel-ratio-mid: 1.5;
+  --panel-ratio-right: 0.75;
+  --panel-ratio-total: 3; /* must equal sum of above */
+}
+
+@media (min-aspect-ratio: 48/10) {
+  :root { --stageMaxW: calc(100vw / 3); }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* ========================================
+   PAGE 1: WELCOME
+   ======================================== */
+#page1 { position: relative; }
+
+#page1 .welcome-logo {
+  height: 350px;
+  width: auto;
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+  position: absolute;
+  top: 50%;
+  left: 100px;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+#page1 .welcome-title {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(2.2rem, 4.2vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  color: var(--text);
+  padding: 0 clamp(10px, 2vw, 24px);
+  max-width: 92vw;
+}
+
+#page1 .welcome-subtitle {
+  position: absolute;
+  right: clamp(12px, 2vw, 28px);
+  bottom: calc(var(--progH) + clamp(12px, 2.6vh, 28px));
+  font-size: clamp(12px, 1.4vw, 16px);
+  color: var(--muted);
+}
+
+#welcome-page .welcome-rp-text,
+#page1 .welcome-rp-text {
+  display: inline-block;
+  animation-duration: 2.2s;
+  animation-timing-function: ease-in-out;
+}
+
+/* ========================================
+   PAGE BASE STYLES
+   ======================================== */
+.page {
+  height: calc(var(--vh) * 100);
+  box-sizing: border-box;
+  padding: var(--pad);
+  padding-top: calc(var(--navH) + var(--pad) + var(--pageBreathTB));
+  padding-bottom: calc(var(--pad) + var(--progH) + var(--pageBreathTB));
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--text);
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.45s cubic-bezier(.4, 0, .2, 1), opacity 0.35s ease;
+}
+
+.page.active-page {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.page.enter-left { transform: translateX(-100%); opacity: 0; z-index: 2; }
+.page.enter-right { transform: translateX(100%); opacity: 0; z-index: 2; }
+.page.exit-left { transform: translateX(-100%); opacity: 0; pointer-events: none; z-index: 1; }
+.page.exit-right { transform: translateX(100%); opacity: 0; pointer-events: none; z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page { transition: none !important; }
+}
+
+/* ========================================
+   PAGE BACKGROUNDS
+   ======================================== */
+#page1, #page2, #page3, #page4, #page5, #page6, #page7, #page8, #page9, #page10 {
+  background: url("/images/rp-main.jpg") no-repeat center center / cover;
+}
+
+#page1::before, #page2::before, #page3::before, #page4::before, #page5::before, 
+#page6::before, #page7::before, #page8::before, #page9::before, #page10::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(38, 45, 53, 0.72);
+  z-index: 0;
+}
+
+#page1 > *, #page2 > *, #page3 > *, #page4 > *, #page8 > *, #page9 > *, #page10 > * {
+  position: relative;
+  z-index: 1;
+  color: var(--text);
+}
+
+/* ========================================
+   NAVBAR
+   ======================================== */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.navbar.bg-light {
+  background: rgba(22,27,34,0.92) !important;
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+}
+
+.navbar .navbar-brand { color: var(--text) !important; }
+.navbar .navbar-toggler { border-color: rgba(255,255,255,0.18) !important; }
+.navbar .navbar-toggler-icon { filter: invert(1) grayscale(1); opacity: 0.9; }
+
+:fullscreen .navbar { display: none !important; }
+:-webkit-full-screen .navbar { display: none !important; }
+body.is-fullscreen .navbar { display: none !important; }
+
+/* ========================================
+   ARROW BUTTONS
+   ======================================== */
+.arrow-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: var(--text);
+  padding: clamp(8px, 1vh, 12px) clamp(12px, 1.2vw, 18px);
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1500;
+  font-size: clamp(18px, 1.8vw, 26px);
+  transition: 0.2s;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.35);
+  user-select: none;
+}
+
+.arrow-btn:hover { background: rgba(96,165,250,0.18); }
+#backArrowButton { left: clamp(10px, 1.2vw, 20px); }
+#nextArrowButton { right: clamp(10px, 1.2vw, 20px); }
+
+/* ========================================
+   PROGRESS BAR
+   ======================================== */
+#progressBarContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: var(--progH);
+  z-index: 2000;
+  background: var(--progressBg);
+  border-top: 1px solid rgba(255,255,255,0.10);
+}
+
+#progressBarFill {
+  width: 0%;
+  height: 100%;
+  background: var(--progressFill);
+  transition: width 0.1s linear;
+}
+
+body.mode-interactive #progressBarContainer { display: none; }
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+.btn-outline-secondary {
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,0.22) !important;
+  background: rgba(255,255,255,0.04) !important;
+}
+
+.btn-outline-secondary:hover {
+  background: rgba(96,165,250,0.18) !important;
+  border-color: rgba(96,165,250,0.35) !important;
+}
+
+.btn-outline-light {
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,0.22) !important;
+}
+
+.btn-outline-light:hover {
+  background: rgba(96,165,250,0.18) !important;
+  border-color: rgba(96,165,250,0.35) !important;
+}
+
+#page5 .panel .btn,
+#page6 .panel .btn,
+#page7 .panel .btn {
+  color: #111827 !important;
+  border-color: rgba(17,24,39,0.25) !important;
+  background: rgba(17,24,39,0.06) !important;
+}
+
+#page5 .panel .btn:hover,
+#page6 .panel .btn:hover,
+#page7 .panel .btn:hover {
+  background: rgba(37,99,235,0.10) !important;
+  border-color: rgba(37,99,235,0.35) !important;
+  color: #111827 !important;
+}
+
+/* ========================================
+   PAGE 2: BUILDING OVERVIEW
+   ======================================== */
+#page2 {
+  justify-content: flex-start;
+  align-items: stretch;
+  text-align: center;
+  padding-left: calc(var(--pad) + var(--arrowGutter));
+  padding-right: calc(var(--pad) + var(--arrowGutter));
+}
+
+.multi-building-title {
+  font-size: clamp(22px, 2.2vw, 36px);
+  margin: 0 0 10px 0;
+  color: var(--text);
+  text-align: center;
+  font-weight: 700;
+}
+
+.multi-building-subtitle {
+  font-size: clamp(14px, 1.2vw, 18px);
+  margin: 0 0 12px 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+#page2 .page2-body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: clamp(10px, 1.1vw, 16px);
+  align-items: stretch;
+  overflow: hidden;
+}
+
+#page2 .page2-cards {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#page2 .multi-building-grid {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  gap: clamp(8px, 0.9vw, 12px);
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  align-content: start;
+  overflow: hidden;
+}
+
+@media (min-width: 2560px) {
+  #page2 .multi-building-grid {
+    grid-template-columns: repeat(auto-fit, minmax(clamp(260px, 16vw, 360px), 1fr));
+    max-width: none;
+  }
+}
+
+#page2 .building-card { scroll-snap-align: start; }
+
+#page2 .page2-map {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#page2 .map-stage {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#page2 .map-stage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 0;
+}
+
+/* ========================================
+   BUILDING CARDS
+   ======================================== */
+.building-card {
+  border-radius: 12px;
+  background: var(--cardBg);
+  color: var(--cardText);
+  padding: 10px 12px;
+  min-width: 0;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+  border: 1px solid rgba(17,24,39,0.10);
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 2px;
+}
+
+.building-name {
+  font-size: clamp(14px, 1.2vw, 18px);
+  font-weight: 400;
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.building-metric {
+  font-size: clamp(12px, 0.95vw, 14px);
+  margin: 0;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
+  color: rgba(17,24,39,0.78);
+}
+
+/* ========================================
+   PAGE 8: VIDEO
+   ======================================== */
+#page8 {
+  justify-content: center;
+  align-items: center;
+}
+
+#page8 h2 {
+  color: var(--text);
+  margin-bottom: clamp(10px, 1.2vh, 16px);
+}
+
+#page8 video {
+  width: var(--stageW);
+  height: auto;
+  aspect-ratio: 16 / 9;
+  max-height: var(--stageAvailH);
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  background: #000;
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* ========================================
+   PAGE 9: CAROUSEL
+   ======================================== */
+#page9 {
+  justify-content: center;
+  align-items: center;
+}
+
+#page9 h2 {
+  color: var(--text);
+  margin-bottom: clamp(10px, 1.2vh, 16px);
+}
+
+#page9 .carousel {
+  width: var(--stageW);
+  margin: 0 auto;
+}
+
+#page9 .carousel img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  max-height: var(--stageAvailH);
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255,255,255,0.10);
+  background: #000;
+}
+
+/* ========================================
+   PAGES 5, 6, 7: THREE-PANEL LAYOUT
+   ======================================== */
+#page5, #page6, #page7 {
+  padding: 0 !important;
+  justify-content: flex-start;
+  align-items: stretch;
+  background: var(--bg);
+}
+
+.three-panel {
+  position: absolute;
+  top: calc(var(--navH) + var(--threeBreathTB));
+  left: var(--pad);
+  right: var(--pad);
+  bottom: calc(var(--progH) + var(--threeBreathTB));
+  display: flex;
+  gap: var(--gap);
+  align-items: stretch;
+  justify-content: center;
+  text-align: left;
+  overflow: hidden;
+  margin: 0;
+  min-height: 0;
+  min-width: 0;
+}
+
+body.mode-interactive #page5 .three-panel,
+body.mode-interactive #page6 .three-panel,
+body.mode-interactive #page7 .three-panel {
+  left: calc(var(--pad) + var(--arrowGutter));
+  right: calc(var(--pad) + var(--arrowGutter));
+}
+
+/* Default: Equal thirds */
+.three-panel .panel {
+  flex: 0 0 calc((100% - (2 * var(--gap))) / 3);
+  background: #ffffff;
+  border: 1px solid rgba(17,24,39,0.10);
+  border-radius: 16px;
+  padding: 12px;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+  color: #111827;
+}
+
+/* Default: Responsive stacking */
+@media (max-aspect-ratio: 4/3), (max-width: 1200px) {
+  .three-panel { flex-direction: column; }
+  .three-panel .panel { flex: 1 1 auto; }
+}
+
+/* ========================================
+   PAGES 5, 6, 7: SHARED PANEL RATIOS
+   Uses variables from :root
+   ======================================== */
+#page5 .three-panel .panel-left,
+#page6 .three-panel .panel-left,
+#page7 .three-panel .panel-left {
+  flex: 0 0 calc((100% - (2 * var(--gap))) * var(--panel-ratio-left) / var(--panel-ratio-total));
+}
+
+#page5 .three-panel .panel-mid,
+#page6 .three-panel .panel-mid,
+#page7 .three-panel .panel-mid {
+  flex: 0 0 calc((100% - (2 * var(--gap))) * var(--panel-ratio-mid) / var(--panel-ratio-total));
+}
+
+#page5 .three-panel .panel-right,
+#page6 .three-panel .panel-right,
+#page7 .three-panel .panel-right {
+  flex: 0 0 calc((100% - (2 * var(--gap))) * var(--panel-ratio-right) / var(--panel-ratio-total));
+}
+
+/* Responsive: Stack vertically */
+@media (max-aspect-ratio: 4/3), (max-width: 1200px) {
+  #page5 .three-panel .panel-left,
+  #page5 .three-panel .panel-mid,
+  #page5 .three-panel .panel-right,
+  #page6 .three-panel .panel-left,
+  #page6 .three-panel .panel-mid,
+  #page6 .three-panel .panel-right,
+  #page7 .three-panel .panel-left,
+  #page7 .three-panel .panel-mid,
+  #page7 .three-panel .panel-right {
+    flex: 1 1 auto;
+  }
+}
+
+/* ========================================
+   THREE-PANEL CONTENT STYLES
+   ======================================== */
+.three-building-title {
+  font-size: clamp(16px, 1.4vw, 22px);
+  margin: 0 0 6px 0;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 700;
+}
+
+#page5 .three-building-title,
+#page6 .three-building-title,
+#page7 .three-building-title {
+  text-align: center;
+}
+
+.three-info-body {
+  color: rgba(17,24,39,0.72);
+  font-size: clamp(12px, 1.0vw, 14px);
+  line-height: 1.35;
+  overflow: hidden;
+  min-height: 0;
+  flex: 1;
+}
+
+#page5 #threeInfoBody {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  overflow: auto;
+  min-height: 0;
+}
+
+.three-metrics {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.metric-box {
+  background: rgba(37,99,235,0.06);
+  border: 1px solid rgba(37,99,235,0.12);
+  border-radius: 12px;
+  padding: 8px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: rgba(17,24,39,0.72);
+}
+
+.metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.three-chart-wrap {
+  flex: 1;
+  min-height: 240px;
+  margin-top: 8px;
+}
+
+.three-chart-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(17,24,39,0.10);
+}
+
+/* ========================================
+   PAGE 5: RIGHT PANEL - SCROLLABLE LIST
+   ======================================== */
+#page5 #threeRightBody {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px 4px;
+}
+
+#page5 #threeRightBody img { display: none !important; }
+
+#page5 #threeRightBody .building-list {
+  height: 100%;
+  overflow: hidden;
+}
+
+#page5 #threeRightBody .building-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: block;
+}
+
+#page5 #threeRightBody .building-list-item {
+  flex: none;
+  min-height: auto;
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: var(--bFs);
+  line-height: 1.05;
+  border: 0.03px solid rgba(17,24,39,0.08);
+  border-bottom: 1px solid rgba(17,24,39,0.08);
+  background: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+#page5 #threeRightBody .building-list-item:nth-child(even) {
+  background: rgba(17,24,39,0.03);
+}
+
+#page5 #threeRightBody .building-list-item:hover {
+  background: rgba(37,99,235,0.10);
+}
+
+#page5 #threeRightBody .building-list-item.active {
+  background: rgba(22,163,74,0.14);
+}
+
+#page5 #threeRightBody .building-list-item .fw-bold {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #111827;
+}
+
+#page5 #threeRightBody .building-list-item small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(17,24,39,0.70);
+}
+
+/* Thin scrollbar for Page 5 right panel */
+#page5 #threeRightBody .building-list ul::-webkit-scrollbar {
+  width: 4px;
+}
+
+#page5 #threeRightBody .building-list ul::-webkit-scrollbar-track {
+  background: rgba(17,24,39,0.04);
+  border-radius: 2px;
+}
+
+#page5 #threeRightBody .building-list ul::-webkit-scrollbar-thumb {
+  background: rgba(17,24,39,0.18);
+  border-radius: 2px;
+}
+
+#page5 #threeRightBody .building-list ul::-webkit-scrollbar-thumb:hover {
+  background: rgba(17,24,39,0.30);
+}
+
+/* ========================================
+   PAGES 6 & 7: YEAR LIST PANELS
+   ======================================== */
+#page6 #solar-year-list,
+#page7 #waste-year-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#page6 #solar-year-list ul,
+#page7 #waste-year-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#page6 #solar-year-list .building-list-item,
+#page7 #waste-year-list .building-list-item {
+  flex: 1;
+  min-height: 0;
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: var(--bFs);
+  line-height: 1.05;
+  border: 0.03px solid rgba(17,24,39,0.08);
+  border-bottom: 1px solid rgba(17,24,39,0.08);
+  background: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+#page6 #solar-year-list .building-list-item:nth-child(even),
+#page7 #waste-year-list .building-list-item:nth-child(even) {
+  background: rgba(17,24,39,0.03);
+}
+
+#page6 #solar-year-list .building-list-item:hover,
+#page7 #waste-year-list .building-list-item:hover {
+  background: rgba(37,99,235,0.10);
+}
+
+#page6 #solar-year-list .building-list-item.active,
+#page7 #waste-year-list .building-list-item.active {
+  background: rgba(22,163,74,0.14);
+}
+
+#page6 #solar-year-list .building-list-item .fw-bold,
+#page7 #waste-year-list .building-list-item .fw-bold {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #111827;
+}
+
+#page6 #solar-year-list .building-list-item small,
+#page7 #waste-year-list .building-list-item small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(17,24,39,0.70);
+}
+
+/* Thin scrollbar for Pages 6 & 7 year lists */
+#page6 #solar-year-list ul::-webkit-scrollbar,
+#page7 #waste-year-list ul::-webkit-scrollbar {
+  width: 4px;
+}
+
+#page6 #solar-year-list ul::-webkit-scrollbar-track,
+#page7 #waste-year-list ul::-webkit-scrollbar-track {
+  background: rgba(17,24,39,0.04);
+  border-radius: 2px;
+}
+
+#page6 #solar-year-list ul::-webkit-scrollbar-thumb,
+#page7 #waste-year-list ul::-webkit-scrollbar-thumb {
+  background: rgba(17,24,39,0.18);
+  border-radius: 2px;
+}
+
+#page6 #solar-year-list ul::-webkit-scrollbar-thumb:hover,
+#page7 #waste-year-list ul::-webkit-scrollbar-thumb:hover {
+  background: rgba(17,24,39,0.30);
+}
+
+/* ========================================
+   BUILDING LIST (SHARED)
+   ======================================== */
+.building-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.building-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.building-list-item {
+  flex: 1;
+  min-height: 0;
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: var(--bFs);
+  line-height: 1.05;
+  border-bottom: 1px solid rgba(17,24,39,0.08);
+  background: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.building-list-item:nth-child(even) { background: rgba(17,24,39,0.03); }
+
+.building-list-item .fw-bold,
+.building-list-item small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #111827;
+}
+
+.building-list-item small { color: rgba(17,24,39,0.70); }
+.building-list-item:hover { background: rgba(37,99,235,0.10); }
+.building-list-item.active { background: rgba(22,163,74,0.14); }
+
+/* ========================================
+   SLUG SANDBOX (INJECTED CONTENT)
+   ======================================== */
+.slug-sandbox {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: inherit;
+  background: transparent;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.slug-sandbox * {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.slug-sandbox html,
+.slug-sandbox body {
+  background: transparent !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.slug-sandbox h1,
+.slug-sandbox h2,
+.slug-sandbox h3,
+.slug-sandbox h4,
+.slug-sandbox h5 {
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.slug-sandbox .muted,
+.slug-sandbox .text-muted,
+.slug-sandbox small {
+  color: rgba(17,24,39,0.72);
+}
+
+.slug-sandbox .panel,
+.slug-sandbox .wrap {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  height: auto;
+  box-shadow: none;
+  gap: 10px;
+}
+
+.slug-sandbox .content {
+  overflow: hidden;
+  padding-right: 0;
+}
+
+.slug-sandbox .container,
+.slug-sandbox .container-fluid,
+.slug-sandbox .row,
+.slug-sandbox [class*="col-"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+/* ========================================
+   BUILDING INFO PANEL - DASHBOARD OVERRIDES
+   ======================================== */
+#threeInfoBody .slug-sandbox,
+#threeInfoBody > .building-info-panel,
+#threeInfoBody .building-info-panel {
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 0 !important;
+  background: transparent !important;
+}
+
+#threeInfoBody .building-info-panel,
+#threeInfoBody .building-info-panel * {
+  max-width: none !important;
+}
+
+#threeInfoBody .building-info-panel .bip-head {
+  text-align: center !important;
+  padding: 10px 8px !important;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(37,99,235,0.14) !important;
+}
+
+#threeInfoBody .building-info-panel .bip-icon {
+  font-size: 2rem !important;
+  margin-bottom: 2px !important;
+}
+
+#threeInfoBody .building-info-panel .bip-title {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #1e40af !important;
+}
+
+#threeInfoBody .building-info-panel .bip-subtitle {
+  font-size: 0.85rem !important;
+  color: #3b82f6 !important;
+  font-weight: 500 !important;
+}
+
+#threeInfoBody .building-info-panel .bip-section {
+  padding: 8px !important;
+  background: #f9fafb !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(17,24,39,0.10) !important;
+}
+
+#threeInfoBody .building-info-panel .bip-section-header {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  margin-bottom: 6px !important;
+  padding-bottom: 4px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+#threeInfoBody .building-info-panel .bip-image-container {
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+#threeInfoBody .building-info-panel .bip-image {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 600px !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+#threeInfoBody .building-info-panel .bip-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 0.75rem !important;
+}
+
+#threeInfoBody .building-info-panel .bip-table th,
+#threeInfoBody .building-info-panel .bip-table td {
+  padding: 5px 6px !important;
+  text-align: center !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+#threeInfoBody .building-info-panel .bip-table th {
+  background: #f3f4f6 !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+#threeInfoBody .building-info-panel .bip-table td:first-child,
+#threeInfoBody .building-info-panel .bip-table th:first-child {
+  text-align: left !important;
+}
+
+#threeInfoBody .building-info-panel .bip-row-available {
+  background: #f0fdf4 !important;
+}
+
+#threeInfoBody .building-info-panel .bip-row-unavailable {
+  background: #fef2f2 !important;
+}
+
+#threeInfoBody .building-info-panel .bip-badge {
+  display: inline-block !important;
+  padding: 2px 6px !important;
+  border-radius: 10px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+#threeInfoBody .building-info-panel .bip-badge-available {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+#threeInfoBody .building-info-panel .bip-badge-unavailable {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+#threeInfoBody .building-info-panel .bip-desc {
+  font-size: 0.85rem !important;
+  line-height: 1.5 !important;
+  color: #374151 !important;
+  margin: 0 !important;
+}
+
+#threeInfoBody .building-info-panel .bip-desc-empty {
+  color: #9ca3af !important;
+  font-style: italic !important;
+}
+
+/* ========================================
+   INFOGRAPHIC STYLES
+   ======================================== */
+.infographic {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-head {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(37,99,235,0.06);
+  border: 1px solid rgba(37,99,235,0.14);
+}
+
+.info-title {
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.1;
+  color: #111827;
+}
+
+.info-subtitle {
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgba(17,24,39,0.70);
+}
+
+.info-icons,
+.info-footer-icons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  opacity: 0.9;
+}
+
+.info-ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: rgba(17,24,39,0.04);
+  border: 1px solid rgba(17,24,39,0.10);
+}
+
+.info-section {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(17,24,39,0.10);
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.info-section-h {
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #111827;
+}
+
+.info-bullets {
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(17,24,39,0.78);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+.page-skipped { display: none !important; }
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+</style>
+
+</head>
+<body class="<%= (String(dashboardMode||'auto').toLowerCase()==='auto') ? 'mode-auto' : 'mode-interactive' %>">
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-sm bg-light navbar-light border-bottom">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-semibold" href="/" style="color:#111827">RP ESG Dashboard</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarMenu">
+        <ul class="navbar-nav">
+          <% if (String(dashboardMode || '').toLowerCase() === 'interactive') { %>
+          <li class="nav-item me-2">
+            <button class="btn btn-success" id="openBuildingControlsBtn" onclick="openBuildingControlsWindow()">
+               Building Controls
+            </button>
+          </li>
+          <% } %>
+          <li class="nav-item me-2">
+            <% if (user) { %>
+            <a class="btn btn-outline-secondary" href="/admin">Admin Dashboard</a>
+            <% } %>
+          </li>
+          <li class="nav-item">
+            <% if (user) { %>
+              <a class="btn btn-outline-secondary" href="/logout">Logout (<%= user.account %>)</a>
+            <% } else { %>
+              <a class="btn btn-outline-secondary" href="/login">Login</a>
+            <% } %>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- PAGE 1: WELCOME -->
+  <div id="page1" class="page active-page">
+    <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
+    <h1 class="welcome-title">
+      WELCOME TO<br>
+      <span class="welcome-rp-text animate__animated animate__heartBeat animate__infinite">REPUBLIC POLYTECHNIC'S</span><br>
+      ESG CENTRE!
+    </h1>
+  </div>
+
+  <!-- PAGE 2: ALL BUILDINGS SUMMARY -->
+  <div id="page2" class="page">
+    <h2 class="multi-building-title animate__animated animate__tada animate__infinite" style="--animate-duration: 2.5s;">
+       <span style="color: #7eae33;">Building</span> Overview
+    </h2>
+    <p class="multi-building-subtitle">Annual Electricity (kWh) and Water (m³) Usage for All RP Buildings</p>
+    <div class="page2-body">
+      <div class="page2-cards">
+        <div id="all-buildings-grid" class="multi-building-grid"></div>
+      </div>
+      <div class="page2-map">
+        <div id="page2MapSlot" class="map-stage">
+          <img src="/images/campus-map.jpg" alt="campus-map">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 3: ELECTRICITY COMPARISON -->
+  <div id="page3" class="page">
+    <h2 class="multi-building-title animate__animated animate__heartBeat animate__infinite" style="--animate-duration: 3s;">
+       <span style="color: #fbbf24;">Electricity</span> Use by Building
+    </h2>
+    <p class="multi-building-subtitle">Electricity (kWh) usage — <span id="elecCompareSubtitleYears"></span></p>
+    <div class="three-chart-wrap" style="width:100%;height:100%;max-width: 92vw;">
+      <canvas id="electricityCompareChart"></canvas>
+    </div>
+  </div>
+
+  <!-- PAGE 4: WATER COMPARISON -->
+  <div id="page4" class="page">
+    <h2 class="multi-building-title animate__animated animate__heartBeat animate__infinite" style="--animate-duration: 3s;">
+      <span style="color: #60a5fa;">Water</span> Use by Building
+    </h2>
+    <p class="multi-building-subtitle">Water (m³) usage — <span id="waterCompareSubtitleYears"></span></p>
+    <div class="three-chart-wrap" style="width:100%;height:100%;max-width: 92vw;">
+      <canvas id="waterCompareChart"></canvas>
+    </div>
+  </div>
+
+  <!-- PAGE 5: 3-IN-1 BUILDING -->
+  <div id="page5" class="page">
+    <div class="three-panel">
+      <div class="panel panel-left">
+        <div class="three-metrics">
+          <div class="three-info-body" id="threeInfoBody">
+            Select a building from the right to view details.
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-mid">
+        <div class="three-building-title animate__animated animate__pulse animate__infinite" style="--animate-duration: 3s;" id="threeChartTitle">
+          Monthly Trend (Jan–Dec)
+        </div>
+        <div class="three-chart-wrap">
+          <canvas id="threeBuildingMonthlyChart"></canvas>
+        </div>
+      </div>
+      <div class="panel panel-right">
+        <div class="three-building-title animate__animated animate__headShake animate__infinite" style="--animate-duration: 3s;" id="threeRightTitle">Navigation</div>
+        <div class="three-info-body" id="threeRightBody">
+          Unable to load building data.
+        </div>
+      </div>
+    </div>
+    <div id="three-buildings-grid" class="building-list" style="display:none;"></div>
+  </div>
+
+  <!-- PAGE 6: SOLAR -->
+  <div id="page6" class="page">
+    <div class="three-panel">
+      <div class="panel panel-left">
+        <div class="three-info-body" id="solarLeftBody">Loading solar info...</div>
+      </div>
+      <div class="panel panel-mid">
+        <div class="three-building-title animate__animated animate__pulse animate__infinite" style="--animate-duration: 3s;" id="solarChartTitle">
+          Solar (Urban Renewables &amp; Green House)
+        </div>
+        <div class="three-chart-wrap">
+          <canvas id="solarThreeChart"></canvas>
+        </div>
+      </div>
+      <div class="panel panel-right">
+        <div class="three-building-title animate__animated animate__headShake animate__infinite" style="--animate-duration: 3s;" id="solarRightTitle">Solar Data</div>
+        <div id="solar-year-list" class="building-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 7: WASTE -->
+  <div id="page7" class="page">
+    <div class="three-panel">
+      <div class="panel panel-left">
+        <div class="three-info-body" id="wasteLeftBody">Loading waste info...</div>
+      </div>
+      <div class="panel panel-mid">
+        <div class="three-building-title animate__animated animate__pulse animate__infinite" style="--animate-duration: 3s;" id="wasteChartTitle">
+          Waste (General &amp; Recyclable)
+        </div>
+        <div class="three-chart-wrap">
+          <canvas id="wasteThreeChart"></canvas>
+        </div>
+      </div>
+      <div class="panel panel-right">
+        <div class="three-building-title animate__animated animate__headShake animate__infinite" style="--animate-duration: 3s;" id="wasteRightTitle">Waste Data</div>
+        <div id="waste-year-list" class="building-list"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- PAGE 8: VIDEO -->
+  <div id="page8" class="page<%= (!mediaVideos || !mediaVideos.length) ? ' page-skipped' : '' %>">
+    <h2>RP Sustainability Video</h2>
+    <video id="esgVideoElement" controls autoplay playsinline></video>
+    <% if (!mediaVideos || !mediaVideos.length) { %>
+      <p class="text-muted mt-3">No videos uploaded</p>
+    <% } %>
+  </div>
+
+  <!-- PAGE 9: IMAGES CAROUSEL -->
+  <div id="page9" class="page<%= (!mediaImages || !mediaImages.length) ? ' page-skipped' : '' %>">
+    <h2 class="animate__animated animate__flash animate__infinite" style="--animate-duration: 3s;">
+      Campus Sustainability Highlights
+    </h2>
+    <div id="esgImageCarousel" class="carousel slide">
+      <div class="carousel-inner">
+        <% if (mediaImages && mediaImages.length) { %>
+          <% mediaImages.forEach(function(img, index){ %>
+            <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
+              <img src="/uploads/images/carousel/<%= img.filename %>" class="d-block w-100" />
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="carousel-item active">
+            <div class="text-muted text-center p-5">No images uploaded</div>
+          </div>
+        <% } %>
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#esgImageCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: invert(1);"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#esgImageCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true" style="filter: invert(1);"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+      <div class="carousel-indicators">
+        <% if (mediaImages && mediaImages.length) { %>
+          <% mediaImages.forEach(function(_, index){ %>
+            <button type="button" data-bs-target="#esgImageCarousel" data-bs-slide-to="<%= index %>"
+              class="<%= index === 0 ? 'active' : '' %>" aria-current="<%= index === 0 ? 'true' : 'false' %>"
+              aria-label="Slide <%= index+1 %>"></button>
+          <% }) %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 10: THANK YOU -->
+  <div id="page10" class="page">
+    <h1 style="color:var(--text)">THANK YOU FOR VISITING</h1>
+    <p class="animate__animated animate__pulse animate__infinite" style="color:var(--muted)">
+      Tap to return to Welcome Page
+    </p>
+  </div>
+
+  <button id="backArrowButton" class="arrow-btn" onclick="navigateToPreviousPage()">&#8592;</button>
+  <button id="nextArrowButton" class="arrow-btn" onclick="navigateToNextPage()">&#8594;</button>
+  <div id="progressBarContainer"><div id="progressBarFill"></div></div>
+  
+  <script>
+    // ============================================================
+    // SERVER DATA
+    // ============================================================
+    const dashboard_data = <%- JSON.stringify(dashboardData || {}) %>;
+    const dashboard_mode = <%- JSON.stringify(dashboardMode || 'auto') %>;
+    const mediaVideos = <%- JSON.stringify(mediaVideos || []) %>;
+    const mediaImages = <%- JSON.stringify(mediaImages || []) %>;
+    const building_label_map = <%- JSON.stringify(buildingLabelMap || {}) %>;
+    const building_card_label_map = <%- JSON.stringify(buildingCardLabelMap || {}) %>;
+
+    // ============================================================
+    // TIMERS DATA - with safety checks
+    // ============================================================
+    const timers_array = <%- typeof timers !== 'undefined' ? JSON.stringify(timers || []) : '[]' %>;
+    const timers_by_page = <%- typeof timersByTimerId !== 'undefined' ? JSON.stringify(timersByTimerId || {}) : '{}' %>;
+    const is_auto_mode = String(dashboard_mode || '').toLowerCase() === 'auto';
+
+    // ============================================================
+    // TIMER CONFIGURATION
+    // Default durations in milliseconds (fallback if no timer set)
+    // ============================================================
+    const DEFAULT_PAGE_DURATIONS = {
+      1: 15000,    // Welcome: 15 seconds
+      2: 60000,   // Building Overview: 1 minutes
+      3: 60000,   // Electricity Compare: 1 minutes
+      4: 60000,   // Water Compare: 1 minutes
+      5: 60000,   // Building 3-Panel (per building cycle): 1 minutes
+      6: 60000,    // Solar (per year cycle): 1 minute
+      7: 60000,    // Waste (per year cycle): 1 minute
+      8: 4000,    // Video end countdown: 4 seconds
+      9: 30000,    // Carousel: 30 seconds per image
+      10: 15000    // Thank You: 15 seconds
+    };
+
+    /**
+     * Get timer duration for a specific page
+     * pageNum - Page number (1-10)
+     * Duration in milliseconds
+     */
+    function getPageDuration(pageNum) {
+      // Check if timers_by_page exists and has configuration for this page
+      if (timers_by_page && typeof timers_by_page === 'object') {
+        const timerConfig = timers_by_page[pageNum];
+        if (timerConfig && timerConfig.duration_ms > 0) {
+          return timerConfig.duration_ms;
+        }
+      }
+      // Fall back to default
+      return DEFAULT_PAGE_DURATIONS[pageNum] || 30000;
+    }
+
+    /**
+     * Get timer duration in seconds for display
+     * pageNum - Page number (1-10)
+     * returns Duration in seconds
+     */
+    function getPageDurationSeconds(pageNum) {
+      return Math.round(getPageDuration(pageNum) / 1000);
+    }
+
+    // ============================================================
+    // EXTRACT SERVER DATA INTO LOCAL STATE
+    // ============================================================
+    let allYears = [];
+    let oldestYear = null;
+    let newestYear = null;
+    let latestDataYear = null;
+    let overviewOldestRows = [];
+    let overviewNewestRows = [];
+    let solarPendingYear = null;
+    let wastePendingYear = null;
+    let solarOldestMonths = [];
+    let solarNewestMonths = [];
+    let wasteOldestMonths = [];
+    let wasteNewestMonths = [];
+    let buildingMonthlyByCode = {};
+
+    // Scroll position persistence for right panel
+    let rightPanelScrollTop = 0;
+
+    // Multi-year data structures
+    let overviewByYear = {};
+    let solarByYear = {};
+    let wasteByYear = {};
+    
+    // Building monthly data by year with separate elec/water year ranges
+    let buildingMonthlyByYear = {};
+    let buildingYearRanges = {};
+
+    if (dashboard_data && typeof dashboard_data === "object") {
+      const data = dashboard_data;
+      allYears = Array.isArray(data.allYears) ? data.allYears : [];
+      oldestYear = data.oldestYear || (allYears.length > 0 ? allYears[allYears.length - 1] : null);
+      newestYear = data.newestYear || (allYears.length > 0 ? allYears[0] : null);
+      latestDataYear = data.latestYear || newestYear || oldestYear || null;
+      
+      // Legacy data (backward compatibility)
+      overviewOldestRows = Array.isArray(data.overviewYear1Rows) ? data.overviewYear1Rows : [];
+      overviewNewestRows = Array.isArray(data.overviewYear2Rows) ? data.overviewYear2Rows : [];
+      solarOldestMonths = Array.isArray(data.solarYear1Months) ? data.solarYear1Months : [];
+      solarNewestMonths = Array.isArray(data.solarYear2Months) ? data.solarYear2Months : [];
+      wasteOldestMonths = Array.isArray(data.wasteYear1Months) ? data.wasteYear1Months : [];
+      wasteNewestMonths = Array.isArray(data.wasteYear2Months) ? data.wasteYear2Months : [];
+      buildingMonthlyByCode = (data.buildingMonthly && typeof data.buildingMonthly === "object") ? data.buildingMonthly : {};
+      
+      // Multi-year data
+      overviewByYear = (data.overviewByYear && typeof data.overviewByYear === "object") ? data.overviewByYear : {};
+      solarByYear = (data.solarByYear && typeof data.solarByYear === "object") ? data.solarByYear : {};
+      wasteByYear = (data.wasteByYear && typeof data.wasteByYear === "object") ? data.wasteByYear : {};
+      
+      // Building monthly by year with year ranges
+      buildingMonthlyByYear = (data.buildingMonthlyByYear && typeof data.buildingMonthlyByYear === "object") ? data.buildingMonthlyByYear : {};
+      buildingYearRanges = (data.buildingYearRanges && typeof data.buildingYearRanges === "object") ? data.buildingYearRanges : {};
+    }
+
+    // ============================================================
+    // BUILDING YEAR RANGE HELPERS
+    // ============================================================
+    
+    function getBuildingYearRange(buildingKey, dataType) {
+      const key = normalizeBuildingKey(buildingKey);
+      const ranges = buildingYearRanges[key] || {};
+      const buildingData = buildingMonthlyByYear[key] || buildingMonthlyByYear[buildingKey] || {};
+      
+      let validYears;
+      if (dataType === 'elec' || dataType === 'electricity') {
+        validYears = buildingData.validElecYears || buildingData.validYears || allYears;
+      } else {
+        validYears = buildingData.validWaterYears || buildingData.validYears || allYears;
+      }
+      
+      if (!Array.isArray(validYears)) validYears = allYears;
+      
+      const sortedYears = [...validYears].map(yearValue => parseInt(yearValue, 10)).filter(yearValue => !isNaN(yearValue)).sort((yearA, yearB) => yearA - yearB);
+      
+      if (!sortedYears.length) return { start: null, end: null, years: [], isCustom: false };
+      
+      const minYear = sortedYears[0];
+      const maxYear = sortedYears[sortedYears.length - 1];
+      
+      const allYearsSorted = [...allYears].map(yearValue => parseInt(yearValue, 10)).filter(yearValue => !isNaN(yearValue)).sort((yearA, yearB) => yearA - yearB);
+      const globalMin = allYearsSorted.length > 0 ? allYearsSorted[0] : minYear;
+      const globalMax = allYearsSorted.length > 0 ? allYearsSorted[allYearsSorted.length - 1] : maxYear;
+      
+      const isCustom = (minYear !== globalMin || maxYear !== globalMax);
+      
+      return { start: minYear, end: maxYear, years: sortedYears, isCustom: isCustom };
+    }
+
+    function getLatestYearForBuilding(buildingKey, dataType) {
+      const range = getBuildingYearRange(buildingKey, dataType);
+      if (!range.years.length) return latestDataYear || newestYear;
+      return range.years[range.years.length - 1];
+    }
+
+    function getBuildingMonthlyForYear(buildingKey, year) {
+      const key = normalizeBuildingKey(buildingKey);
+      const buildingData = buildingMonthlyByYear[key] || buildingMonthlyByYear[buildingKey];
+      
+      if (buildingData && buildingData.dataByYear && buildingData.dataByYear[year]) {
+        const data = buildingData.dataByYear[year];
+        return {
+          elec: Array.isArray(data.elec) ? data.elec.slice() : Array(12).fill(0),
+          water: Array.isArray(data.water) ? data.water.slice() : Array(12).fill(0),
+          year: year
+        };
+      }
+      
+      const monthly = (function() {
+        if (!buildingMonthlyByCode) return null;
+        if (buildingMonthlyByCode[key]) return buildingMonthlyByCode[key];
+        if (buildingMonthlyByCode[buildingKey]) return buildingMonthlyByCode[buildingKey];
+        const lowerKey = key.toLowerCase();
+        for (const [objectKey, objectValue] of Object.entries(buildingMonthlyByCode)) {
+          if (objectKey.toLowerCase() === lowerKey) return objectValue;
+          if (normalizeBuildingKey(objectKey) === key) return objectValue;
+        }
+        return null;
+      })();
+      
+      return {
+        elec: monthly && Array.isArray(monthly.elec) ? monthly.elec.slice() : Array(12).fill(0),
+        water: monthly && Array.isArray(monthly.water) ? monthly.water.slice() : Array(12).fill(0),
+        year: year
+      };
+    }
+
+    function getBuildingTotalsForYear(buildingKey, year) {
+      const key = normalizeBuildingKey(buildingKey);
+      if (overviewByYear && overviewByYear[year]) {
+        const yearData = overviewByYear[year];
+        const row = yearData.find(rowItem => normalizeBuildingKey(rowItem.building) === key);
+        if (row) {
+          return { electricity: Number(row.electricity || 0), water: Number(row.water || 0) };
+        }
+      }
+      const monthly = getBuildingMonthlyForYear(buildingKey, year);
+      return {
+        electricity: (monthly.elec || []).reduce((sum, value) => sum + Number(value || 0), 0),
+        water: (monthly.water || []).reduce((sum, value) => sum + Number(value || 0), 0)
+      };
+    }
+
+    function formatYearRangeDisplay(elecRange, waterRange) {
+      const elecText = elecRange.years.length === 0 ? 'N/A' :
+                       elecRange.years.length === 1 ? String(elecRange.years[0]) :
+                       `${elecRange.start}-${elecRange.end}`;
+      const waterText = waterRange.years.length === 0 ? 'N/A' :
+                        waterRange.years.length === 1 ? String(waterRange.years[0]) :
+                        `${waterRange.start}-${waterRange.end}`;
+      if (elecText === waterText) return elecText;
+      return `Elec: ${elecText}, Water: ${waterText}`;
+    }
+
+    // ============================================================
+    // CHART.JS PLUGINS
+    // ============================================================
+    const barValueLabelPlugin = {
+      id: "barValueLabel",
+      afterDatasetsDraw(chart, args, pluginOptions) {
+        try {
+          const options = pluginOptions || {};
+          if (!options.enabled) return;
+          const mode = String(options.mode || "all");
+          const context = chart.ctx;
+          const datasets = chart.data?.datasets || [];
+
+          const isPositiveFiniteNumber = (value) => {
+            const number = Number(value);
+            return Number.isFinite(number) && number > 0;
+          };
+
+          const formatValue = (value) => {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return "";
+            return number.toLocaleString(undefined, { maximumFractionDigits: 0 });
+          };
+
+          const maxValuePerDataset = new Map();
+          let globalMaxValue = -Infinity;
+
+          datasets.forEach((dataset, datasetIndex) => {
+            if (!dataset) return;
+            if (String(dataset.label || "").startsWith("_")) return;
+            const datasetType = String(dataset.type || chart.config.type || "");
+            if (datasetType && datasetType !== "bar" && datasetType !== "line") return;
+            const meta = chart.getDatasetMeta(datasetIndex);
+            if (!meta || meta.hidden) return;
+            const dataArray = Array.isArray(dataset.data) ? dataset.data : [];
+            let datasetMaxValue = -Infinity;
+            dataArray.forEach((dataPoint) => {
+              if (!isPositiveFiniteNumber(dataPoint)) return;
+              if (dataPoint > datasetMaxValue) datasetMaxValue = dataPoint;
+              if (dataPoint > globalMaxValue) globalMaxValue = dataPoint;
+            });
+            maxValuePerDataset.set(datasetIndex, datasetMaxValue);
+          });
+
+          context.save();
+          context.textAlign = "center";
+          context.textBaseline = "bottom";
+          context.font = "700 12px Arial";
+          context.fillStyle = "#111827";
+
+          datasets.forEach((dataset, datasetIndex) => {
+            if (!dataset) return;
+            if (String(dataset.label || "").startsWith("_")) return;
+            const datasetType = String(dataset.type || chart.config.type || "");
+            if (datasetType && datasetType !== "bar" && datasetType !== "line") return;
+            const meta = chart.getDatasetMeta(datasetIndex);
+            if (!meta || meta.hidden) return;
+            const datasetMaxValue = maxValuePerDataset.get(datasetIndex);
+            const dataArray = Array.isArray(dataset.data) ? dataset.data : [];
+            const chartElements = meta.data || [];
+            if (mode === "max-per-dataset" && !isPositiveFiniteNumber(datasetMaxValue)) return;
+
+            chartElements.forEach((element, dataIndex) => {
+              const value = Number(dataArray[dataIndex]);
+              if (!element || !isPositiveFiniteNumber(value)) return;
+              let shouldDrawLabel = false;
+              if (mode === "all") shouldDrawLabel = true;
+              else if (mode === "max-global") shouldDrawLabel = value === globalMaxValue;
+              else if (mode === "max-per-dataset") shouldDrawLabel = value === datasetMaxValue;
+              if (!shouldDrawLabel) return;
+              const position = (typeof element.getProps === "function")
+                ? element.getProps(["x", "y", "base"], true)
+                : { x: element.x, y: element.y, base: element.base };
+              const xPosition = position.x;
+              const yTop = Number.isFinite(position.base) ? Math.min(position.y, position.base) : position.y;
+              context.fillText(formatValue(value), xPosition, yTop - 4);
+            });
+          });
+          context.restore();
+        } catch (error) {}
+      }
+    };
+
+    try { Chart.register(barValueLabelPlugin); } catch (error) {}
+
+    const snapLinePointsToBars = {
+      id: "snapLinePointsToBars",
+      beforeDatasetDraw(chart, args) {
+        try {
+          const lineDatasetIndex = args.index;
+          const datasetsList = chart?.data?.datasets || [];
+          const lineDataset = datasetsList[lineDatasetIndex];
+          if (!lineDataset || lineDataset.type !== "line") return;
+          const barDatasetIndex = Number(lineDataset.snapToBarIndex);
+          if (!isFinite(barDatasetIndex)) return;
+          const barMeta = chart.getDatasetMeta(barDatasetIndex);
+          const lineMeta = chart.getDatasetMeta(lineDatasetIndex);
+          if (!barMeta || !lineMeta) return;
+          const barElements = barMeta.data || [];
+          const linePoints = lineMeta.data || [];
+          const count = Math.min(barElements.length, linePoints.length);
+          for (let index = 0; index < count; index++) {
+            const barElement = barElements[index];
+            const linePoint = linePoints[index];
+            if (!barElement || !linePoint) continue;
+            const barXPosition = (typeof barElement.getProps === "function") ? barElement.getProps(["x"], true).x : barElement.x;
+            if (typeof barXPosition === "number") {
+              linePoint.x = barXPosition;
+              if (typeof linePoint.controlPointPreviousX === "number") linePoint.controlPointPreviousX = barXPosition;
+              if (typeof linePoint.controlPointNextX === "number") linePoint.controlPointNextX = barXPosition;
+            }
+          }
+        } catch (error) {}
+      }
+    };
+
+    try { Chart.register(snapLinePointsToBars); } catch (error) {}
+
+    // ============================================================
+    // CHART OPTIONS + HELPERS
+    // ============================================================
+    function createLegendClickHandler() {
+      return function(event, legendItem, legend) {
+        const chart = legend.chart;
+        const clickedIndex = legendItem.datasetIndex;
+        const clickedDataset = chart.data.datasets[clickedIndex];
+        if (!clickedDataset) return;
+        const meta = chart.getDatasetMeta(clickedIndex);
+        meta.hidden = meta.hidden === null ? !chart.data.datasets[clickedIndex].hidden : !meta.hidden;
+        chart.data.datasets.forEach((dataset, index) => {
+          if (dataset.type === "line" && dataset.snapToBarIndex === clickedIndex) {
+            const lineMeta = chart.getDatasetMeta(index);
+            lineMeta.hidden = meta.hidden;
+          }
+        });
+        if (clickedDataset.type === "line" && typeof clickedDataset.snapToBarIndex === "number") {
+          const barIndex = clickedDataset.snapToBarIndex;
+          const barMeta = chart.getDatasetMeta(barIndex);
+          if (barMeta) barMeta.hidden = meta.hidden;
+        }
+        chart.update();
+      };
+    }
+
+    function baseChartOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 900, easing: "easeOutBack" },
+        animations: {
+          y: {
+            from: 0,
+            delay(context) {
+              if (context.type === "data" && context.mode === "default") return context.dataIndex * 70;
+              return 0;
+            }
+          }
+        },
+        plugins: {
+          barValueLabel: { enabled: false, mode: "max-per-dataset" },
+          legend: {
+            onClick: createLegendClickHandler(),
+            labels: {
+              color: "#111827",
+              filter: (legendItem) => !String(legendItem.text || "").startsWith("_")
+            }
+          },
+          tooltip: { enabled: true }
+        },
+        scales: {
+          x: { ticks: { color: "#111827" }, grid: { color: "rgba(17,24,39,0.10)" } },
+          y: { ticks: { color: "#111827" }, grid: { color: "rgba(17,24,39,0.10)" }, position: "left", beginAtZero: true },
+          y1: { ticks: { color: "#111827" }, grid: { drawOnChartArea: false }, position: "right", beginAtZero: true }
+        }
+      };
+    }
+
+    const month_labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const color_electricity = "#facc15";
+    const color_water = "#3b82f6";
+    const color_solar_urban = "#f59e0b";
+    const color_solar_gh = "#22c55e";
+    const color_waste_gen = "#ef4444";
+    const color_waste_rec = "#3ead8a";
+
+    function hideZeroMonths(labels, ...series) {
+      const keep = labels.map((_, index) => series.some(arr => Number(arr[index] || 0) !== 0));
+      const outLabels = [];
+      const outSeries = series.map(() => []);
+      for (let index = 0; index < labels.length; index++) {
+        if (!keep[index]) continue;
+        outLabels.push(labels[index]);
+        series.forEach((arr, seriesIndex) => outSeries[seriesIndex].push(Number(arr[index] || 0)));
+      }
+      if (!outLabels.length) return { labels: labels.slice(), series: series.map(array => array.map(value => Number(value || 0))) };
+      return { labels: outLabels, series: outSeries };
+    }
+
+    function formatNumber(number) {
+      const value = Number(number || 0);
+      if (!isFinite(value)) return "0";
+      return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
+    function normalizeBuildingKey(name) {
+      if (!name) return "";
+      const raw = String(name).trim();
+      if (!raw) return "";
+      
+      const normalized = raw.replace(/\s+/g, ' ');
+      const upper = normalized.toUpperCase();
+      
+      if (/^E[1-6]\b/.test(upper)) return upper.slice(0, 2);
+      if (/^W[1-6]\b/.test(upper)) return upper.slice(0, 2);
+      
+      if (upper.includes("SPORT") && (upper.includes("HALL") || upper.includes("COMPLEX"))) {
+        return "SPORTS COMPLEX";
+      }
+      if (upper.includes("GREEN") && upper.includes("HOUSE")) {
+        return "GREEN HOUSE";
+      }
+      if (upper.includes("ARCH")) {
+        return "THE ARCH";
+      }
+      if ((upper.includes("BLK") || upper.includes("BLOCK")) && upper.includes("43") || upper === "SIT") {
+        return "BLK 43";
+      }
+      
+      if (upper === "RPIC" || upper === "RIPC") return "RPIC";
+      if (upper === "ECMC") return "ECMC";
+      if (upper === "RPC") return "RPC";
+      if (upper === "TRCC") return "TRCC";
+      if (upper === "XLC") return "XLC";
+      if (upper === "ALC") return "ALC";
+      
+      return upper;
+    }
+
+    function labelForBuilding(code) {
+      const key = normalizeBuildingKey(code);
+      const dbLabel = building_label_map && building_label_map[key];
+      if (dbLabel) return dbLabel;
+      return key;
+    }
+
+    function cardLabelForBuilding(code) {
+      const key = normalizeBuildingKey(code);
+      const cardLabel = building_card_label_map && building_card_label_map[key];
+      if (cardLabel) return cardLabel;
+      const displayLabel = building_label_map && building_label_map[key];
+      if (displayLabel) return displayLabel;
+      return key;
+    }
+
+    function buildingSlugFromCode(code) {
+      const key = normalizeBuildingKey(code);
+      return String(key || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    // ============================================================
+    // MULTI-YEAR COLOR PALETTE
+    // ============================================================
+    const yearColorPalette = [
+      "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16", "#22c55e",
+      "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6",
+      "#a855f7", "#d946ef", "#ec4899", "#f43f5e"
+    ];
+
+    function getColorForYear(yearIndex, totalYears) {
+      if (totalYears <= 1) return yearColorPalette[5];
+      const step = Math.floor(yearColorPalette.length / Math.min(totalYears, yearColorPalette.length));
+      const colorIndex = (yearIndex * step) % yearColorPalette.length;
+      return yearColorPalette[colorIndex];
+    }
+
+    // ============================================================
+    // SUBTITLE DISPLAY
+    // ============================================================
+    (function setCompareSubtitles() {
+      const elecElement = document.getElementById("elecCompareSubtitleYears");
+      const waterElement = document.getElementById("waterCompareSubtitleYears");
+      
+      let displayText;
+      if (!allYears || allYears.length === 0) {
+        displayText = "No data available";
+      } else if (allYears.length === 1) {
+        displayText = String(allYears[0]);
+      } else {
+        const sortedYears = [...allYears].sort((yearA, yearB) => yearA - yearB);
+        if (sortedYears.length <= 4) {
+          displayText = sortedYears.join(", ");
+        } else {
+          displayText = `${sortedYears[0]} – ${sortedYears[sortedYears.length - 1]} (${sortedYears.length} years)`;
+        }
+      }
+      
+      if (elecElement) elecElement.textContent = displayText;
+      if (waterElement) waterElement.textContent = displayText;
+    })();
+    
+    // ============================================================
+    // NAVIGATION + PROGRESS STATE
+    // ============================================================
+    let currentPageNumber = 1;
+
+    const hasVideos = Array.isArray(mediaVideos) && mediaVideos.length > 0;
+    const hasImages = Array.isArray(mediaImages) && mediaImages.length > 0;
+
+    function buildEnabledPages() {
+      const pages = [1, 2, 3, 4, 5, 6, 7];
+      if (hasVideos) pages.push(8);
+      if (hasImages) pages.push(9);
+      pages.push(10);
+      return pages;
+    }
+
+    const enabled_pages_auto = buildEnabledPages();
+    const enabled_pages_interactive = buildEnabledPages();
+
+    function enabledPages() {
+      return is_auto_mode ? enabled_pages_auto : enabled_pages_interactive;
+    }
+
+    function nextEnabledPage(from, direction) {
+      const pages = enabledPages();
+      const index = pages.indexOf(from);
+      if (index === -1) return pages[0];
+      const nextIndex = (index + (direction || 1) + pages.length) % pages.length;
+      return pages[nextIndex];
+    }
+
+    // Use timer-based default duration
+    const defaultPageDurationMs = getPageDuration(1);
+    
+    const backArrowButton = document.getElementById("backArrowButton");
+    const nextArrowButton = document.getElementById("nextArrowButton");
+    const progressBarContainerElement = document.getElementById("progressBarContainer");
+    const progressBarFillElement = document.getElementById("progressBarFill");
+
+    let progressIntervalId = null;
+    let progressStartTimestampMs = 0;
+    let progressTotalDurationMs = defaultPageDurationMs;
+    let progressElapsedMs = 0;
+    let isAutoAdvanceEnabled = true;
+    let progressActivePage = 1;
+    let pageTransitionSeq = 0;
+    let pageTransitionBusy = false;
+
+    function hardResetProgressBar() {
+      if (progressIntervalId) clearInterval(progressIntervalId);
+      progressIntervalId = null;
+      progressTotalDurationMs = getPageDuration(currentPageNumber);
+      progressElapsedMs = 0;
+      progressStartTimestampMs = 0;
+      isAutoAdvanceEnabled = true;
+      progressActivePage = currentPageNumber;
+      if (progressBarFillElement) progressBarFillElement.style.width = "0%";
+      if (progressBarContainerElement && is_auto_mode) progressBarContainerElement.style.display = "";
+    }
+
+    function stopProgressBarAnimation() {
+      if (progressIntervalId) clearInterval(progressIntervalId);
+      progressIntervalId = null;
+      progressElapsedMs = 0;
+      if (progressBarFillElement) progressBarFillElement.style.width = "0%";
+    }
+
+    function setProgressBarToComputedElapsed(totalMs, elapsedMs, autoAdvance) {
+      if (!is_auto_mode) return;
+      progressTotalDurationMs = Math.max(1, Number(totalMs || 1));
+      progressElapsedMs = Math.max(0, Number(elapsedMs || 0));
+      progressStartTimestampMs = Date.now() - progressElapsedMs;
+      isAutoAdvanceEnabled = !!autoAdvance;
+      progressActivePage = currentPageNumber;
+      if (!progressBarFillElement) return;
+      const percentage = Math.max(0, Math.min(100, (progressElapsedMs / progressTotalDurationMs) * 100));
+      progressBarFillElement.style.width = percentage + "%";
+      if (progressIntervalId) clearInterval(progressIntervalId);
+      progressIntervalId = setInterval(() => {
+        if (progressActivePage !== currentPageNumber) return;
+        const now = Date.now();
+        const elapsed = now - progressStartTimestampMs;
+        progressElapsedMs = elapsed;
+        const percent = Math.max(0, Math.min(100, (elapsed / progressTotalDurationMs) * 100));
+        progressBarFillElement.style.width = percent + "%";
+        if (elapsed >= progressTotalDurationMs) {
+          clearInterval(progressIntervalId);
+          progressIntervalId = null;
+          progressBarFillElement.style.width = "100%";
+          if (isAutoAdvanceEnabled && progressActivePage === currentPageNumber) {
+            navigateToNextPage();
+          }
+        }
+      }, 100);
+    }
+
+    function updateProgressBarWidthFromState() {
+      if (!progressBarFillElement) return;
+      const percentage = Math.max(0, Math.min(100, (progressElapsedMs / progressTotalDurationMs) * 100));
+      progressBarFillElement.style.width = percentage + "%";
+    }
+
+    function startManualProgress(totalMs, elapsedMs) {
+      if (!is_auto_mode) return;
+      if (progressIntervalId) clearInterval(progressIntervalId);
+      progressIntervalId = null;
+      progressTotalDurationMs = Math.max(1, Number(totalMs || 1));
+      progressElapsedMs = Math.max(0, Number(elapsedMs || 0));
+      progressStartTimestampMs = Date.now() - progressElapsedMs;
+      isAutoAdvanceEnabled = false;
+      progressActivePage = currentPageNumber;
+      updateProgressBarWidthFromState();
+    }
+
+    function runProgressForPage(pageNum, totalMs, autoAdvance) {
+      if (!is_auto_mode) return;
+      setProgressBarToComputedElapsed(totalMs, 0, autoAdvance);
+    }
+
+    // ============================================================
+    // ADMIN VIDEO SETTINGS
+    // ============================================================
+    const ADMIN_VIDEO_SETTINGS_KEY = "esg_video_settings";
+    const ADMIN_VIDEO_SETTINGS_CHANNEL = "esg_video_settings_channel";
+
+    function clamp01(inputValue) {
+      const number = Number(inputValue);
+      if (!isFinite(number)) return null;
+      return Math.max(0, Math.min(1, number));
+    }
+
+    function readAdminVideoSettings() {
+      try {
+        const raw = localStorage.getItem(ADMIN_VIDEO_SETTINGS_KEY);
+        if (!raw) return null;
+        const settings = JSON.parse(raw);
+        if (!settings || typeof settings !== "object") return null;
+        const volume = (settings.volume != null) ? clamp01(settings.volume) : null;
+        const muted = (typeof settings.muted === "boolean") ? settings.muted : null;
+        return { volume: volume, muted };
+      } catch (error) { return null; }
+    }
+
+    function saveAdminVideoSettings(next) {
+      try {
+        const current = readAdminVideoSettings() || {};
+        const merged = {
+          volume: (next && next.volume != null) ? clamp01(next.volume) : current.volume,
+          muted: (next && typeof next.muted === "boolean") ? !!next.muted : current.muted
+        };
+        localStorage.setItem(ADMIN_VIDEO_SETTINGS_KEY, JSON.stringify(merged));
+        return merged;
+      } catch (error) { return null; }
+    }
+
+    function applyAdminVideoSettingsToPlayer(videoElement) {
+      const video = videoElement || document.getElementById("esgVideoElement");
+      if (!video) return;
+      try { video.removeAttribute("muted"); } catch (error) {}
+      const settings = readAdminVideoSettings();
+      const targetVolume = (settings && typeof settings.volume === "number") ? settings.volume : 0.5;
+      const targetMuted = (settings && typeof settings.muted === "boolean") ? settings.muted : true;
+      try {
+        const clampedVolume = clamp01(targetVolume);
+        if (clampedVolume != null) video.volume = clampedVolume;
+      } catch (error) {}
+      try { video.muted = !!targetMuted; } catch (error) {}
+    }
+
+    (function initAdminVideoSettingsListeners() {
+      window.addEventListener("load", () => { applyAdminVideoSettingsToPlayer(); });
+      window.addEventListener("storage", (event) => {
+        if (event.key === ADMIN_VIDEO_SETTINGS_KEY) {
+          applyAdminVideoSettingsToPlayer();
+          if (!is_auto_mode && currentPageNumber === 8) sendVideoStateToControls();
+        }
+      });
+      try {
+        const broadcastChannel = new BroadcastChannel(ADMIN_VIDEO_SETTINGS_CHANNEL);
+        broadcastChannel.onmessage = (event) => {
+          const message = event && event.data;
+          if (!message || message.type !== "ADMIN_VIDEO_SETTINGS") return;
+          saveAdminVideoSettings({ volume: message.volume, muted: message.muted });
+          applyAdminVideoSettingsToPlayer();
+          if (!is_auto_mode && currentPageNumber === 8) sendVideoStateToControls();
+        };
+      } catch (error) {}
+    })();
+
+    // ============================================================
+    // BUILDING CONTROLS WINDOW
+    // ============================================================
+    window.buildingControlWin = null;
+
+    function safePostToControls(payload) {
+      try {
+        if (window.buildingControlWin && !window.buildingControlWin.closed) {
+          window.buildingControlWin.postMessage(payload, window.location.origin);
+        }
+      } catch (error) {}
+    }
+
+    function controlModeForPage(pageNum) {
+      if (pageNum >= 5 && pageNum <= 7) return "building";
+      if (pageNum === 8 && hasVideos) return "video";
+      if (pageNum === 9 && hasImages) return "carousel";
+      return "nav";
+    }
+
+    function sendDashboardMetaToControls() {
+      if (is_auto_mode) return;
+      safePostToControls({
+        type: "DASHBOARD_META",
+        allYears: allYears,
+        oldestYear: oldestYear,
+        newestYear: newestYear,
+        latestYear: latestDataYear,
+        currentPage: currentPageNumber
+      });
+    }
+
+    function sendControlPageUpdate() {
+      if (is_auto_mode) return;
+      safePostToControls({
+        type: "DASHBOARD_PAGE_UPDATE",
+        page: currentPageNumber,
+        mode: controlModeForPage(currentPageNumber),
+        buildingPages: [5, 6, 7],
+        videoPage: hasVideos ? 8 : null,
+        carouselPage: hasImages ? 9 : null,
+        hasVideos: hasVideos,
+        hasImages: hasImages,
+        enabledPages: enabledPages()
+      });
+      sendDashboardMetaToControls();
+      if (currentPageNumber === 8 && hasVideos) sendVideoStateToControls();
+      if (currentPageNumber === 9 && hasImages) sendCarouselStateToControls();
+      if (currentPageNumber === 5) sendCurrentBuildingToControls();
+    }
+
+    function sendVideoStateToControls() {
+      if (is_auto_mode) return;
+      const video = document.getElementById("esgVideoElement");
+      if (!video) return;
+      safePostToControls({
+        type: "VIDEO_STATE",
+        paused: !!video.paused,
+        muted: !!video.muted,
+        volume: (typeof video.volume === "number") ? video.volume : 1,
+        currentTime: (typeof video.currentTime === "number") ? video.currentTime : 0,
+        duration: (typeof video.duration === "number" && isFinite(video.duration)) ? video.duration : 0
+      });
+    }
+
+    function sendCarouselStateToControls() {
+      if (is_auto_mode) return;
+      const carouselElement = document.getElementById("esgImageCarousel");
+      if (!carouselElement) return;
+      const items = carouselElement.querySelectorAll(".carousel-item");
+      const activeIndex = Array.from(items).findIndex(item => item.classList.contains("active"));
+      safePostToControls({
+        type: "CAROUSEL_STATE",
+        index: Math.max(0, activeIndex),
+        total: items.length || 0
+      });
+    }
+
+    function sendCurrentBuildingToControls() {
+      if (is_auto_mode) return;
+      const titleElement = document.getElementById("threeInfoTitle");
+      if (!titleElement) return;
+      const buildingCode = normalizeBuildingKey(titleElement.textContent);
+      const totals = buildingTotals(buildingCode);
+      safePostToControls({
+        type: "BUILDING_UPDATE",
+        building: buildingCode,
+        label: labelForBuilding(buildingCode),
+        electricity: totals.electricity,
+        water: totals.water
+      });
+    }
+
+    window.addEventListener("load", () => {
+      if (is_auto_mode) return;
+      if (!window.buildingControlWin || window.buildingControlWin.closed) {
+        window.buildingControlWin = window.open(
+          "/buildingControls?mode=interactive&startPage=1",
+          "buildingControls",
+          "width=520,height=780,resizable=yes"
+        );
+      }
+      setTimeout(() => { sendControlPageUpdate(); }, 150);
+      setTimeout(() => { sendDashboardMetaToControls(); }, 180);
+    });
+
+    function openBuildingControlsWindow() {
+      if (window.buildingControlWin && !window.buildingControlWin.closed) {
+        window.buildingControlWin.focus();
+        return;
+      }
+      window.buildingControlWin = window.open(
+        "/buildingControls?mode=interactive&startPage=" + String(currentPageNumber || 1),
+        "buildingControls",
+        "width=520,height=780,resizable=yes"
+      );
+      setTimeout(() => {
+        sendControlPageUpdate();
+        sendDashboardMetaToControls();
+      }, 200);
+    }
+
+    // ============================================================
+    // CLEANUP HELPERS
+    // ============================================================
+    let videoEndCountdownId = null;
+
+    function clearVideoEndCountdown() {
+      if (videoEndCountdownId) clearTimeout(videoEndCountdownId);
+      videoEndCountdownId = null;
+    }
+
+    function stopAndResetVideoElement() {
+      clearVideoEndCountdown();
+      if (progressBarContainerElement && is_auto_mode) progressBarContainerElement.style.display = "";
+      const video = document.getElementById("esgVideoElement");
+      if (!video) return;
+      try { video.onended = null; } catch (error) {}
+      try { video.pause(); } catch (error) {}
+      try { video.removeAttribute("src"); } catch (error) {}
+      try { video.load(); } catch (error) {}
+      videoBridgeReset();
+    }
+
+    function disposeImageCarouselInstance() {
+      const carouselElement = document.getElementById("esgImageCarousel");
+      if (!carouselElement) return;
+      try {
+        const instance = bootstrap.Carousel.getInstance(carouselElement);
+        if (instance) instance.dispose();
+      } catch (error) {}
+    }
+
+    // ============================================================
+    // PAGE TRANSITIONS
+    // ============================================================
+    function showPageByNumber(pageNumber, forcedDirection) {
+      const next = Number(pageNumber || 1);
+      if (!enabledPages().includes(next)) return;
+      if (currentPageNumber === next) return;
+      if (!is_auto_mode && pageTransitionBusy) return;
+      const mySeq = ++pageTransitionSeq;
+      if (!is_auto_mode) pageTransitionBusy = true;
+
+      const currentElement = document.getElementById("page" + currentPageNumber);
+      const nextElement = document.getElementById("page" + next);
+      if (!nextElement) {
+        if (!is_auto_mode) pageTransitionBusy = false;
+        return;
+      }
+
+      if (currentPageNumber === 8) stopAndResetVideoElement();
+      if (currentPageNumber === 9) disposeImageCarouselInstance();
+
+      const direction = forcedDirection || (next > currentPageNumber ? "left" : "right");
+
+      nextElement.classList.remove("exit-left", "exit-right", "active-page");
+      nextElement.style.transition = "none";
+      nextElement.style.transform = direction === "left" ? "translateX(100%)" : "translateX(-100%)";
+      nextElement.offsetHeight;
+
+      if (currentElement) {
+        currentElement.style.transition = "transform 0.5s ease, opacity 0.5s ease";
+        currentElement.style.transform = direction === "left" ? "translateX(-100%)" : "translateX(100%)";
+        currentElement.style.opacity = "0";
+      }
+
+      nextElement.classList.add("active-page");
+      nextElement.style.transition = "transform 0.5s ease, opacity 0.5s ease";
+      nextElement.style.transform = "translateX(0)";
+      nextElement.style.opacity = "1";
+
+      currentPageNumber = next;
+      hardResetProgressBar();
+      onEnterPage(next);
+      sendControlPageUpdate();
+
+      setTimeout(() => {
+        if (mySeq !== pageTransitionSeq) return;
+        document.querySelectorAll(".page").forEach((page) => {
+          if (page !== nextElement) {
+            page.classList.remove("active-page", "exit-left", "exit-right");
+            page.style.transition = "";
+            page.style.transform = "";
+            page.style.opacity = "";
+          }
+        });
+        nextElement.style.transition = "";
+        nextElement.style.transform = "";
+        nextElement.style.opacity = "";
+        if (!is_auto_mode) pageTransitionBusy = false;
+      }, 500);
+    }
+
+    function navigateToNextPage() {
+      const next = nextEnabledPage(currentPageNumber, 1);
+      showPageByNumber(next, "left");
+    }
+
+    function navigateToPreviousPage() {
+      const previous = nextEnabledPage(currentPageNumber, -1);
+      showPageByNumber(previous, "right");
+    }
+
+    // ============================================================
+    // BUILDING DATA PREP
+    // ============================================================
+    let allBuildingCodes = [];
+    let latestOverviewByKey = {};
+    let threePanelChart = null;
+    let threeCycleTimeoutId = null;
+    let threeCycleList = [];
+    let threeCycleIdx = 0;
+    let threeCycleMs = getPageDuration(5);
+    let electricityCompareChart = null;
+    let waterCompareChart = null;
+
+    function clearThreeCycleTimer() {
+      if (threeCycleTimeoutId) clearTimeout(threeCycleTimeoutId);
+      threeCycleTimeoutId = null;
+    }
+
+    function ensureAllBuildingsPrepared() {
+      if (allBuildingCodes.length) return;
+      
+      const monthlyByYearKeys = Object.keys(buildingMonthlyByYear || {}).filter(Boolean);
+      if (monthlyByYearKeys.length) {
+        allBuildingCodes = monthlyByYearKeys.map(keyItem => normalizeBuildingKey(keyItem));
+      } else {
+        const monthlyKeys = Object.keys(buildingMonthlyByCode || {}).filter(Boolean);
+        if (monthlyKeys.length) {
+          allBuildingCodes = monthlyKeys.map(keyItem => normalizeBuildingKey(keyItem));
+        } else {
+          const rows = overviewNewestRows.length ? overviewNewestRows : overviewOldestRows;
+          allBuildingCodes = rows.map(rowItem => rowItem && rowItem.building).filter(Boolean).map(building => normalizeBuildingKey(building));
+        }
+      }
+      allBuildingCodes = [...new Set(allBuildingCodes)].filter(Boolean);
+
+      const latestRows = overviewNewestRows.length ? overviewNewestRows : overviewOldestRows;
+      latestOverviewByKey = {};
+      latestRows.forEach(rowItem => {
+        if (!rowItem || !rowItem.building) return;
+        const keyValue = normalizeBuildingKey(rowItem.building);
+        if (!keyValue) return;
+        latestOverviewByKey[keyValue] = {
+          electricity: Number(rowItem.electricity || 0),
+          water: Number(rowItem.water || 0),
+          label: rowItem.building
+        };
+      });
+
+      const BUILDING_CONTROLS_ORDER = [
+        "E1","E2","E3","E4","E5","E6","W1","W2","W3","W4","W5","W6",
+        "ALC","BLK 43","ECMC","GREEN HOUSE","RPC","RPIC","SPORTS COMPLEX","THE ARCH","TRCC","XLC"
+      ];
+      const BUILDING_CONTROLS_ORDER_INDEX = new Map(BUILDING_CONTROLS_ORDER.map((building, index) => [normalizeBuildingKey(building), index]));
+
+      function sortBuildingsByControlsOrder(buildingA, buildingB) {
+        const keyA = normalizeBuildingKey(buildingA);
+        const keyB = normalizeBuildingKey(buildingB);
+        const indexA = BUILDING_CONTROLS_ORDER_INDEX.has(keyA) ? BUILDING_CONTROLS_ORDER_INDEX.get(keyA) : 9999;
+        const indexB = BUILDING_CONTROLS_ORDER_INDEX.has(keyB) ? BUILDING_CONTROLS_ORDER_INDEX.get(keyB) : 9999;
+        if (indexA !== indexB) return indexA - indexB;
+        return labelForBuilding(keyA).localeCompare(labelForBuilding(keyB));
+      }
+      allBuildingCodes.sort(sortBuildingsByControlsOrder);
+    }
+
+    function buildingTotals(buildingCode) {
+      const key = normalizeBuildingKey(buildingCode);
+      const row = latestOverviewByKey[key];
+      return { electricity: row ? row.electricity : 0, water: row ? row.water : 0 };
+    }
+
+    function renderBuildingCards(containerElement) {
+      if (!containerElement) return;
+      containerElement.innerHTML = "";
+      allBuildingCodes.forEach(code => {
+        const totals = buildingTotals(code);
+        const card = document.createElement("div");
+        card.className = "building-card";
+        card.dataset.building = code;
+        if (!is_auto_mode) {
+          card.style.pointerEvents = "auto";
+          card.style.cursor = "pointer";
+          card.addEventListener("click", () => {
+            const building = normalizeBuildingKey(code);
+            showPageByNumber(5, "left");
+            setThreePanelBuilding(building);
+            if (!window.buildingControlWin || window.buildingControlWin.closed) {
+              window.buildingControlWin = window.open(
+                "/buildingControls?mode=interactive&startPage=" + String(currentPageNumber || 1),
+                "buildingControls", "width=520,height=780,resizable=yes"
+              );
+            }
+            setTimeout(() => {
+              try {
+                if (window.buildingControlWin && !window.buildingControlWin.closed) {
+                  window.buildingControlWin.postMessage({ type: "SET_BUILDING", building }, window.location.origin);
+                  sendControlPageUpdate();
+                }
+              } catch (error) {}
+            }, 150);
+          });
+        }
+        const name = document.createElement("div");
+        name.className = "building-name";
+        name.textContent = cardLabelForBuilding(code);
+        const elecMetricElement = document.createElement("p");
+        elecMetricElement.className = "building-metric";
+        elecMetricElement.textContent = "Electricity: " + formatNumber(totals.electricity) + " kWh";
+        const waterMetricElement = document.createElement("p");
+        waterMetricElement.className = "building-metric";
+        waterMetricElement.textContent = "Water: " + formatNumber(totals.water) + " m³";
+        card.appendChild(name);
+        card.appendChild(elecMetricElement);
+        card.appendChild(waterMetricElement);
+        containerElement.appendChild(card);
+      });
+    }
+    
+    function renderBuildingList(containerElement, onClick) {
+      if (!containerElement) return;
+      containerElement.innerHTML = "";
+      const ul = document.createElement("ul");
+      allBuildingCodes.forEach((code) => {
+        const li = document.createElement("li");
+        li.className = "building-list-item";
+        li.dataset.building = code;
+        const name = document.createElement("div");
+        name.className = "fw-bold";
+        name.textContent = labelForBuilding(code);
+        const meta = document.createElement("small");
+        const totals = buildingTotals(code);
+        meta.textContent = "Electricity: " + formatNumber(totals.electricity) + " kWh  •  Water: " + formatNumber(totals.water) + " m³";
+        li.appendChild(name);
+        li.appendChild(meta);
+        li.addEventListener("click", () => onClick(code, li));
+        ul.appendChild(li);
+      });
+      containerElement.appendChild(ul);
+    }
+
+    function sanitizeInjectedHtml(html) {
+      const temp = document.createElement("div");
+      temp.innerHTML = String(html || "");
+      temp.querySelectorAll("script, link, meta, title, head").forEach(node => node.remove());
+      temp.querySelectorAll("style").forEach(styleElement => {
+        const css = String(styleElement.textContent || "");
+        if (/(^|\W)(:root|html|body|\*)(\W|$)|@import/i.test(css)) styleElement.remove();
+      });
+      const body = temp.querySelector("body");
+      const content = body ? body.innerHTML : temp.innerHTML;
+      return `<div class="slug-sandbox">${content}</div>`;
+    }
+
+    // ============================================================
+    // SCROLL HELPER - Incremental scroll (only scrolls minimum needed)
+    // ============================================================
+    function scrollActiveItemIntoView(containerSelector, activeSelector) {
+      requestAnimationFrame(() => {
+        const container = document.querySelector(containerSelector);
+        const activeItem = container ? container.querySelector(activeSelector) : null;
+        if (!activeItem || !container) return;
+        
+        const ul = container.querySelector('ul') || container;
+        if (!ul) return;
+        
+        const containerRect = ul.getBoundingClientRect();
+        const itemRect = activeItem.getBoundingClientRect();
+        
+        // Buffer zone (pixels) - triggers scroll slightly before item goes fully out of view
+        const buffer = 4;
+        const padding = 8; // Padding from edge after scrolling
+        
+        // Check if item is visible within container
+        const isAboveView = itemRect.top < (containerRect.top + buffer);
+        const isBelowView = itemRect.bottom > (containerRect.bottom - buffer);
+        const isFullyVisible = !isAboveView && !isBelowView;
+        
+        // Only scroll if item is not fully visible
+        if (isFullyVisible) return;
+        
+        if (isAboveView) {
+          // Item is above visible area - scroll up minimally to show it at top
+          const scrollAmount = itemRect.top - containerRect.top - padding;
+          ul.scrollTop = Math.max(0, ul.scrollTop + scrollAmount);
+        } else if (isBelowView) {
+          // Item is below visible area - scroll down minimally to show it at bottom
+          const scrollAmount = itemRect.bottom - containerRect.bottom + padding;
+          ul.scrollTop = ul.scrollTop + scrollAmount;
+        }
+      });
+    }
+
+    // ============================================================
+    // PAGE 5: SET THREE PANEL BUILDING
+    // ============================================================
+    function setThreePanelBuilding(buildingCode) {
+      ensureAllBuildingsPrepared();
+
+      const title = document.getElementById("threeInfoTitle");
+      const elecTotal = document.getElementById("threeElecTotal");
+      const waterTotal = document.getElementById("threeWaterTotal");
+      const elecMetricLabel = document.getElementById("elecMetricLabel");
+      const waterMetricLabel = document.getElementById("waterMetricLabel");
+      const chartTitle = document.querySelector("#page5 .panel-mid #threeChartTitle");
+
+      const buildingName = labelForBuilding(buildingCode);
+      const buildingSlug = buildingSlugFromCode(buildingCode);
+
+      const ranges = buildingYearRanges[buildingCode] || {};
+      const elecStartYear = ranges.elecStartYear;
+      const elecEndYear = ranges.elecEndYear;
+      const waterStartYear = ranges.waterStartYear;
+      const waterEndYear = ranges.waterEndYear;
+
+      function buildYearArray(startYear, endYear, validYears) {
+        if (!startYear && !endYear) {
+          if (validYears && validYears.length > 0) {
+            const sorted = [...validYears].sort((yearA, yearB) => yearB - yearA);
+            return [sorted[0]];
+          }
+          return latestDataYear ? [latestDataYear] : [];
+        }
+
+        const start = startYear || (validYears && validYears.length > 0 ? Math.min(...validYears) : null);
+        const end = endYear || (validYears && validYears.length > 0 ? Math.max(...validYears) : null);
+
+        if (!start || !end) return [];
+
+        const years = [];
+        for (let year = start; year <= end; year++) {
+          if (!validYears || validYears.length === 0 || validYears.includes(year)) {
+            years.push(year);
+          }
+        }
+        return years.sort((yearA, yearB) => yearA - yearB);
+      }
+
+      const buildingData = buildingMonthlyByYear[buildingCode] || buildingMonthlyByYear[buildingCode] || {};
+      const validElecYears = buildingData.validElecYears || buildingData.validYears || allYears;
+      const validWaterYears = buildingData.validWaterYears || buildingData.validYears || allYears;
+
+      const elecYearsForChart = buildYearArray(elecStartYear, elecEndYear, validElecYears);
+      const waterYearsForChart = buildYearArray(waterStartYear, waterEndYear, validWaterYears);
+
+      if (title) title.textContent = buildingName;
+
+      const allChartYears = [...new Set([...elecYearsForChart, ...waterYearsForChart])].sort((yearA, yearB) => yearA - yearB);
+      let yearRangeText;
+      if (allChartYears.length === 0) {
+        yearRangeText = latestDataYear || "Latest";
+      } else if (allChartYears.length === 1) {
+        yearRangeText = String(allChartYears[0]);
+      } else {
+        yearRangeText = `${allChartYears[0]} to ${allChartYears[allChartYears.length - 1]}`;
+      }
+
+      if (chartTitle) {
+        chartTitle.textContent = `(${buildingName}) Monthly Trend - ${yearRangeText}`;
+      }
+
+      let totalElectricity = 0;
+      let totalWater = 0;
+
+      elecYearsForChart.forEach(year => {
+        const yearData = getBuildingMonthlyForYear(buildingCode, year);
+        totalElectricity += (yearData.elec || []).reduce((sum, value) => sum + Number(value || 0), 0);
+      });
+
+      waterYearsForChart.forEach(year => {
+        const yearData = getBuildingMonthlyForYear(buildingCode, year);
+        totalWater += (yearData.water || []).reduce((sum, value) => sum + Number(value || 0), 0);
+      });
+
+      if (elecMetricLabel) {
+        if (elecYearsForChart.length === 0) {
+          elecMetricLabel.textContent = "Electricity (N/A)";
+        } else if (elecYearsForChart.length === 1) {
+          elecMetricLabel.textContent = `Electricity (${elecYearsForChart[0]})`;
+        } else {
+          elecMetricLabel.textContent = `Electricity (${elecYearsForChart[0]}-${elecYearsForChart[elecYearsForChart.length - 1]})`;
+        }
+      }
+
+      if (waterMetricLabel) {
+        if (waterYearsForChart.length === 0) {
+          waterMetricLabel.textContent = "Water (N/A)";
+        } else if (waterYearsForChart.length === 1) {
+          waterMetricLabel.textContent = `Water (${waterYearsForChart[0]})`;
+        } else {
+          waterMetricLabel.textContent = `Water (${waterYearsForChart[0]}-${waterYearsForChart[waterYearsForChart.length - 1]})`;
+        }
+      }
+
+      if (elecTotal) elecTotal.textContent = formatNumber(totalElectricity) + " kWh";
+      if (waterTotal) waterTotal.textContent = formatNumber(totalWater) + " m³";
+
+      fetch(`/building-left/${encodeURIComponent(buildingSlug)}`)
+        .then(response => response.text())
+        .then(html => {
+          const body = document.getElementById("threeInfoBody");
+          if (!body) return;
+          body.innerHTML = sanitizeInjectedHtml(html);
+          const elecElement = body.querySelector(".js-elec-total");
+          const waterElement = body.querySelector(".js-water-total");
+          if (elecElement) elecElement.textContent = formatNumber(totalElectricity);
+          if (waterElement) waterElement.textContent = formatNumber(totalWater);
+        })
+        .catch(() => {
+          const body = document.getElementById("threeInfoBody");
+          if (body) body.innerHTML = "<div class='slug-sandbox'><p class='text-muted'>No building info available.</p></div>";
+        });
+
+      // Render building list in right panel
+      (function renderRightPanelBuildingList() {
+        const rightBody = document.getElementById("threeRightBody");
+        if (!rightBody) return;
+
+        const existingUl = rightBody.querySelector(".building-list ul");
+        if (existingUl) {
+          rightPanelScrollTop = existingUl.scrollTop;
+        }
+
+        rightBody.innerHTML = "";
+
+        const listContainer = document.createElement("div");
+        listContainer.className = "building-list";
+
+        const ul = document.createElement("ul");
+        
+        allBuildingCodes.forEach(code => {
+          const isCurrentBuilding = normalizeBuildingKey(code) === buildingCode;
+          const codeKey = normalizeBuildingKey(code);
+          
+          const codeBuildingData = buildingMonthlyByYear[codeKey] || buildingMonthlyByYear[code] || {};
+          const codeRanges = buildingYearRanges[codeKey] || {};
+          
+          const elecStart = codeRanges.elecStartYear;
+          const elecEnd = codeRanges.elecEndYear;
+          const waterStart = codeRanges.waterStartYear;
+          const waterEnd = codeRanges.waterEndYear;
+          
+          const codeValidElecYears = (codeBuildingData.validElecYears || codeBuildingData.validYears || allYears)
+            .map(yearValue => parseInt(yearValue, 10)).filter(yearValue => !isNaN(yearValue));
+          const codeValidWaterYears = (codeBuildingData.validWaterYears || codeBuildingData.validYears || allYears)
+            .map(yearValue => parseInt(yearValue, 10)).filter(yearValue => !isNaN(yearValue));
+          
+          function getYearsInRange(startYear, endYear, validYears) {
+            if (!startYear && !endYear) {
+              if (validYears && validYears.length > 0) {
+                const sorted = [...validYears].sort((yearA, yearB) => yearB - yearA);
+                return [sorted[0]];
+              }
+              return latestDataYear ? [latestDataYear] : [];
+            }
+
+            const start = startYear || (validYears.length > 0 ? Math.min(...validYears) : null);
+            const end = endYear || (validYears.length > 0 ? Math.max(...validYears) : null);
+            
+            if (!start || !end) return [];
+            
+            const years = [];
+            for (let year = start; year <= end; year++) {
+              if (validYears.length === 0 || validYears.includes(year)) {
+                years.push(year);
+              }
+            }
+            return years.sort((yearA, yearB) => yearA - yearB);
+          }
+          
+          const elecYearsToShow = getYearsInRange(elecStart, elecEnd, codeValidElecYears);
+          const waterYearsToShow = getYearsInRange(waterStart, waterEnd, codeValidWaterYears);
+          
+          const allYearsToShow = [...new Set([...elecYearsToShow, ...waterYearsToShow])]
+            .sort((yearA, yearB) => yearA - yearB);
+          
+          if (!allYearsToShow.length && latestDataYear) {
+            allYearsToShow.push(latestDataYear);
+          }
+
+          const yearlyData = allYearsToShow.map(year => {
+            const yearData = getBuildingMonthlyForYear(codeKey, year);
+            
+            const includeElec = elecYearsToShow.includes(year);
+            const includeWater = waterYearsToShow.includes(year);
+            
+            const elecTotal = includeElec 
+              ? (yearData.elec || []).reduce((sum, value) => sum + Number(value || 0), 0)
+              : null;
+            const waterTotal = includeWater
+              ? (yearData.water || []).reduce((sum, value) => sum + Number(value || 0), 0)
+              : null;
+
+            return { year, elec: elecTotal, water: waterTotal };
+          });
+
+          const li = document.createElement("li");
+          li.className = "building-list-item";
+          li.dataset.building = code;
+
+          if (isCurrentBuilding) {
+            li.classList.add("active");
+          }
+
+          const name = document.createElement("div");
+          name.className = "fw-bold";
+          if (isCurrentBuilding) {
+            name.textContent = "Active ▸ " + cardLabelForBuilding(code);
+          } else {
+            name.textContent = cardLabelForBuilding(code);
+          }
+          li.appendChild(name);
+
+          yearlyData.forEach(({ year, elec, water }) => {
+            const yearLine = document.createElement("small");
+            yearLine.style.display = "block";
+
+            const parts = [];
+            if (elec !== null) {
+              parts.push("Elec: " + formatNumber(elec) + " kWh");
+            }
+            if (water !== null) {
+              parts.push("Water: " + formatNumber(water) + " m³");
+            }
+
+            if (parts.length > 0) {
+              yearLine.textContent = parts.join(" • ") + " (" + year + ")";
+            } else {
+              yearLine.textContent = "No data (" + year + ")";
+            }
+
+            li.appendChild(yearLine);
+          });
+
+          li.addEventListener("click", () => {
+            clearThreeCycleTimer();
+            setThreePanelBuilding(normalizeBuildingKey(code));
+          });
+
+          ul.appendChild(li);
+        });
+
+        listContainer.appendChild(ul);
+        rightBody.appendChild(listContainer);
+
+        // Auto-scroll to active element using incremental scroll
+        scrollActiveItemIntoView("#page5 #threeRightBody .building-list", ".building-list-item.active");
+      })();
+
+      // Build chart datasets
+      const elecDataByYear = {};
+      const waterDataByYear = {};
+
+      elecYearsForChart.forEach(year => {
+        const yearData = getBuildingMonthlyForYear(buildingCode, year);
+        elecDataByYear[year] = yearData.elec || Array(12).fill(0);
+      });
+
+      waterYearsForChart.forEach(year => {
+        const yearData = getBuildingMonthlyForYear(buildingCode, year);
+        waterDataByYear[year] = yearData.water || Array(12).fill(0);
+      });
+
+      const allSeries = [];
+      elecYearsForChart.forEach(year => allSeries.push(elecDataByYear[year]));
+      waterYearsForChart.forEach(year => allSeries.push(waterDataByYear[year]));
+
+      const labels = month_labels.slice();
+      const filtered = hideZeroMonths(labels, ...allSeries);
+
+      let seriesIndex = 0;
+      const filteredElecData = {};
+      elecYearsForChart.forEach(year => {
+        filteredElecData[year] = filtered.series[seriesIndex];
+        seriesIndex++;
+      });
+
+      const filteredWaterData = {};
+      waterYearsForChart.forEach(year => {
+        filteredWaterData[year] = filtered.series[seriesIndex];
+        seriesIndex++;
+      });
+
+      const elecColors = ["#facc15", "#fbbf24", "#f59e0b", "#d97706", "#b45309", "#92400e"];
+      const waterColors = ["#3b82f6", "#60a5fa", "#2563eb", "#1d4ed8", "#1e40af", "#1e3a8a"];
+
+      const datasets = [];
+      let barIndex = 0;
+
+      elecYearsForChart.forEach((year, index) => {
+        const color = elecColors[index % elecColors.length];
+        const currentBarIndex = barIndex;
+
+        datasets.push({
+          label: `Electricity ${year} (kWh)`,
+          data: filteredElecData[year] || [],
+          backgroundColor: color,
+          yAxisID: "y",
+          order: 2
+        });
+
+        datasets.push({
+          label: `_ElecLine${year}`,
+          type: "line",
+          data: filteredElecData[year] || [],
+          borderColor: color,
+          backgroundColor: "transparent",
+          pointBackgroundColor: color,
+          pointBorderColor: color,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          borderWidth: 2,
+          tension: 0,
+          fill: false,
+          yAxisID: "y",
+          order: 1,
+          snapToBarIndex: currentBarIndex
+        });
+
+        barIndex += 2;
+      });
+
+      waterYearsForChart.forEach((year, index) => {
+        const color = waterColors[index % waterColors.length];
+        const currentBarIndex = barIndex;
+
+        datasets.push({
+          label: `Water ${year} (m³)`,
+          data: filteredWaterData[year] || [],
+          backgroundColor: color,
+          yAxisID: "y1",
+          order: 2
+        });
+
+        datasets.push({
+          label: `_WaterLine${year}`,
+          type: "line",
+          data: filteredWaterData[year] || [],
+          borderColor: color,
+          backgroundColor: "transparent",
+          pointBackgroundColor: color,
+          pointBorderColor: color,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          borderWidth: 2,
+          tension: 0,
+          fill: false,
+          yAxisID: "y1",
+          order: 1,
+          snapToBarIndex: currentBarIndex
+        });
+
+        barIndex += 2;
+      });
+
+      const ctx = document.getElementById("threeBuildingMonthlyChart");
+
+      if (threePanelChart) { 
+        threePanelChart.destroy(); 
+        threePanelChart = null; 
+      }
+
+      if (ctx) {
+        threePanelChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: filtered.labels,
+            datasets: datasets
+          },
+          options: {
+            ...baseChartOptions(),
+            plugins: {
+              ...(baseChartOptions().plugins || {}),
+              barValueLabel: { enabled: false, mode: "max-per-dataset" },
+              legend: {
+                onClick: createLegendClickHandler(),
+                labels: {
+                  color: "#111827",
+                  filter: (legendItem) => !String(legendItem.text || "").startsWith("_"),
+                  usePointStyle: false,
+                  boxWidth: 12,
+                  padding: 8,
+                  font: { size: 11 }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      document.querySelectorAll("#three-buildings-grid .building-list-item").forEach((card) => {
+        if (card && card.dataset && card.dataset.building === buildingCode) card.classList.add("active");
+        else card.classList.remove("active");
+      });
+
+      if (!is_auto_mode) sendCurrentBuildingToControls();
+    }
+
+    function buildTotalsMapFromOverview(rows) {
+      const map = {};
+      (rows || []).forEach(rowItem => {
+        const key = normalizeBuildingKey(rowItem && rowItem.building);
+        if (!key) return;
+        map[key] = { label: key, electricity: Number(rowItem.electricity || 0), water: Number(rowItem.water || 0) };
+      });
+      return map;
+    }
+
+    function getUnionBuildingKeys(mapA, mapB) {
+      const keys = new Set();
+      Object.keys(mapA || {}).forEach(keyItem => keys.add(keyItem));
+      Object.keys(mapB || {}).forEach(keyItem => keys.add(keyItem));
+      return Array.from(keys).sort((keyA, keyB) => labelForBuilding(keyA).localeCompare(labelForBuilding(keyB)));
+    }
+
+    // ============================================================
+    // PAGE SETUP FUNCTIONS
+    // ============================================================
+    function setupAllBuildingsListPage() {
+      ensureAllBuildingsPrepared();
+      const grid = document.getElementById("all-buildings-grid");
+      renderBuildingCards(grid);
+      const cards = grid.querySelectorAll('.building-card');
+      cards.forEach((card, index) => {
+        card.style.opacity = 0;
+        setTimeout(() => {
+          card.classList.add('animate__animated', 'animate__fadeInUp');
+          card.style.opacity = 1;
+        }, index * 30);
+      });
+      if (!is_auto_mode) { stopProgressBarAnimation(); return; }
+      runProgressForPage(2, getPageDuration(2), true);
+    }
+
+    function setupElectricityComparePage() {
+      const ctx = document.getElementById("electricityCompareChart");
+      if (!ctx) return;
+
+      const sortedYears = [...allYears].sort((yearA, yearB) => yearA - yearB);
+      
+      const dataByYear = {};
+      sortedYears.forEach(year => {
+        const rows = overviewByYear[year] || [];
+        const map = {};
+        rows.forEach(rowItem => {
+          const key = normalizeBuildingKey(rowItem && rowItem.building);
+          if (!key) return;
+          map[key] = { 
+            label: key, 
+            electricity: Number(rowItem.electricity || 0), 
+            water: Number(rowItem.water || 0) 
+          };
+        });
+        dataByYear[year] = map;
+      });
+
+      const allBuildingKeys = new Set();
+      Object.values(dataByYear).forEach(map => {
+        Object.keys(map).forEach(keyItem => allBuildingKeys.add(keyItem));
+      });
+      const buildingKeys = Array.from(allBuildingKeys).sort((keyA, keyB) => 
+        labelForBuilding(keyA).localeCompare(labelForBuilding(keyB))
+      );
+
+      const labels = buildingKeys.map(keyItem => keyItem);
+
+      if (electricityCompareChart) { 
+        electricityCompareChart.destroy(); 
+        electricityCompareChart = null; 
+      }
+
+      const datasets = [];
+      
+      sortedYears.forEach((year, yearIndex) => {
+        const yearMap = dataByYear[year] || {};
+        const data = buildingKeys.map(keyItem => Number((yearMap[keyItem] && yearMap[keyItem].electricity) || 0));
+        const color = getColorForYear(yearIndex, sortedYears.length);
+        
+        const barDatasetIndex = datasets.length;
+        
+        datasets.push({ 
+          label: String(year), 
+          data: data, 
+          backgroundColor: color, 
+          order: 2 
+        });
+        
+        datasets.push({ 
+          label: `_Line${year}`, 
+          type: "line", 
+          data: data, 
+          borderColor: color, 
+          backgroundColor: "transparent",
+          pointBackgroundColor: color, 
+          pointBorderColor: color, 
+          pointRadius: 3, 
+          pointHoverRadius: 5,
+          borderWidth: 2, 
+          tension: 0, 
+          fill: false, 
+          order: 1, 
+          snapToBarIndex: barDatasetIndex 
+        });
+      });
+
+      electricityCompareChart = new Chart(ctx, {
+        type: "bar",
+        data: { labels, datasets },
+        options: (function () {
+          const options = baseChartOptions();
+          const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
+          const tickSize = isUltra ? 20 : 12;
+          options.plugins.legend.labels.font = { size: isUltra ? 20 : 12 };
+          options.plugins.tooltip.titleFont = { size: isUltra ? 22 : 14 };
+          options.plugins.tooltip.bodyFont = { size: tickSize };
+          options.scales.x.ticks.font = { size: tickSize };
+          options.scales.y.ticks.font = { size: tickSize };
+          options.scales.y1.display = true;
+          options.scales.y1.grid.drawOnChartArea = false;
+          options.scales.y1.ticks.font = { size: tickSize };
+          options.scales.y1.afterBuildTicks = (scale) => {
+            try { 
+              const yScale = scale?.chart?.scales?.y; 
+              if (yScale) { 
+                scale.ticks = yScale.ticks; 
+                scale.min = yScale.min; 
+                scale.max = yScale.max; 
+              } 
+            } catch (error) {}
+          };
+          return options;
+        })()
+      });
+      
+      if (!is_auto_mode) { stopProgressBarAnimation(); return; }
+      runProgressForPage(3, getPageDuration(3), true);
+    }
+
+    function setupWaterComparePage() {
+      const ctx = document.getElementById("waterCompareChart");
+      if (!ctx) return;
+
+      const sortedYears = [...allYears].sort((yearA, yearB) => yearA - yearB);
+      
+      const dataByYear = {};
+      sortedYears.forEach(year => {
+        const rows = overviewByYear[year] || [];
+        const map = {};
+        rows.forEach(rowItem => {
+          const key = normalizeBuildingKey(rowItem && rowItem.building);
+          if (!key) return;
+          map[key] = { 
+            label: key, 
+            electricity: Number(rowItem.electricity || 0), 
+            water: Number(rowItem.water || 0) 
+          };
+        });
+        dataByYear[year] = map;
+      });
+
+      const allBuildingKeys = new Set();
+      Object.values(dataByYear).forEach(map => {
+        Object.keys(map).forEach(keyItem => allBuildingKeys.add(keyItem));
+      });
+      const buildingKeys = Array.from(allBuildingKeys).sort((keyA, keyB) => 
+        labelForBuilding(keyA).localeCompare(labelForBuilding(keyB))
+      );
+
+      const labels = buildingKeys.map(keyItem => keyItem);
+
+      if (waterCompareChart) { 
+        waterCompareChart.destroy(); 
+        waterCompareChart = null; 
+      }
+
+      const datasets = [];
+      
+      sortedYears.forEach((year, yearIndex) => {
+        const yearMap = dataByYear[year] || {};
+        const data = buildingKeys.map(keyItem => Number((yearMap[keyItem] && yearMap[keyItem].water) || 0));
+        const color = getColorForYear(yearIndex, sortedYears.length);
+        
+        const barDatasetIndex = datasets.length;
+        
+        datasets.push({ 
+          label: String(year), 
+          data: data, 
+          backgroundColor: color, 
+          order: 2 
+        });
+        
+        datasets.push({ 
+          label: `_Line${year}`, 
+          type: "line", 
+          data: data, 
+          borderColor: color, 
+          backgroundColor: "transparent",
+          pointBackgroundColor: color, 
+          pointBorderColor: color, 
+          pointRadius: 3, 
+          pointHoverRadius: 5,
+          borderWidth: 2, 
+          tension: 0, 
+          fill: false, 
+          order: 1, 
+          snapToBarIndex: barDatasetIndex 
+        });
+      });
+
+      waterCompareChart = new Chart(ctx, {
+        type: "bar",
+        data: { labels, datasets },
+        options: (function () {
+          const options = baseChartOptions();
+          const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
+          const tickSize = isUltra ? 20 : 12;
+          options.plugins.legend.labels.font = { size: isUltra ? 20 : 12 };
+          options.plugins.tooltip.titleFont = { size: isUltra ? 22 : 14 };
+          options.plugins.tooltip.bodyFont = { size: tickSize };
+          options.scales.x.ticks.font = { size: tickSize };
+          options.scales.y.ticks.font = { size: tickSize };
+          options.scales.y1.display = true;
+          options.scales.y1.grid.drawOnChartArea = false;
+          options.scales.y1.ticks.font = { size: tickSize };
+          options.scales.y1.afterBuildTicks = (scale) => {
+            try { 
+              const yScale = scale?.chart?.scales?.y; 
+              if (yScale) { 
+                scale.ticks = yScale.ticks; 
+                scale.min = yScale.min; 
+                scale.max = yScale.max; 
+              } 
+            } catch (error) {}
+          };
+          return options;
+        })()
+      });
+      
+      if (!is_auto_mode) { stopProgressBarAnimation(); return; }
+      runProgressForPage(4, getPageDuration(4), true);
+    }
+
+    function setupBuildingThreePanelPage() {
+      ensureAllBuildingsPrepared();
+      const listElement = document.getElementById("three-buildings-grid");
+      
+      // Update building cycle duration from timer
+      threeCycleMs = getPageDuration(5);
+      
+      renderBuildingList(listElement, (code) => {
+        clearThreeCycleTimer();
+        setThreePanelBuilding(normalizeBuildingKey(code));
+        if (is_auto_mode) runProgressForPage(5, threeCycleMs, false);
+      });
+      if (allBuildingCodes.length) setThreePanelBuilding(normalizeBuildingKey(allBuildingCodes[0]));
+      if (!is_auto_mode) { stopProgressBarAnimation(); return; }
+
+      threeCycleList = allBuildingCodes.map(code => normalizeBuildingKey(code));
+      threeCycleIdx = 0;
+      const runCycle = () => {
+        if (currentPageNumber !== 5) return;
+        const code = threeCycleList[threeCycleIdx] || null;
+        if (code) setThreePanelBuilding(code);
+        runProgressForPage(5, threeCycleMs, false);
+        threeCycleTimeoutId = setTimeout(() => {
+          threeCycleIdx++;
+          if (threeCycleIdx >= threeCycleList.length) { clearThreeCycleTimer(); navigateToNextPage(); return; }
+          runCycle();
+        }, threeCycleMs);
+      };
+      clearThreeCycleTimer();
+      runCycle();
+    }
+
+    // ============================================================
+    // COUNT-UP ANIMATION FUNCTIONS
+    // ============================================================
+
+    // Animation function
+    function animateCountUp(element, endValue, duration = 1000) {
+      if (!element) return;
+      
+      const startValue = Math.floor(endValue * 0.1);
+      const startTime = Date.now();
+      
+      function formatNumberValue(number) {
+        return number.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      }
+      
+      function updateCount() {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuart);
+        
+        element.textContent = formatNumberValue(currentValue);
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateCount);
+        } else {
+          element.textContent = formatNumberValue(endValue);
+        }
+      }
+      
+      // Start the animation
+      requestAnimationFrame(updateCount);
+    }
+
+    // Function to initialize solar count animation
+    function initSolarCountAnimation() {
+      const element = document.getElementById('solarTotalValue');
+      if (!element) return;
+      
+      const totalValue = parseInt(element.getAttribute('data-total')) || 0;
+      if (totalValue <= 0) return;
+      
+      // Animate from 0 to total
+      animateCountUp(element, totalValue, 1000);
+      
+      // Also animate the breakdown bars and values
+      animateBreakdownBars();
+    }
+
+    // New function to animate breakdown bars
+    function animateBreakdownBars() {
+      // Animate Urban values
+      const urbanValueElement = document.getElementById('urbanValue');
+      const urbanBarElement = document.getElementById('urbanBar');
+      const urbanPercentElement = document.getElementById('urbanPercent');
+      
+      if (urbanValueElement && urbanBarElement && urbanPercentElement) {
+        const urbanTotal = parseInt(urbanValueElement.getAttribute('data-value')) || 0;
+        const urbanPercent = parseFloat(urbanBarElement.getAttribute('data-percent')) || 0;
+        
+        // Animate the value
+        animateCountValue(urbanValueElement, urbanTotal, 1000, ' kWh');
+        
+        // Animate the progress bar
+        animateProgressBar(urbanBarElement, urbanPercent, 1000);
+        
+        // Animate the percentage text
+        animatePercentage(urbanPercentElement, urbanPercent, 1000, '% of total');
+      }
+      
+      // Animate Greenhouse values
+      const greenhouseValueElement = document.getElementById('greenhouseValue');
+      const greenhouseBarElement = document.getElementById('greenhouseBar');
+      const greenhousePercentElement = document.getElementById('greenhousePercent');
+      
+      if (greenhouseValueElement && greenhouseBarElement && greenhousePercentElement) {
+        const greenhouseTotal = parseInt(greenhouseValueElement.getAttribute('data-value')) || 0;
+        const greenhousePercent = parseFloat(greenhouseBarElement.getAttribute('data-percent')) || 0;
+        
+        // Animate the value
+        animateCountValue(greenhouseValueElement, greenhouseTotal, 1000, ' kWh');
+        
+        // Animate the progress bar
+        animateProgressBar(greenhouseBarElement, greenhousePercent, 1000);
+        
+        // Animate the percentage text
+        animatePercentage(greenhousePercentElement, greenhousePercent, 1000, '% of total');
+      }
+    }
+
+    // Helper function to animate count values with suffix
+    function animateCountValue(element, endValue, duration = 1000, suffix = '') {
+      if (!element) return;
+      
+      const startValue = Math.floor(endValue * 0.1);
+      const startTime = Date.now();
+      
+      function formatNumberValue(number) {
+        return number.toLocaleString(undefined, { maximumFractionDigits: 0 }) + suffix;
+      }
+      
+      function updateCount() {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuart);
+        
+        element.textContent = formatNumberValue(currentValue);
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateCount);
+        } else {
+          element.textContent = formatNumberValue(endValue);
+        }
+      }
+      
+      // Start the animation
+      requestAnimationFrame(updateCount);
+    }
+
+    // Helper function to animate progress bars
+    function animateProgressBar(element, endPercent, duration = 1000) {
+      if (!element) return;
+      
+      const startTime = Date.now();
+      
+      function updateBar() {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        
+        // Use quadratic easing - smoother than quartic
+        const easeOutQuad = progress * (2 - progress);
+        const currentPercent = easeOutQuad * endPercent;
+        
+        element.style.width = currentPercent + '%';
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateBar);
+        } else {
+          element.style.width = endPercent + '%';
+        }
+      }
+      
+      // Start the animation
+      requestAnimationFrame(updateBar);
+    }
+      
+    // Helper function to animate percentage text
+    function animatePercentage(element, endPercent, duration = 1000, suffix = '') {
+      if (!element) return;
+      
+      const startTime = Date.now();
+      
+      function updatePercentage() {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeOutQuad = progress * (2 - progress);
+        const currentPercent = (easeOutQuad * endPercent).toFixed(1);
+        
+        element.textContent = currentPercent + suffix;
+        
+        if (progress < 1) {
+          requestAnimationFrame(updatePercentage);
+        } else {
+          element.textContent = endPercent.toFixed(1) + suffix;
+        }
+      }
+      
+      // Start the animation
+      requestAnimationFrame(updatePercentage);
+    }
+
+    // Your existing animateCountUp function (keep this as is)
+    function animateCountUp(element, endValue, duration = 1000) {
+      if (!element) return;
+      
+      const startValue = Math.floor(endValue * 0.1);
+      const startTime = Date.now();
+      
+      function formatNumberValue(number) {
+        return number.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      }
+      
+      function updateCount() {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuart);
+        
+        element.textContent = formatNumberValue(currentValue);
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateCount);
+        } else {
+          element.textContent = formatNumberValue(endValue);
+        }
+      }
+      
+      // Start the animation
+      requestAnimationFrame(updateCount);
+    }
+
+    // Function to animate waste breakdown bars
+    function animateWasteBreakdownBars() {
+      // Animate General Waste
+      const generalValueElement = document.getElementById('generalWasteValue');
+      const generalBarElement = document.getElementById('generalWasteBar');
+      const generalPercentElement = document.getElementById('generalWastePercent');
+      
+      if (generalValueElement && generalBarElement && generalPercentElement) {
+        const generalTotal = parseInt(generalValueElement.getAttribute('data-value')) || 0;
+        const generalPercent = parseFloat(generalBarElement.getAttribute('data-percent')) || 0;
+        
+        // Animate the kg value (800ms duration)
+        animateCountValue(generalValueElement, generalTotal, 800, ' kg');
+        // Animate the progress bar (800ms duration)
+        animateProgressBar(generalBarElement, generalPercent, 800);
+        // Animate the percentage text (800ms duration)
+        animatePercentage(generalPercentElement, generalPercent, 800, '% of total');
+      }
+      
+      // Animate Recyclable Waste with a slight delay
+      setTimeout(() => {
+        const recyclableValueElement = document.getElementById('recyclableWasteValue');
+        const recyclableBarElement = document.getElementById('recyclableWasteBar');
+        const recyclablePercentElement = document.getElementById('recyclableWastePercent');
+        
+        if (recyclableValueElement && recyclableBarElement && recyclablePercentElement) {
+          const recyclableTotal = parseInt(recyclableValueElement.getAttribute('data-value')) || 0;
+          const recyclablePercent = parseFloat(recyclableBarElement.getAttribute('data-percent')) || 0;
+          
+          animateCountValue(recyclableValueElement, recyclableTotal, 800, ' kg');
+          animateProgressBar(recyclableBarElement, recyclablePercent, 800);
+          animatePercentage(recyclablePercentElement, recyclablePercent, 800, '% of total');
+        }
+      }, 300); // Start recyclable 300ms after general starts
+    }
+
+    // ============================================================
+    // PAGE 6: SOLAR - WITH YEAR CYCLING IN AUTO MODE
+    // ============================================================
+    let solarThreeChart = null;
+    let solarCycleTimeoutId = null;
+    let solarCycleList = [];
+    let solarCycleIdx = 0;
+    let solarCycleMs = getPageDuration(6);
+
+    function clearSolarCycleTimer() {
+      if (solarCycleTimeoutId) clearTimeout(solarCycleTimeoutId);
+      solarCycleTimeoutId = null;
+    }
+
+    function setupSolarThreePanelPage() {
+      clearSolarCycleTimer();
+      solarCycleMs = getPageDuration(6);
+      
+      const leftBody = document.getElementById("solarLeftBody");
+      if (leftBody) leftBody.innerHTML = "<div class='slug-sandbox'><p class='text-muted'>Loading solar info...</p></div>";
+
+      function loadSolarLeftPanel(year) {
+      const element = document.getElementById("solarLeftBody");
+      if (!element) return;
+      
+      fetch(`/infographics/SolarInfo?year=${encodeURIComponent(String(year || ""))}`)
+        .then(response => response.text())
+        .then(html => { 
+          element.innerHTML = html; 
+          
+          // Use MutationObserver to detect when content is added
+          const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.addedNodes.length) {
+                // Check if our target element exists
+                if (document.getElementById('solarTotalValue')) {
+                  initSolarCountAnimation();
+                  observer.disconnect(); // Stop observing
+                }
+              }
+            });
+          });
+          
+          // Start observing the container
+          observer.observe(element, { childList: true, subtree: true });
+          
+          // Also try immediately in case it's already there
+          setTimeout(() => {
+            if (document.getElementById('solarTotalValue')) {
+              initSolarCountAnimation();
+              observer.disconnect();
+            }
+          }, 50);
+        })
+        .catch(() => { 
+          element.innerHTML = "<div class='slug-sandbox'><p class='text-muted'>No solar info available.</p></div>"; 
+        });
+    }
+
+      const yearLabel = document.getElementById("solarYearLabel");
+      const listElement = document.getElementById("solar-year-list");
+
+      const options = [];
+      const ascendingYears = [...allYears].sort((yearA, yearB) => yearA - yearB);
+      
+      ascendingYears.forEach(year => {
+        if (!year) return;
+        let data = [];
+        if (solarByYear && solarByYear[year] && solarByYear[year].length) {
+          data = solarByYear[year];
+        } else if (year === oldestYear && solarOldestMonths.length) {
+          data = solarOldestMonths;
+        } else if (year === newestYear && solarNewestMonths.length) {
+          data = solarNewestMonths;
+        }
+        
+        // Calculate totals for the year
+        let urbanTotal = 0;
+        let ghTotal = 0;
+        data.forEach(monthData => {
+          urbanTotal += Number(monthData.urban || 0);
+          ghTotal += Number(monthData.greenhouse || 0);
+        });
+        
+        options.push({ year, label: String(year), data, urbanTotal, ghTotal });
+      });
+      
+      if (!options.length) {
+        if (newestYear && solarNewestMonths.length) {
+          let urbanTotal = 0, ghTotal = 0;
+          solarNewestMonths.forEach(monthData => {
+            urbanTotal += Number(monthData.urban || 0);
+            ghTotal += Number(monthData.greenhouse || 0);
+          });
+          options.push({ year: newestYear, label: String(newestYear), data: solarNewestMonths, urbanTotal, ghTotal });
+        } else if (oldestYear && solarOldestMonths.length) {
+          let urbanTotal = 0, ghTotal = 0;
+          solarOldestMonths.forEach(monthData => {
+            urbanTotal += Number(monthData.urban || 0);
+            ghTotal += Number(monthData.greenhouse || 0);
+          });
+          options.push({ year: oldestYear, label: String(oldestYear), data: solarOldestMonths, urbanTotal, ghTotal });
+        }
+      }
+
+      const renderList = () => {
+        if (!listElement) return;
+        listElement.innerHTML = "";
+        const ul = document.createElement("ul");
+        
+        options.forEach((option, index) => {
+          const li = document.createElement("li");
+          li.className = "building-list-item";
+          li.dataset.year = String(option.year);
+          
+          const name = document.createElement("div");
+          name.className = "fw-bold";
+          name.textContent = "Solar — " + option.label;
+          
+          const metaUrban = document.createElement("small");
+          metaUrban.style.display = "block";
+          metaUrban.textContent = "Urban: " + formatNumber(option.urbanTotal) + " kWh";
+          
+          const metaGreenhouse = document.createElement("small");
+          metaGreenhouse.style.display = "block";
+          metaGreenhouse.textContent = "Green House: " + formatNumber(option.ghTotal) + " kWh";
+          
+          li.appendChild(name);
+          li.appendChild(metaUrban);
+          li.appendChild(metaGreenhouse);
+          
+          li.addEventListener("click", () => {
+            clearSolarCycleTimer();
+            applySolarYear(option.year, true);
+          });
+          
+          ul.appendChild(li);
+        });
+        
+        listElement.appendChild(ul);
+      };
+
+      function applySolarYear(year, userClick) {
+        const selected = options.find(option => String(option.year) === String(year)) || options[0] || null;
+        if (!selected) return;
+        if (yearLabel) yearLabel.textContent = String(selected.year);
+        
+        loadSolarLeftPanel(selected.year);
+        
+        const months = (selected.data || []).slice().sort((monthA, monthB) => (monthA.month||0)-(monthB.month||0));
+        const labels = month_labels.slice();
+        const urban = labels.map((_, index) => Number((months[index] && months[index].urban) || 0));
+        const gh = labels.map((_, index) => Number((months[index] && months[index].greenhouse) || 0));
+        const filtered = hideZeroMonths(labels, urban, gh);
+        const ctx = document.getElementById("solarThreeChart");
+        if (!ctx) return;
+        if (solarThreeChart) { solarThreeChart.destroy(); solarThreeChart = null; }
+        solarThreeChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: filtered.labels,
+            datasets: [
+              { label: "Urban Renewables", data: filtered.series[0], backgroundColor: color_solar_urban, yAxisID: "y", order: 2 },
+              { label: "Green House", data: filtered.series[1], backgroundColor: color_solar_gh, yAxisID: "y", order: 2 },
+              { label: "_UrbanLine", type: "line", data: filtered.series[0], borderColor: color_solar_urban, backgroundColor: "transparent",
+                pointBackgroundColor: color_solar_urban, pointBorderColor: color_solar_urban, pointRadius: 4, pointHoverRadius: 5,
+                borderWidth: 2, tension: 0, fill: false, yAxisID: "y", order: 1, snapToBarIndex: 0 },
+              { label: "_GHLine", type: "line", data: filtered.series[1], borderColor: color_solar_gh, backgroundColor: "transparent",
+                pointBackgroundColor: color_solar_gh, pointBorderColor: color_solar_gh, pointRadius: 4, pointHoverRadius: 5,
+                borderWidth: 2, tension: 0, fill: false, yAxisID: "y", order: 1, snapToBarIndex: 1 }
+            ]
+          },
+          options: (function () { const options = baseChartOptions(); options.scales.y1.display = false; return options; })()
+        });
+        
+        // Update chart title with year
+        const chartTitle = document.getElementById("solarChartTitle");
+        if (chartTitle) {
+          chartTitle.textContent = `Solar (Urban Renewables & Green House) - ${selected.year}`;
+        }
+        
+        // Update active state in list
+        document.querySelectorAll("#solar-year-list .building-list-item").forEach(li => {
+          if (li && li.dataset && li.dataset.year === String(selected.year)) li.classList.add("active");
+          else li.classList.remove("active");
+        });
+        
+        // Incremental scroll to active year
+        scrollActiveItemIntoView("#solar-year-list", ".building-list-item.active");
+        
+        if (is_auto_mode && userClick) {
+          clearSolarCycleTimer();
+          runProgressForPage(6, solarCycleMs, false);
+        }
+      }
+
+      window.__applySolarYearFromControls = applySolarYear;
+      renderList();
+      
+      // Initial year selection
+      const initialYear = (solarPendingYear != null) ? solarPendingYear : (options[0] ? options[0].year : null);
+      if (initialYear) applySolarYear(initialYear, false);
+      
+      if (!is_auto_mode) { 
+        stopProgressBarAnimation(); 
+        return; 
+      }
+
+      // Auto mode: cycle through years
+      solarCycleList = options.map(option => option.year);
+      solarCycleIdx = 0;
+      
+      const runSolarCycle = () => {
+        if (currentPageNumber !== 6) return;
+        const year = solarCycleList[solarCycleIdx] || null;
+        if (year) applySolarYear(year, false);
+        runProgressForPage(6, solarCycleMs, false);
+        solarCycleTimeoutId = setTimeout(() => {
+          solarCycleIdx++;
+          if (solarCycleIdx >= solarCycleList.length) { 
+            clearSolarCycleTimer(); 
+            navigateToNextPage(); 
+            return; 
+          }
+          runSolarCycle();
+        }, solarCycleMs);
+      };
+      
+      clearSolarCycleTimer();
+      if (solarCycleList.length > 0) {
+        runSolarCycle();
+      } else {
+        runProgressForPage(6, solarCycleMs, true);
+      }
+    }
+
+    // ============================================================
+    // PAGE 7: WASTE - WITH YEAR CYCLING IN AUTO MODE
+    // ============================================================
+    let wasteThreeChart = null;
+    let wasteCycleTimeoutId = null;
+    let wasteCycleList = [];
+    let wasteCycleIdx = 0;
+    let wasteCycleMs = getPageDuration(7);
+
+    function clearWasteCycleTimer() {
+      if (wasteCycleTimeoutId) clearTimeout(wasteCycleTimeoutId);
+      wasteCycleTimeoutId = null;
+    }
+
+    function setupWasteThreePanelPage() {
+      clearWasteCycleTimer();
+      wasteCycleMs = getPageDuration(7);
+      
+      const leftBody = document.getElementById("wasteLeftBody");
+      if (leftBody) leftBody.innerHTML = "<div class='slug-sandbox'><p class='text-muted'>Loading waste info...</p></div>";
+
+      function loadWasteLeftPanel(year) {
+        const element = document.getElementById("wasteLeftBody");
+        if (!element) return;
+        
+        fetch(`/infographics/WasteInfo?fy=${encodeURIComponent(String(year || ""))}`)
+          .then(response => response.text())
+          .then(html => { 
+            element.innerHTML = html; 
+            
+            // Use MutationObserver to detect when content is added
+            const observer = new MutationObserver((mutations) => {
+              mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length) {
+                  // Check if our target element exists
+                  if (document.getElementById('generalWasteBar')) {
+                    animateWasteBreakdownBars();
+                    observer.disconnect(); // Stop observing
+                  }
+                }
+              });
+            });
+            
+            // Start observing the container
+            observer.observe(element, { childList: true, subtree: true });
+            
+            // Also try immediately in case it's already there
+            setTimeout(() => {
+              if (document.getElementById('generalWasteBar')) {
+                animateWasteBreakdownBars();
+                observer.disconnect();
+              }
+            }, 50);
+          })
+          .catch(() => { 
+            element.innerHTML = "<div class='slug-sandbox'><p class='text-muted'>No waste info available.</p></div>"; 
+          });
+      }
+
+      const yearLabel = document.getElementById("wasteYearLabel");
+      const listElement = document.getElementById("waste-year-list");
+
+      const options = [];
+      const ascendingYears = [...allYears].sort((yearA, yearB) => yearA - yearB);
+      
+      ascendingYears.forEach(year => {
+        if (!year) return;
+        let data = [];
+        if (wasteByYear && wasteByYear[year] && wasteByYear[year].length) {
+          data = wasteByYear[year];
+        } else if (year === oldestYear && wasteOldestMonths.length) {
+          data = wasteOldestMonths;
+        } else if (year === newestYear && wasteNewestMonths.length) {
+          data = wasteNewestMonths;
+        }
+        
+        // Calculate totals for the year
+        let generalTotal = 0;
+        let recyclableTotal = 0;
+        data.forEach(monthData => {
+          generalTotal += Number(monthData.generalKg || 0);
+          recyclableTotal += Number(monthData.recyclableKg || 0);
+        });
+        
+        options.push({ year, label: "FY " + String(year), data, generalTotal, recyclableTotal });
+      });
+      
+      if (!options.length) {
+        if (newestYear && wasteNewestMonths.length) {
+          let generalTotal = 0, recyclableTotal = 0;
+          wasteNewestMonths.forEach(monthData => {
+            generalTotal += Number(monthData.generalKg || 0);
+            recyclableTotal += Number(monthData.recyclableKg || 0);
+          });
+          options.push({ year: newestYear, label: "FY " + String(newestYear), data: wasteNewestMonths, generalTotal, recyclableTotal });
+        } else if (oldestYear && wasteOldestMonths.length) {
+          let generalTotal = 0, recyclableTotal = 0;
+          wasteOldestMonths.forEach(monthData => {
+            generalTotal += Number(monthData.generalKg || 0);
+            recyclableTotal += Number(monthData.recyclableKg || 0);
+          });
+          options.push({ year: oldestYear, label: "FY " + String(oldestYear), data: wasteOldestMonths, generalTotal, recyclableTotal });
+        }
+      }
+
+      const renderList = () => {
+        if (!listElement) return;
+        listElement.innerHTML = "";
+        const ul = document.createElement("ul");
+        
+        options.forEach((option, index) => {
+          const li = document.createElement("li");
+          li.className = "building-list-item";
+          li.dataset.year = String(option.year);
+          
+          const name = document.createElement("div");
+          name.className = "fw-bold";
+          name.textContent = option.label;
+          
+          const metaGeneral = document.createElement("small");
+          metaGeneral.style.display = "block";
+          metaGeneral.textContent = "General: " + formatNumber(option.generalTotal) + " kg";
+          
+          const metaRecyclable = document.createElement("small");
+          metaRecyclable.style.display = "block";
+          metaRecyclable.textContent = "Recyclable: " + formatNumber(option.recyclableTotal) + " kg";
+          
+          li.appendChild(name);
+          li.appendChild(metaGeneral);
+          li.appendChild(metaRecyclable);
+          
+          li.addEventListener("click", () => {
+            clearWasteCycleTimer();
+            applyWasteYear(option.year, true);
+          });
+          
+          ul.appendChild(li);
+        });
+        
+        listElement.appendChild(ul);
+      };
+
+      const fiscal_labels = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"];
+
+      function applyWasteYear(year, userClick) {
+        const selected = options.find(option => String(option.year) === String(year)) || options[0] || null;
+        if (!selected) return;
+        if (yearLabel) yearLabel.textContent = "FY " + String(selected.year);
+        
+        loadWasteLeftPanel(selected.year);
+        
+        const months = (selected.data || []).slice().sort((monthA, monthB) => (monthA.month||0)-(monthB.month||0));
+        const labels = fiscal_labels.slice();
+        const generalWaste = labels.map((_, index) => Number((months[index] && months[index].generalKg) || 0));
+        const recyclableWaste = labels.map((_, index) => Number((months[index] && months[index].recyclableKg) || 0));
+        const filtered = hideZeroMonths(labels, generalWaste, recyclableWaste);
+        const ctx = document.getElementById("wasteThreeChart");
+        if (!ctx) return;
+        if (wasteThreeChart) { wasteThreeChart.destroy(); wasteThreeChart = null; }
+        wasteThreeChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: filtered.labels,
+            datasets: [
+              { label: "General (kg)", data: filtered.series[0], backgroundColor: color_waste_gen, yAxisID: "y", order: 2 },
+              { label: "Recyclable (kg)", data: filtered.series[1], backgroundColor: color_waste_rec, yAxisID: "y", order: 2 },
+              { label: "_GeneralLine", type: "line", data: filtered.series[0], borderColor: color_waste_gen, backgroundColor: "transparent",
+                pointBackgroundColor: color_waste_gen, pointBorderColor: color_waste_gen, pointRadius: 4, pointHoverRadius: 5,
+                borderWidth: 2, tension: 0, fill: false, yAxisID: "y", order: 1, snapToBarIndex: 0 },
+              { label: "_RecycleLine", type: "line", data: filtered.series[1], borderColor: color_waste_rec, backgroundColor: "transparent",
+                pointBackgroundColor: color_waste_rec, pointBorderColor: color_waste_rec, pointRadius: 4, pointHoverRadius: 5,
+                borderWidth: 2, tension: 0, fill: false, yAxisID: "y", order: 1, snapToBarIndex: 1 }
+            ]
+          },
+          options: (function () { const options = baseChartOptions(); options.scales.y1.display = false; return options; })()
+        });
+        
+        // Update chart title with year
+        const chartTitle = document.getElementById("wasteChartTitle");
+        if (chartTitle) {
+          chartTitle.textContent = `Waste (General & Recyclable) - FY ${selected.year}`;
+        }
+        
+        // Update active state in list
+        document.querySelectorAll("#waste-year-list .building-list-item").forEach(li => {
+          if (li && li.dataset && li.dataset.year === String(selected.year)) li.classList.add("active");
+          else li.classList.remove("active");
+        });
+        
+        // Incremental scroll to active year
+        scrollActiveItemIntoView("#waste-year-list", ".building-list-item.active");
+        
+        if (is_auto_mode && userClick) {
+          clearWasteCycleTimer();
+          runProgressForPage(7, wasteCycleMs, false);
+        }
+      }
+
+      window.__applyWasteYearFromControls = applyWasteYear;
+      renderList();
+      
+      // Initial year selection
+      const initialYear = (wastePendingYear != null) ? wastePendingYear : (options[0] ? options[0].year : null);
+      if (initialYear) applyWasteYear(initialYear, false);
+      
+      if (!is_auto_mode) { 
+        stopProgressBarAnimation(); 
+        return; 
+      }
+
+      // Auto mode: cycle through years
+      wasteCycleList = options.map(option => option.year);
+      wasteCycleIdx = 0;
+      
+      const runWasteCycle = () => {
+        if (currentPageNumber !== 7) return;
+        const year = wasteCycleList[wasteCycleIdx] || null;
+        if (year) applyWasteYear(year, false);
+        runProgressForPage(7, wasteCycleMs, false);
+        wasteCycleTimeoutId = setTimeout(() => {
+          wasteCycleIdx++;
+          if (wasteCycleIdx >= wasteCycleList.length) { 
+            clearWasteCycleTimer(); 
+            navigateToNextPage(); 
+            return; 
+          }
+          runWasteCycle();
+        }, wasteCycleMs);
+      };
+      
+      clearWasteCycleTimer();
+      if (wasteCycleList.length > 0) {
+        runWasteCycle();
+      } else {
+        runProgressForPage(7, wasteCycleMs, true);
+      }
+    }
+
+    // ============================================================
+    // VIDEO PAGE
+    // ============================================================
+    let videoIndex = 0;
+    let __videoBridge = { ready: false, playlistLen: 0, playAtIndex: null };
+
+    function videoBridgeReset() { __videoBridge.ready = false; __videoBridge.playlistLen = 0; __videoBridge.playAtIndex = null; }
+    function videoBridgeSet(playlistLen, playAtIndexFn) { __videoBridge.ready = true; __videoBridge.playlistLen = Number(playlistLen || 0); __videoBridge.playAtIndex = (typeof playAtIndexFn === "function") ? playAtIndexFn : null; }
+
+    function setupVideoPageProgressBehavior() {
+      clearVideoEndCountdown();
+      const video = document.getElementById("esgVideoElement");
+      if (!video) return;
+      applyAdminVideoSettingsToPlayer(video);
+
+      const tryPlayWithAutoplayFallback = () => {
+        try {
+          const promise = video.play();
+          if (promise && typeof promise.catch === "function") {
+            promise.catch(() => {
+              try { video.muted = true; video.volume = 0; } catch (error) {}
+              try { video.play().catch(() => {}); } catch (error) {}
+              setTimeout(sendVideoStateToControls, 120);
+            });
+          }
+        } catch (error) {}
+      };
+
+      const playlist = Array.isArray(mediaVideos) ? mediaVideos.slice() : [];
+      videoBridgeReset();
+
+      if (!playlist.length) {
+        console.log("No videos available, skipping page 8");
+        if (is_auto_mode) {
+          setTimeout(() => navigateToNextPage(), 100);
+          return;
+        }
+        stopProgressBarAnimation();
+        sendVideoStateToControls();
+        return;
+      }
+
+      if (is_auto_mode) {
+        hardResetProgressBar();
+        if (progressBarContainerElement) progressBarContainerElement.style.display = "none";
+      } else { 
+        stopProgressBarAnimation(); 
+      }
+
+      const playAtIndex = (index) => {
+        videoIndex = (index + playlist.length) % playlist.length;
+        const item = playlist[videoIndex];
+        video.src = "/uploads/videos/" + item.filename;
+        applyAdminVideoSettingsToPlayer(video);
+        tryPlayWithAutoplayFallback();
+        setTimeout(sendVideoStateToControls, 120);
+      };
+
+      videoBridgeSet(playlist.length, playAtIndex);
+
+      const startEndCountdownThenNextPage = () => {
+        if (!is_auto_mode) return;
+        if (progressBarContainerElement) progressBarContainerElement.style.display = "";
+        hardResetProgressBar();
+        runProgressForPage(8, getPageDuration(8), true);
+      };
+
+      video.onended = () => {
+        if (videoIndex >= playlist.length - 1) startEndCountdownThenNextPage();
+        else playAtIndex(videoIndex + 1);
+        setTimeout(sendVideoStateToControls, 80);
+      };
+
+      video.onplay = () => setTimeout(sendVideoStateToControls, 50);
+      video.onpause = () => setTimeout(sendVideoStateToControls, 50);
+      video.onvolumechange = () => { 
+        saveAdminVideoSettings({ volume: video.volume, muted: video.muted }); 
+        setTimeout(sendVideoStateToControls, 50); 
+      };
+      video.ontimeupdate = () => { 
+        if (!is_auto_mode && currentPageNumber === 8) sendVideoStateToControls(); 
+      };
+
+      playAtIndex(0);
+    }
+
+    // ============================================================
+    // CAROUSEL PAGE
+    // ============================================================
+    let imageCarouselTimerId = null;
+
+    function clearImageCarouselTimer() { if (imageCarouselTimerId) clearInterval(imageCarouselTimerId); imageCarouselTimerId = null; }
+
+    function setupImageCarouselPageProgressBehavior() {
+      const carouselElement = document.getElementById("esgImageCarousel");
+      if (!carouselElement) return;
+      
+      carouselElement.querySelectorAll(".carousel-control-prev, .carousel-control-next, .carousel-indicators button")
+        .forEach(button => button.addEventListener("click", (event) => event.stopPropagation()));
+
+      const items = Array.isArray(mediaImages) ? mediaImages : [];
+      
+      if (!items.length) {
+        console.log("No images available, skipping page 9");
+        if (is_auto_mode) {
+          setTimeout(() => navigateToNextPage(), 100);
+          return;
+        }
+        stopProgressBarAnimation();
+        sendCarouselStateToControls();
+        return;
+      }
+
+      const carouselInstance = new bootstrap.Carousel(carouselElement, { 
+        interval: false, 
+        ride: false, 
+        pause: false, 
+        wrap: true 
+      });
+      
+      carouselElement.addEventListener("slid.bs.carousel", () => { 
+        sendCarouselStateToControls(); 
+      });
+
+      if (!is_auto_mode) { 
+        stopProgressBarAnimation(); 
+        sendCarouselStateToControls(); 
+        return; 
+      }
+
+      // Use timer for per-image duration
+      const durationPerItemMs = getPageDuration(9);
+      const totalMs = durationPerItemMs * items.length;
+      let start = Date.now();
+      startManualProgress(totalMs, 0);
+      clearImageCarouselTimer();
+
+      imageCarouselTimerId = setInterval(() => {
+        if (currentPageNumber !== 9) return;
+        const elapsed = Date.now() - start;
+        progressTotalDurationMs = totalMs;
+        progressElapsedMs = elapsed;
+        updateProgressBarWidthFromState();
+        const slideIndex = Math.min(items.length - 1, Math.floor(elapsed / durationPerItemMs));
+        try { carouselInstance.to(slideIndex); } catch (error) {}
+        if (elapsed >= totalMs) { 
+          clearImageCarouselTimer(); 
+          progressElapsedMs = totalMs; 
+          updateProgressBarWidthFromState(); 
+          navigateToNextPage(); 
+        }
+      }, 250);
+    }
+
+    function setupThankYouPage() {
+      const page = document.getElementById("page10");
+      if (page) page.onclick = () => showPageByNumber(1, "right");
+      if (!is_auto_mode) { stopProgressBarAnimation(); return; }
+      runProgressForPage(10, getPageDuration(10), true);
+    }
+
+    // ============================================================
+    // PAGE ENTER HOOK
+    // ============================================================
+    function onEnterPage(pageNum) {
+      clearThreeCycleTimer();
+      clearSolarCycleTimer();
+      clearWasteCycleTimer();
+      clearImageCarouselTimer();
+      clearVideoEndCountdown();
+      if (pageNum === 1) { if (!is_auto_mode) stopProgressBarAnimation(); else runProgressForPage(1, getPageDuration(1), true); }
+      else if (pageNum === 2) setupAllBuildingsListPage();
+      else if (pageNum === 3) setupElectricityComparePage();
+      else if (pageNum === 4) setupWaterComparePage();
+      else if (pageNum === 5) setupBuildingThreePanelPage();
+      else if (pageNum === 6) setupSolarThreePanelPage();
+      else if (pageNum === 7) setupWasteThreePanelPage();
+      else if (pageNum === 8) setupVideoPageProgressBehavior();
+      else if (pageNum === 9) setupImageCarouselPageProgressBehavior();
+      else if (pageNum === 10) setupThankYouPage();
+      sendControlPageUpdate();
+    }
+
+    // ============================================================
+    // CONTROLS WINDOW MESSAGE HANDLER
+    // ============================================================
+    window.addEventListener("message", (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (!event.data) return;
+
+      if (event.data.type === "SET_BUILDING") {
+        const buildingCode = normalizeBuildingKey(event.data.building);
+        if (!buildingCode) return;
+        if (currentPageNumber !== 5) showPageByNumber(5, "left");
+        clearThreeCycleTimer();
+        setThreePanelBuilding(buildingCode);
+        return;
+      }
+
+      if (event.data.type === "NAV_PREV") { navigateToPreviousPage(); return; }
+      if (event.data.type === "NAV_NEXT") { navigateToNextPage(); return; }
+      if (event.data.type === "NAV_PAGE") {
+        const pageNumber = Number(event.data.page);
+        if (enabledPages().includes(pageNumber)) showPageByNumber(pageNumber, pageNumber > currentPageNumber ? "left" : "right");
+        return;
+      }
+
+      if (event.data.type === "VIDEO_PLAY") {
+        const videoElement = document.getElementById("esgVideoElement");
+        if (videoElement) { try { videoElement.play(); } catch (error) {} }
+        setTimeout(sendVideoStateToControls, 80);
+        return;
+      }
+      if (event.data.type === "VIDEO_PAUSE") {
+        const videoElement = document.getElementById("esgVideoElement");
+        if (videoElement) { try { videoElement.pause(); } catch (error) {} }
+        setTimeout(sendVideoStateToControls, 80);
+        return;
+      }
+      if (event.data.type === "VIDEO_PLAY_PAUSE") {
+        const videoElement = document.getElementById("esgVideoElement");
+        if (videoElement) {
+          try {
+            if (videoElement.paused) videoElement.play();
+            else videoElement.pause();
+          } catch (error) {}
+        }
+        setTimeout(sendVideoStateToControls, 80);
+        return;
+      }
+
+      if (event.data.type === "VIDEO_MUTE") {
+        const videoElement = document.getElementById("esgVideoElement");
+        if (videoElement) {
+          videoElement.muted = true;
+          saveAdminVideoSettings({ muted: true });
+        }
+        setTimeout(sendVideoStateToControls, 80);
+        return;
+      }
+      if (event.data.type === "VIDEO_UNMUTE") {
+        const videoElement = document.getElementById("esgVideoElement");
+        if (videoElement) {
+          videoElement.muted = false;
+          saveAdminVideoSettings({ muted: false });
+        }
+        setTimeout(sendVideoStateToControls, 80);
+        return;
+      }
+      if (event.data.type === "VIDEO_SET_VOLUME") {
+        const videoElement = document.getElementById("esgVideoElement");
+        if (videoElement && typeof event.data.volume === "number") {
+          const clampedVolume = clamp01(event.data.volume);
+          if (clampedVolume !== null) {
+            videoElement.volume = clampedVolume;
+            saveAdminVideoSettings({ volume: clampedVolume });
+          }
+        }
+        setTimeout(sendVideoStateToControls, 80);
+        return;
+      }
+      if (event.data.type === "VIDEO_SEEK") {
+        const videoElement = document.getElementById("esgVideoElement");
+        if (videoElement) {
+          // Handle ratio-based seeking (from buildingControls - value between 0 and 1)
+          if (typeof event.data.ratio === "number" && isFinite(event.data.ratio)) {
+            const duration = videoElement.duration;
+            if (isFinite(duration) && duration > 0) {
+              const targetTime = Math.max(0, Math.min(duration, event.data.ratio * duration));
+              videoElement.currentTime = targetTime;
+            }
+          }
+          // Handle absolute time seeking (direct seconds value)
+          else if (typeof event.data.time === "number" && isFinite(event.data.time)) {
+            videoElement.currentTime = Math.max(0, event.data.time);
+          }
+        }
+        setTimeout(sendVideoStateToControls, 80);
+        return;
+      }
+      if (event.data.type === "VIDEO_PREV") {
+        if (__videoBridge.ready && typeof __videoBridge.playAtIndex === "function") {
+          __videoBridge.playAtIndex(videoIndex - 1);
+        }
+        setTimeout(sendVideoStateToControls, 80);
+        return;
+      }
+      if (event.data.type === "VIDEO_NEXT") {
+        if (__videoBridge.ready && typeof __videoBridge.playAtIndex === "function") {
+          __videoBridge.playAtIndex(videoIndex + 1);
+        }
+        setTimeout(sendVideoStateToControls, 80);
+        return;
+      }
+
+      if (event.data.type === "CAROUSEL_PREV") {
+        const carouselElement = document.getElementById("esgImageCarousel");
+        if (!carouselElement) return;
+        try {
+          const carouselInstance = bootstrap.Carousel.getOrCreateInstance(carouselElement);
+          carouselInstance.prev();
+        } catch (error) {}
+        setTimeout(sendCarouselStateToControls, 80);
+        return;
+      }
+      if (event.data.type === "CAROUSEL_NEXT") {
+        const carouselElement = document.getElementById("esgImageCarousel");
+        if (!carouselElement) return;
+        try {
+          const carouselInstance = bootstrap.Carousel.getOrCreateInstance(carouselElement);
+          carouselInstance.next();
+        } catch (error) {}
+        setTimeout(sendCarouselStateToControls, 80);
+        return;
+      }
+      if (event.data.type === "CAROUSEL_TO") {
+        const carouselElement = document.getElementById("esgImageCarousel");
+        if (!carouselElement) return;
+        const slideIndex = Number(event.data.index);
+        if (!isFinite(slideIndex) || slideIndex < 0) return;
+        try {
+          const carouselInstance = bootstrap.Carousel.getOrCreateInstance(carouselElement);
+          carouselInstance.to(slideIndex);
+        } catch (error) {}
+        setTimeout(sendCarouselStateToControls, 80);
+        return;
+      }
+
+      if (event.data.type === "SET_SOLAR_YEAR") {
+        const year = event.data.year;
+        if (currentPageNumber !== 6) {
+          solarPendingYear = year;
+          showPageByNumber(6, "left");
+        } else if (typeof window.__applySolarYearFromControls === "function") {
+          clearSolarCycleTimer();
+          window.__applySolarYearFromControls(year, false);
+        }
+        return;
+      }
+
+      if (event.data.type === "SET_WASTE_YEAR") {
+        const year = event.data.year;
+        if (currentPageNumber !== 7) {
+          wastePendingYear = year;
+          showPageByNumber(7, "left");
+        } else if (typeof window.__applyWasteYearFromControls === "function") {
+          clearWasteCycleTimer();
+          window.__applyWasteYearFromControls(year, false);
+        }
+        return;
+      }
+
+      if (event.data.type === "REQUEST_STATE") {
+        sendControlPageUpdate();
+        sendDashboardMetaToControls();
+        if (currentPageNumber === 5) sendCurrentBuildingToControls();
+        if (currentPageNumber === 8) sendVideoStateToControls();
+        if (currentPageNumber === 9) sendCarouselStateToControls();
+        return;
+      }
+
+      if (event.data.type === "REQUEST_BUILDING_LIST") {
+        ensureAllBuildingsPrepared();
+        safePostToControls({
+          type: "BUILDING_LIST",
+          buildings: allBuildingCodes.map(buildingCode => ({
+            code: buildingCode,
+            label: labelForBuilding(buildingCode),
+            ...buildingTotals(buildingCode)
+          }))
+        });
+        return;
+      }
+
+      if (event.data.type === "REQUEST_YEAR_LIST") {
+        safePostToControls({
+          type: "YEAR_LIST",
+          allYears: allYears,
+          oldestYear: oldestYear,
+          newestYear: newestYear,
+          latestYear: latestDataYear
+        });
+        return;
+      }
+    });
+
+    // ============================================================
+    // ARROW BUTTONS VISIBILITY
+    // ============================================================
+    function updateArrowButtonVisibility() {
+      if (is_auto_mode) {
+        if (backArrowButton) backArrowButton.style.display = "none";
+        if (nextArrowButton) nextArrowButton.style.display = "none";
+      } else {
+        if (backArrowButton) backArrowButton.style.display = "";
+        if (nextArrowButton) nextArrowButton.style.display = "";
+      }
+    }
+
+    // ============================================================
+    // VIEWPORT HEIGHT FIX (Mobile)
+    // ============================================================
+    function setVHUnit() {
+      const viewportHeight = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", viewportHeight + "px");
+    }
+    window.addEventListener("resize", setVHUnit);
+    window.addEventListener("orientationchange", setVHUnit);
+    setVHUnit();
+
+    // ============================================================
+    // FULLSCREEN CLASS TOGGLE
+    // ============================================================
+    function updateFullscreenClass() {
+      const apiFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      const f11Fullscreen = (window.innerHeight === screen.height && window.innerWidth === screen.width);
+      const isFullscreen = apiFullscreen || f11Fullscreen;
+      document.body.classList.toggle("is-fullscreen", isFullscreen);
+    }
+    document.addEventListener("fullscreenchange", updateFullscreenClass);
+    document.addEventListener("webkitfullscreenchange", updateFullscreenClass);
+    document.addEventListener("mozfullscreenchange", updateFullscreenClass);
+    document.addEventListener("MSFullscreenChange", updateFullscreenClass);
+    window.addEventListener("resize", updateFullscreenClass);
+    updateFullscreenClass();
+
+    // ============================================================
+    // KEYBOARD NAVIGATION
+    // ============================================================
+    document.addEventListener("keydown", (event) => {
+      if (is_auto_mode) return;
+      if (event.key === "ArrowRight" || event.key === "PageDown") {
+        event.preventDefault();
+        navigateToNextPage();
+      } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        navigateToPreviousPage();
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        showPageByNumber(1, "right");
+      } else if (event.key === "End") {
+        event.preventDefault();
+        showPageByNumber(10, "left");
+      }
+    });
+
+    // ============================================================
+    // TOUCH/SWIPE NAVIGATION
+    // ============================================================
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener("touchstart", (event) => {
+      touchStartX = event.changedTouches[0].screenX;
+    }, { passive: true });
+
+    document.addEventListener("touchend", (event) => {
+      if (is_auto_mode) return;
+      touchEndX = event.changedTouches[0].screenX;
+      const swipeDifference = touchStartX - touchEndX;
+      if (Math.abs(swipeDifference) > 80) {
+        if (swipeDifference > 0) navigateToNextPage();
+        else navigateToPreviousPage();
+      }
+    }, { passive: true });
+
+    // ============================================================
+    // WINDOW LOAD: INITIALIZATION
+    // ============================================================
+    window.addEventListener("load", () => {
+      updateArrowButtonVisibility();
+      ensureAllBuildingsPrepared();
+      onEnterPage(currentPageNumber);
+
+      setTimeout(() => {
+        sendControlPageUpdate();
+        sendDashboardMetaToControls();
+      }, 200);
+    });
+
+    // ============================================================
+    // BROADCAST CHANNEL: CROSS-TAB SYNC
+    // ============================================================
+    (function initBroadcastSync() {
+      try {
+        const broadcastChannel = new BroadcastChannel("esg_dashboard_sync");
+
+        broadcastChannel.onmessage = (event) => {
+          const message = event && event.data;
+          if (!message) return;
+
+          if (message.type === "PAGE_CHANGE" && !is_auto_mode) {
+            const pageNumber = Number(message.page);
+            if (enabledPages().includes(pageNumber) && pageNumber !== currentPageNumber) {
+              showPageByNumber(pageNumber, pageNumber > currentPageNumber ? "left" : "right");
+            }
+          }
+
+          if (message.type === "BUILDING_CHANGE" && !is_auto_mode && currentPageNumber === 5) {
+            const buildingCode = normalizeBuildingKey(message.building);
+            if (buildingCode) {
+              clearThreeCycleTimer();
+              setThreePanelBuilding(buildingCode);
+            }
+          }
+        };
+
+        const originalShowPage = showPageByNumber;
+        window.showPageByNumber = function(pageNumber, direction) {
+          originalShowPage(pageNumber, direction);
+          try { broadcastChannel.postMessage({ type: "PAGE_CHANGE", page: currentPageNumber }); } catch (error) {}
+        };
+
+      } catch (error) {
+        // BroadcastChannel not supported
+      }
+    })();
+
+    // ============================================================
+    // DEBUG: Console info with Timer Configuration
+    // ============================================================
+    console.log("ESG Dashboard initialized", {
+      mode: is_auto_mode ? "auto" : "interactive",
+      allYears: allYears,
+      oldestYear: oldestYear,
+      newestYear: newestYear,
+      latestYear: latestDataYear,
+      buildingCount: Object.keys(buildingMonthlyByCode || {}).length,
+      buildingMonthlyByYearCount: Object.keys(buildingMonthlyByYear || {}).length,
+      buildingYearRangesCount: Object.keys(buildingYearRanges || {}).length,
+      overviewOldestCount: overviewOldestRows.length,
+      overviewNewestCount: overviewNewestRows.length,
+      hasVideos: hasVideos,
+      hasImages: hasImages,
+      enabledPages: enabledPages(),
+      videoCount: mediaVideos ? mediaVideos.length : 0,
+      imageCount: mediaImages ? mediaImages.length : 0,
+      timersConfigured: timers_array.length,
+      pageDurations: {
+        page1_welcome: getPageDurationSeconds(1) + 's',
+        page2_buildings: getPageDurationSeconds(2) + 's',
+        page3_electricity: getPageDurationSeconds(3) + 's',
+        page4_water: getPageDurationSeconds(4) + 's',
+        page5_building_cycle: getPageDurationSeconds(5) + 's',
+        page6_solar_cycle: getPageDurationSeconds(6) + 's',
+        page7_waste_cycle: getPageDurationSeconds(7) + 's',
+        page8_video_end: getPageDurationSeconds(8) + 's',
+        page9_carousel_per_image: getPageDurationSeconds(9) + 's',
+        page10_thankyou: getPageDurationSeconds(10) + 's'
+      }
+    });
+  </script>
+</body>
+</html>

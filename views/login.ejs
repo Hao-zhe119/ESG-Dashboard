@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Slide-up animation */
+        @keyframes slideUpFade {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        }
+
+        /* Initial hidden state */
+        .login-animate {
+        opacity: 0;
+        transform: translateY(40px);
+        }
+
+        /* Active animation */
+        .login-animate.show {
+        animation: slideUpFade 0.8s ease-out forwards;
+        }
+
+        /* Base body - no background here */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background Image Layer (Blurred) */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background-image: url('/images/rp-main.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: blur(5px);
+            z-index: -2;
+        }
+
+        /* Dark Overlay Layer */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.55);
+            z-index: -1;
+        }
+
+        /* All content stays sharp and above overlays */
+        .navbar {
+            position: relative;
+            z-index: 10;
+        }
+
+        .main-container {
+            position: relative;
+            z-index: 10;
+        }
+
+        .password-toggle {
+            cursor: pointer;
+        }
+
+        .back-link {
+            cursor: pointer;
+            color: #0d6efd;
+            text-decoration: underline;
+        }
+
+        .back-link:hover {
+            color: #0a58ca;
+        }
+
+        .disabled-input {
+            background-color: #e9ecef !important;
+            cursor: not-allowed;
+        }
+
+        /* Card styling - crisp and clear */
+        .card {
+            background-color: rgba(255, 255, 255, 0.97);
+            border: none;
+            border-radius: 12px;
+        }
+
+        /* Footer text styling */
+        .footer-text {
+            color: rgba(255, 255, 255, 0.9) !important;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <img src="https://i.tracxn.com/logo/company/1465fcf4a73a187cfeb150e9a5d460a4?format=webp&height=120&width=120"
+                     alt="Logo" width="40" height="34" class="d-inline-block align-text-top">
+                ESG Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="collapsibleNavbar">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light" href="/login">Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login/Reset Card -->
+    <div class="container main-container mt-5 login-animate" style="max-width: 420px;">
+        <div class="card shadow-lg">
+            <div class="card-body">
+
+                <!-- No Account Found Warning -->
+                <% if (!adminAccount) { %>
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> No admin account found in database. Please contact your system administrator.
+                    </div>
+                <% } %>
+
+                <!-- LOGIN PANEL -->
+                <div id="login-panel">
+                    <h4 class="card-title text-center mb-4">Admin Login</h4>
+
+                    <!-- Login Error Message -->
+                    <% if (typeof loginError !== 'undefined' && loginError) { %>
+                        <div class="alert alert-danger">
+                            <%= loginError %>
+                        </div>
+                    <% } %>
+
+                    <!-- Login Form -->
+                    <form action="/login" method="POST">
+                        <div class="mb-3">
+                            <label for="login-account" class="form-label">Username</label>
+                            <input 
+                                type="text" 
+                                id="login-account" 
+                                name="account" 
+                                class="form-control disabled-input" 
+                                value="<%= adminAccount || 'No account found' %>"
+                                readonly
+                                disabled>
+                            <div class="form-text text-muted">Username is pre-configured</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="login-password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <input
+                                    type="password"
+                                    id="login-password"
+                                    name="password"
+                                    class="form-control"
+                                    placeholder="Enter your password"
+                                    required
+                                    autocomplete="current-password"
+                                    <%= !adminAccount ? 'disabled' : '' %>>
+                                <button class="btn btn-outline-secondary password-toggle" type="button" data-target="login-password" <%= !adminAccount ? 'disabled' : '' %>>
+                                    Show
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" <%= !adminAccount ? 'disabled' : '' %>>
+                            Login
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Forgot your password? 
+                            <span class="back-link" id="showResetPanel">Reset here</span>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- RESET PASSWORD PANEL -->
+                <div id="reset-panel" style="display: none;">
+                    <h4 class="card-title text-center mb-4">Reset Password</h4>
+
+                    <!-- Reset Error/Success Message -->
+                    <% if (typeof resetError !== 'undefined' && resetError) { %>
+                        <div class="alert alert-danger">
+                            <%= resetError %>
+                        </div>
+                    <% } %>
+
+                    <% if (typeof resetSuccess !== 'undefined' && resetSuccess) { %>
+                        <div class="alert alert-success">
+                            <%= resetSuccess %>
+                        </div>
+                    <% } %>
+
+                    <div class="alert alert-info mb-3">
+                        <small>
+                            <strong>Note:</strong> You need the admin reset passcode to reset your password. Contact your system administrator if you don't have it.
+                        </small>
+                    </div>
+
+                    <!-- Reset Form -->
+                    <form action="/reset-password" method="POST">
+                        <div class="mb-3">
+                            <label for="reset-account" class="form-label">Username</label>
+                            <input 
+                                type="text" 
+                                id="reset-account" 
+                                name="account" 
+                                class="form-control disabled-input" 
+                                value="<%= adminAccount || 'No account found' %>"
+                                readonly
+                                disabled>
+                            <div class="form-text text-muted">Password will be reset for this account</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reset-passcode" class="form-label">Reset Passcode</label>
+                            <div class="input-group">
+                                <input
+                                    type="password"
+                                    id="reset-passcode"
+                                    name="passcode"
+                                    class="form-control"
+                                    placeholder="Enter admin reset passcode"
+                                    required
+                                    <%= !adminAccount ? 'disabled' : '' %>>
+                                <button class="btn btn-outline-secondary password-toggle" type="button" data-target="reset-passcode" <%= !adminAccount ? 'disabled' : '' %>>
+                                    Show
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reset-new-password" class="form-label">New Password</label>
+                            <div class="input-group">
+                                <input
+                                    type="password"
+                                    id="reset-new-password"
+                                    name="newPassword"
+                                    class="form-control"
+                                    placeholder="Enter new password"
+                                    minlength="6"
+                                    required
+                                    autocomplete="new-password"
+                                    <%= !adminAccount ? 'disabled' : '' %>>
+                                <button class="btn btn-outline-secondary password-toggle" type="button" data-target="reset-new-password" <%= !adminAccount ? 'disabled' : '' %>>
+                                    Show
+                                </button>
+                            </div>
+                            <div class="form-text">Minimum 6 characters</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reset-confirm-password" class="form-label">Confirm New Password</label>
+                            <div class="input-group">
+                                <input
+                                    type="password"
+                                    id="reset-confirm-password"
+                                    name="confirmPassword"
+                                    class="form-control"
+                                    placeholder="Confirm new password"
+                                    minlength="6"
+                                    required
+                                    autocomplete="new-password"
+                                    <%= !adminAccount ? 'disabled' : '' %>>
+                                <button class="btn btn-outline-secondary password-toggle" type="button" data-target="reset-confirm-password" <%= !adminAccount ? 'disabled' : '' %>>
+                                    Show
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100" <%= !adminAccount ? 'disabled' : '' %>>
+                            Reset Password
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Remember your password? 
+                            <span class="back-link" id="showLoginPanel">Back to Login</span>
+                        </small>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <small class="footer-text">ESG Dashboard - Republic Polytechnic</small>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Scripts -->
+    <script>
+        (function(){
+            // Password toggle functionality
+            document.querySelectorAll('.password-toggle').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var targetId = this.getAttribute('data-target');
+                    var pwdInput = document.getElementById(targetId);
+                    if (!pwdInput) return;
+
+                    var isShowing = pwdInput.type === 'text';
+                    pwdInput.type = isShowing ? 'password' : 'text';
+                    this.textContent = isShowing ? 'Show' : 'Hide';
+                });
+            });
+
+            // Panel switching
+            var loginPanel = document.getElementById('login-panel');
+            var resetPanel = document.getElementById('reset-panel');
+            var showResetBtn = document.getElementById('showResetPanel');
+            var showLoginBtn = document.getElementById('showLoginPanel');
+
+            if (showResetBtn) {
+                showResetBtn.addEventListener('click', function() {
+                    loginPanel.style.display = 'none';
+                    resetPanel.style.display = 'block';
+                });
+            }
+
+            if (showLoginBtn) {
+                showLoginBtn.addEventListener('click', function() {
+                    resetPanel.style.display = 'none';
+                    loginPanel.style.display = 'block';
+                });
+            }
+
+            // Auto-show reset panel if there's a reset error or success
+            <% if ((typeof resetError !== 'undefined' && resetError) || (typeof resetSuccess !== 'undefined' && resetSuccess)) { %>
+                if (loginPanel && resetPanel) {
+                    loginPanel.style.display = 'none';
+                    resetPanel.style.display = 'block';
+                }
+            <% } %>
+
+            // Auto-focus password field on load
+            var pwdField = document.getElementById('login-password');
+            if (pwdField && !pwdField.disabled) {
+                pwdField.focus();
+            }
+        })();
+
+        // Slide-up animation on load
+        window.addEventListener('load', function () {
+        const loginContainer = document.querySelector('.login-animate');
+        if (loginContainer) {
+            requestAnimationFrame(() => {
+            loginContainer.classList.add('show');
+            });
+        }
+        });
+    </script>
+
+</body>
+</html>
