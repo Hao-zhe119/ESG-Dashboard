@@ -50,7 +50,7 @@
   --panel-ratio-left: 0.75;
   --panel-ratio-mid: 1.5;
   --panel-ratio-right: 0.75;
-  --panel-ratio-total: 3; /* must equal sum of above */
+  --panel-ratio-total: 3; 
 }
 
 @media (min-aspect-ratio: 48/10) {
@@ -535,7 +535,6 @@ body.mode-interactive #page7 .three-panel {
 
 /* ========================================
    PAGES 5, 6, 7: SHARED PANEL RATIOS
-   Uses variables from :root
    ======================================== */
 #page5 .three-panel .panel-left,
 #page6 .three-panel .panel-left,
@@ -720,7 +719,6 @@ body.mode-interactive #page7 .three-panel {
   color: rgba(17,24,39,0.70);
 }
 
-/* Thin scrollbar for Page 5 right panel */
 #page5 #threeRightBody .building-list ul::-webkit-scrollbar {
   width: 4px;
 }
@@ -811,7 +809,6 @@ body.mode-interactive #page7 .three-panel {
   color: rgba(17,24,39,0.70);
 }
 
-/* Thin scrollbar for Pages 6 & 7 year lists */
 #page6 #solar-year-list ul::-webkit-scrollbar,
 #page7 #waste-year-list ul::-webkit-scrollbar {
   width: 4px;
@@ -835,7 +832,7 @@ body.mode-interactive #page7 .three-panel {
 }
 
 /* ========================================
-   BUILDING LIST (SHARED)
+   BUILDING LIST
    ======================================== */
 .building-list {
   flex: 1;
@@ -950,7 +947,7 @@ body.mode-interactive #page7 .three-panel {
 }
 
 /* ========================================
-   BUILDING INFO PANEL - DASHBOARD OVERRIDES
+   BUILDING INFO PANEL
    ======================================== */
 #threeInfoBody .slug-sandbox,
 #threeInfoBody > .building-info-panel,
@@ -1396,7 +1393,7 @@ body.mode-interactive #page7 .three-panel {
     const building_card_label_map = <%- JSON.stringify(buildingCardLabelMap || {}) %>;
 
     // ============================================================
-    // TIMERS DATA - with safety checks
+    // TIMERS DATA
     // ============================================================
     const timers_array = <%- typeof timers !== 'undefined' ? JSON.stringify(timers || []) : '[]' %>;
     const timers_by_page = <%- typeof timersByTimerId !== 'undefined' ? JSON.stringify(timersByTimerId || {}) : '{}' %>;
@@ -1404,7 +1401,7 @@ body.mode-interactive #page7 .three-panel {
 
     // ============================================================
     // TIMER CONFIGURATION
-    // Default durations in milliseconds (fallback if no timer set)
+    // Default durations in milliseconds
     // ============================================================
     const DEFAULT_PAGE_DURATIONS = {
       1: 15000,    // Welcome: 15 seconds
@@ -1481,7 +1478,7 @@ body.mode-interactive #page7 .three-panel {
       newestYear = data.newestYear || (allYears.length > 0 ? allYears[0] : null);
       latestDataYear = data.latestYear || newestYear || oldestYear || null;
       
-      // Legacy data (backward compatibility)
+      // Legacy data
       overviewOldestRows = Array.isArray(data.overviewYear1Rows) ? data.overviewYear1Rows : [];
       overviewNewestRows = Array.isArray(data.overviewYear2Rows) ? data.overviewYear2Rows : [];
       solarOldestMonths = Array.isArray(data.solarYear1Months) ? data.solarYear1Months : [];
@@ -2466,7 +2463,7 @@ body.mode-interactive #page7 .three-panel {
     }
 
     // ============================================================
-    // SCROLL HELPER - Incremental scroll (only scrolls minimum needed)
+    // SCROLL HELPER - Incremental scroll
     // ============================================================
     function scrollActiveItemIntoView(containerSelector, activeSelector) {
       requestAnimationFrame(() => {
@@ -2480,9 +2477,8 @@ body.mode-interactive #page7 .three-panel {
         const containerRect = ul.getBoundingClientRect();
         const itemRect = activeItem.getBoundingClientRect();
         
-        // Buffer zone (pixels) - triggers scroll slightly before item goes fully out of view
         const buffer = 4;
-        const padding = 8; // Padding from edge after scrolling
+        const padding = 8;
         
         // Check if item is visible within container
         const isAboveView = itemRect.top < (containerRect.top + buffer);
@@ -3204,7 +3200,6 @@ body.mode-interactive #page7 .three-panel {
         const now = Date.now();
         const progress = Math.min((now - startTime) / duration, 1);
         
-        // Easing function for smooth animation
         const easeOutQuart = 1 - Math.pow(1 - progress, 4);
         const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuart);
         
@@ -3236,7 +3231,6 @@ body.mode-interactive #page7 .three-panel {
       animateBreakdownBars();
     }
 
-    // New function to animate breakdown bars
     function animateBreakdownBars() {
       // Animate Urban values
       const urbanValueElement = document.getElementById('urbanValue');
@@ -3277,7 +3271,6 @@ body.mode-interactive #page7 .three-panel {
       }
     }
 
-    // Helper function to animate count values with suffix
     function animateCountValue(element, endValue, duration = 1000, suffix = '') {
       if (!element) return;
       
@@ -3292,7 +3285,6 @@ body.mode-interactive #page7 .three-panel {
         const now = Date.now();
         const progress = Math.min((now - startTime) / duration, 1);
         
-        // Easing function for smooth animation
         const easeOutQuart = 1 - Math.pow(1 - progress, 4);
         const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuart);
         
@@ -3309,7 +3301,6 @@ body.mode-interactive #page7 .three-panel {
       requestAnimationFrame(updateCount);
     }
 
-    // Helper function to animate progress bars
     function animateProgressBar(element, endPercent, duration = 1000) {
       if (!element) return;
       
@@ -3319,7 +3310,6 @@ body.mode-interactive #page7 .three-panel {
         const now = Date.now();
         const progress = Math.min((now - startTime) / duration, 1);
         
-        // Use quadratic easing - smoother than quartic
         const easeOutQuad = progress * (2 - progress);
         const currentPercent = easeOutQuad * endPercent;
         
@@ -3336,7 +3326,6 @@ body.mode-interactive #page7 .three-panel {
       requestAnimationFrame(updateBar);
     }
       
-    // Helper function to animate percentage text
     function animatePercentage(element, endPercent, duration = 1000, suffix = '') {
       if (!element) return;
       
@@ -3346,7 +3335,6 @@ body.mode-interactive #page7 .three-panel {
         const now = Date.now();
         const progress = Math.min((now - startTime) / duration, 1);
         
-        // Easing function for smooth animation
         const easeOutQuad = progress * (2 - progress);
         const currentPercent = (easeOutQuad * endPercent).toFixed(1);
         
@@ -3363,7 +3351,6 @@ body.mode-interactive #page7 .three-panel {
       requestAnimationFrame(updatePercentage);
     }
 
-    // Your existing animateCountUp function (keep this as is)
     function animateCountUp(element, endValue, duration = 1000) {
       if (!element) return;
       
@@ -3378,7 +3365,6 @@ body.mode-interactive #page7 .three-panel {
         const now = Date.now();
         const progress = Math.min((now - startTime) / duration, 1);
         
-        // Easing function for smooth animation
         const easeOutQuart = 1 - Math.pow(1 - progress, 4);
         const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuart);
         
@@ -3406,15 +3392,14 @@ body.mode-interactive #page7 .three-panel {
         const generalTotal = parseInt(generalValueElement.getAttribute('data-value')) || 0;
         const generalPercent = parseFloat(generalBarElement.getAttribute('data-percent')) || 0;
         
-        // Animate the kg value (800ms duration)
-        animateCountValue(generalValueElement, generalTotal, 800, ' kg');
-        // Animate the progress bar (800ms duration)
-        animateProgressBar(generalBarElement, generalPercent, 800);
-        // Animate the percentage text (800ms duration)
-        animatePercentage(generalPercentElement, generalPercent, 800, '% of total');
+        // Animate the kg value 
+        animateCountValue(generalValueElement, generalTotal, 1000, ' kg');
+        // Animate the progress bar 
+        animateProgressBar(generalBarElement, generalPercent, 1000);
+        // Animate the percentage text
+        animatePercentage(generalPercentElement, generalPercent, 1000, '% of total');
       }
       
-      // Animate Recyclable Waste with a slight delay
       setTimeout(() => {
         const recyclableValueElement = document.getElementById('recyclableWasteValue');
         const recyclableBarElement = document.getElementById('recyclableWasteBar');
@@ -3424,11 +3409,11 @@ body.mode-interactive #page7 .three-panel {
           const recyclableTotal = parseInt(recyclableValueElement.getAttribute('data-value')) || 0;
           const recyclablePercent = parseFloat(recyclableBarElement.getAttribute('data-percent')) || 0;
           
-          animateCountValue(recyclableValueElement, recyclableTotal, 800, ' kg');
-          animateProgressBar(recyclableBarElement, recyclablePercent, 800);
-          animatePercentage(recyclablePercentElement, recyclablePercent, 800, '% of total');
+          animateCountValue(recyclableValueElement, recyclableTotal, 1000, ' kg');
+          animateProgressBar(recyclableBarElement, recyclablePercent, 1000);
+          animatePercentage(recyclablePercentElement, recyclablePercent, 1000, '% of total');
         }
-      }, 300); // Start recyclable 300ms after general starts
+      }, 300);
     }
 
     // ============================================================
@@ -3477,7 +3462,6 @@ body.mode-interactive #page7 .three-panel {
           // Start observing the container
           observer.observe(element, { childList: true, subtree: true });
           
-          // Also try immediately in case it's already there
           setTimeout(() => {
             if (document.getElementById('solarTotalValue')) {
               initSolarCountAnimation();
@@ -3713,7 +3697,6 @@ body.mode-interactive #page7 .three-panel {
             // Start observing the container
             observer.observe(element, { childList: true, subtree: true });
             
-            // Also try immediately in case it's already there
             setTimeout(() => {
               if (document.getElementById('generalWasteBar')) {
                 animateWasteBreakdownBars();
@@ -4169,7 +4152,6 @@ body.mode-interactive #page7 .three-panel {
       if (event.data.type === "VIDEO_SEEK") {
         const videoElement = document.getElementById("esgVideoElement");
         if (videoElement) {
-          // Handle ratio-based seeking (from buildingControls - value between 0 and 1)
           if (typeof event.data.ratio === "number" && isFinite(event.data.ratio)) {
             const duration = videoElement.duration;
             if (isFinite(duration) && duration > 0) {
@@ -4177,7 +4159,6 @@ body.mode-interactive #page7 .three-panel {
               videoElement.currentTime = targetTime;
             }
           }
-          // Handle absolute time seeking (direct seconds value)
           else if (typeof event.data.time === "number" && isFinite(event.data.time)) {
             videoElement.currentTime = Math.max(0, event.data.time);
           }
@@ -4305,7 +4286,7 @@ body.mode-interactive #page7 .three-panel {
     }
 
     // ============================================================
-    // VIEWPORT HEIGHT FIX (Mobile)
+    // VIEWPORT HEIGHT FIX
     // ============================================================
     function setVHUnit() {
       const viewportHeight = window.innerHeight * 0.01;
@@ -4419,7 +4400,6 @@ body.mode-interactive #page7 .three-panel {
         };
 
       } catch (error) {
-        // BroadcastChannel not supported
       }
     })();
 
