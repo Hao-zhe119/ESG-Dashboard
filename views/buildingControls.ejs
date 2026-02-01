@@ -15,7 +15,7 @@
       --cardText:#111827;
       --active:#60a5fa;
 
-      /* Side navigation rails width (reserved space) */
+      /* Side navigation rails width */
       --sideRail: 110px;
 
       /* Max width of the centered grid group */
@@ -238,7 +238,6 @@
       min-height:0;
       position:relative;
 
-      /* Reserve room for left/right nav rails */
       padding-left: var(--sideRail);
       padding-right: var(--sideRail);
       box-sizing:border-box;
@@ -258,7 +257,7 @@
     .side-rail.left{ left:0; }
     .side-rail.right{ right:0; }
 
-    /* Actual buttons inside rails should be clickable */
+    /* Buttons inside rails */
     .side-rail button{
       pointer-events:auto;
       width: 64px;
@@ -396,7 +395,7 @@
     }
 
     /* ============================================================
-       PAGE 7/8/9/10 CONTROL PANELS (generic)
+       PAGE 7/8/9/10 CONTROL PANELS
     ============================================================ */
     .control-wrap{
       height:100%;
@@ -721,14 +720,13 @@
   </div>
 
   <script>
-    // Close the popup when this file is opened without a parent dashboard window.
     if (!window.opener) window.close();
 
     // ============================================================
     // MEDIA AVAILABILITY STATE
     // ============================================================
-    let hasVideos = true;  // Assume true until told otherwise
-    let hasImages = true;  // Assume true until told otherwise
+    let hasVideos = true;  
+    let hasImages = true;  
     let enabledPages = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // Default all enabled
 
     // ============================================================
@@ -924,7 +922,6 @@
       }
     }
 
-    // Fixed: Use NAV_PREV and NAV_NEXT to match index.ejs listener
     if (dashPrevPageBtn) dashPrevPageBtn.addEventListener("click", () => postToMain({ type: "NAV_PREV" }));
     if (dashNextPageBtn) dashNextPageBtn.addEventListener("click", () => postToMain({ type: "NAV_NEXT" }));
 
@@ -1359,7 +1356,6 @@
       if (messageEvent.data.type === "DASHBOARD_PAGE_UPDATE") {
         const currentPage = Number(messageEvent.data.page);
 
-        // Update media availability
         if (typeof messageEvent.data.hasVideos === "boolean") {
           hasVideos = messageEvent.data.hasVideos;
         }
@@ -1370,7 +1366,6 @@
           enabledPages = messageEvent.data.enabledPages.slice();
         }
 
-        // Update UI based on media availability
         updateMediaAvailabilityUI();
 
         if (pendingNavPage != null && Number(currentPage) === Number(pendingNavPage)) {
@@ -1395,7 +1390,6 @@
           enabledPages = messageEvent.data.enabledPages.slice();
         }
 
-        // Update UI based on media availability
         updateMediaAvailabilityUI();
 
         // Handle allYears array for multi-year support

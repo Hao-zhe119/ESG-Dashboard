@@ -48,7 +48,7 @@
     <div class="bip-subtitle">Building Information</div>
   </div>
 
-  <!-- Image Section - Will grow to fill available space -->
+  <!-- Image Section -->
   <% if (safeFilename) { %>
   <div class="bip-section bip-section-image">
     <div class="bip-section-header">📷 Building Image</div>
@@ -116,12 +116,12 @@
     gap: 12px;
     height: 100%;
     min-height: 0;
-    overflow: hidden; /* Changed from auto to hidden - panel doesn't scroll */
+    overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   .building-info-panel .bip-head {
-    flex-shrink: 0; /* Don't shrink header */
+    flex-shrink: 0;
     text-align: center;
     padding: 14px 12px;
     background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
@@ -148,7 +148,7 @@
   }
 
   .building-info-panel .bip-section {
-    flex-shrink: 0; /* Don't shrink by default */
+    flex-shrink: 0;
     padding: 12px;
     background: #f9fafb;
     border-radius: 10px;
@@ -157,8 +157,8 @@
 
   /* Image section grows to fill available space */
   .building-info-panel .bip-section-image {
-    flex: 1 1 auto; /* Grow and shrink to fill space */
-    min-height: 150px; /* Minimum height */
+    flex: 1 1 auto;
+    min-height: 150px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -175,8 +175,8 @@
   }
 
   .building-info-panel .bip-image-container {
-    flex: 1 1 auto; /* Fill remaining space in section */
-    min-height: 0; /* Allow shrinking below content size */
+    flex: 1 1 auto;
+    min-height: 0;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid #e5e7eb;
@@ -189,8 +189,8 @@
   .building-info-panel .bip-image {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Cover the entire container */
-    object-position: center; /* Center the image */
+    object-fit: cover;
+    object-position: center;
     display: block;
   }
 
@@ -261,7 +261,6 @@
     font-style: italic;
   }
 
-  /* Responsive adjustments */
   @media (max-width: 768px) {
     .building-info-panel .bip-title {
       font-size: 1.1rem;

@@ -782,7 +782,6 @@ app.get("/", async (req, res) => {
     queryMode === "interactive" ? "interactive" : (queryMode === "auto" ? "auto" : dbMode);
   const dashboardMode = effectiveMode;
 
-  // Initialize timers with empty defaults
   let timers = [];
   let timersByTimerId = {};
 
@@ -1549,13 +1548,11 @@ app.get('/building-left/:slug', async (req, res) => {
   const accountId = getAccountId(req); // ✅ Get account ID
   
   try {
-    // ✅ Use existing helper to convert slug to normalized building key
     const rawName = buildingRawNameFromSlug(slug);
     const buildingKey = normalizeBuildingKey(rawName);
     
     console.log('Building-left request - Slug:', slug, '→ Building Key:', buildingKey);
     
-    // ✅ Query with account_id filter and match on both building_name and display_label
     const query = `
       SELECT 
         building_name,
@@ -1596,7 +1593,6 @@ app.get('/building-left/:slug', async (req, res) => {
     const building = rows[0];
     console.log('Found building:', building);
     
-    // ✅ Map database columns to EJS variable names
     res.render('BuildingDetails', {
       display_label: building.display_label || building.building_name || rawName,
       building_key: building.building_name || buildingKey,
@@ -1825,14 +1821,13 @@ app.get('/info/waste', async (req, res) => {
 });
 
 /* ==============================
-   INFOGRAPHICS ROUTES (NEW - FOR LEFT PANEL)
+   INFOGRAPHICS ROUTES
    These routes render EJS templates for Solar and Waste info panels
 ============================== */
 
 /**
  * GET /infographics/SolarInfo
  * Renders the Solar info panel for the left side of Page 6
- * Query params: year (optional)
  */
 app.get('/infographics/SolarInfo', async (req, res) => {
   const accountId = getAccountId(req);
@@ -1892,7 +1887,6 @@ app.get('/infographics/SolarInfo', async (req, res) => {
       `);
     }
 
-    // Render the EJS template
     return res.render("infographics/SolarInfo", {
       year: year,
       allYears: allYears || [],
@@ -1913,7 +1907,6 @@ app.get('/infographics/SolarInfo', async (req, res) => {
 /**
  * GET /infographics/WasteInfo
  * Renders the Waste info panel for the left side of Page 7
- * Query params: fy (fiscal year, optional)
  */
 app.get('/infographics/WasteInfo', async (req, res) => {
   const accountId = getAccountId(req);

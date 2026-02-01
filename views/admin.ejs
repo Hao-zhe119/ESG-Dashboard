@@ -1217,9 +1217,9 @@
   <script>
   $(document).ready(function() {
 
-    // ============================================================
-    // Sidebar: show ONLY the clicked section + remember in URL hash
-    // ============================================================
+    // =========
+    // Sidebar
+    // =========
     const $links = $("#adminNav .nav-link");
     const $sections = $(".admin-section");
 
@@ -1477,7 +1477,7 @@
     });
 
     // ============================================================
-    // Select2 (guarded)
+    // Select2
     // ============================================================
     if ($("#graphSelect").length) {
       $("#graphSelect").select2({
@@ -1487,9 +1487,9 @@
       });
     }
 
-    // ============================================================
-    // Manage Media: AUTOSAVE always ON (drag reorder + on/off change)
-    // ============================================================
+    // ==============
+    // Manage Media
+    // ==============
     const $mediaSaveChip = $("#mediaSaveChip");
     let autosaveTimer = null;
 
@@ -1621,9 +1621,9 @@
       scheduleAutosave(listEl);
     });
 
-    // ----------------------------
+    // ========================
     // LIVE REFRESH HELPERS
-    // ----------------------------
+    // ========================
     async function fetchMediaJson(type) {
       const res = await fetch("/admin/media/json?type=" + encodeURIComponent(type), {
         headers: { "Accept": "application/json" }
@@ -1681,9 +1681,9 @@
       syncAllEnabledLabels(listEl);
     }
 
-    // ============================================================
-    // Upload Video (inside Manage Media) + refresh list
-    // ============================================================
+    // ===============
+    // Upload Video 
+    // ===============
     $("#videoFile").on("change", function() {
       let name = this.files.length ? this.files[0].name : "";
       $("#videoFileName").text(name ? "Selected: " + name : "");
@@ -1732,9 +1732,9 @@
         .text(message);
     }
 
-    // ============================================================
-    // Upload Image (inside Manage Media) + refresh list
-    // ============================================================
+    // ==============
+    // Upload Image 
+    // ==============
     $("#imageFile").on("change", function() {
       let name = this.files.length ? this.files[0].name : "";
       $("#imageFileName").text(name ? "Selected: " + name : "");
@@ -2180,9 +2180,9 @@
 
     initializeAllDropdownConstraints();
 
-    // ============================================================
-    // Building Image Preview (local file selection)
-    // ============================================================
+    // ========================
+    // Building Image Preview 
+    // ========================
     $("#imgfile").on("change", function() {
       const file = this.files && this.files[0];
       if (!file) return;
