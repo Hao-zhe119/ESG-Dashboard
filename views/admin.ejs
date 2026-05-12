@@ -835,7 +835,7 @@
             <h4>Video Settings (Main Dashboard)</h4>
 
             <div class="alert alert-secondary">
-              Controls here are <b>volume + mute only</b>.
+              Controls here include <b>volume, mute, start time,</b> and <b>playback length</b> for the dashboard video.
               These settings are saved and should be applied by the dashboard video on load.
             </div>
 
@@ -860,6 +860,10 @@
                     <span class="badge bg-secondary" id="adminVideoVolumeChip">50%</span>
                   </div>
                 </div>
+
+                <small class="text-muted d-block mt-2">
+                  Set a global volume and mute state here. Per-video start/time duration values can be configured in the Videos list below.
+                </small>
 
                 <small class="text-muted d-block mt-2">
                   Note: some browsers may not allow audio changes until the dashboard has had a user interaction at least once.
@@ -964,6 +968,18 @@
                       <strong title="<%= item.filename %>"><%= item.filename %></strong>
                       <div class="text-muted small">
                         Enabled: <span class="enabled-label"><%= item.is_enabled ? "Yes" : "No" %></span>
+                      </div>
+                      <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                        <div class="input-group input-group-sm" style="width: 128px;">
+                          <span class="input-group-text">Start</span>
+                          <input type="number" class="form-control video-segment-start" data-filename="<%= item.filename %>" min="0" step="1" placeholder="0" />
+                          <div class="invalid-feedback">Start time must be a whole number 0 or greater.</div>
+                        </div>
+                        <div class="input-group input-group-sm" style="width: 160px;">
+                          <span class="input-group-text">Len</span>
+                          <input type="number" class="form-control video-segment-duration" data-filename="<%= item.filename %>" min="0" step="1" placeholder="Full" />
+                          <div class="invalid-feedback">Length must be a whole number 0 or greater, or left blank.</div>
+                        </div>
                       </div>
                     </div>
                     <div class="media-controls">
@@ -1652,10 +1668,26 @@
         previewHref = '/uploads/videos/' + filename;
       }
 
+      const fileSettings = loadVideoSettingsByFile()[filename] || {};
+      const startValue = (typeof fileSettings.startTime !== "undefined" && fileSettings.startTime !== null) ? fileSettings.startTime : "";
+      const durationValue = (typeof fileSettings.duration !== "undefined" && fileSettings.duration !== null) ? fileSettings.duration : "";
       return '<div class="media-row" data-id="' + id + '">' +
         '<div class="drag-handle" title="Drag to reorder">||</div>' +
         thumb +
-        '<div class="media-body"><strong title="' + filename + '">' + filename + '</strong><div class="text-muted small">Enabled: <span class="enabled-label">' + enabledYesNo + '</span></div></div>' +
+        '<div class="media-body"><strong title="' + filename + '">' + filename + '</strong><div class="text-muted small">Enabled: <span class="enabled-label">' + enabledYesNo + '</span></div>' +
+        '<div class="d-flex flex-wrap gap-2 align-items-center mt-2">' +
+          '<div class="input-group input-group-sm" style="width: 128px;">' +
+            '<span class="input-group-text">Start</span>' +
+            '<input type="number" class="form-control video-segment-start" data-filename="' + filename + '" min="0" step="1" placeholder="0" value="' + startValue + '" />' +
+            '<div class="invalid-feedback">Start time must be a whole number 0 or greater.</div>' +
+          '</div>' +
+          '<div class="input-group input-group-sm" style="width: 160px;">' +
+            '<span class="input-group-text">Len</span>' +
+            '<input type="number" class="form-control video-segment-duration" data-filename="' + filename + '" min="0" step="1" placeholder="Full" value="' + durationValue + '" />' +
+            '<div class="invalid-feedback">Length must be a whole number 0 or greater, or left blank.</div>' +
+          '</div>' +
+        '</div>' +
+        '</div>' +
         '<div class="media-controls">' +
         '<a class="btn btn-sm btn-outline-info" href="' + previewHref + '" target="_blank" rel="noopener noreferrer">Preview</a>' +
         '<input type="hidden" class="sort-input" value="">' +
@@ -1780,15 +1812,73 @@
     }
 
     // ============================================================
-    // Video Settings (Volume + Mute only)
+    // Video Settings (Volume, Mute, Start Time, Duration)
     // ============================================================
     const LS_KEY = "esg_video_settings";
-    let videoSettings = { volume: 0.5, muted: false };
+    const BY_FILE_KEY = "esg_video_settings_by_file";
+    const ADMIN_VIDEO_SETTINGS_CHANNEL = "esg_video_settings_channel";
+    let videoSettings = { volume: 0.5, muted: false, startTime: null, duration: null };
+
+    function loadVideoSettingsByFile() {
+      try {
+        const raw = localStorage.getItem(BY_FILE_KEY);
+        if (!raw) return {};
+        const payload = JSON.parse(raw);
+        return (payload && typeof payload === "object") ? payload : {};
+      } catch (_e) {
+        return {};
+      }
+    }
+
+    function saveVideoSettingsByFile(data) {
+      try { localStorage.setItem(BY_FILE_KEY, JSON.stringify(data || {})); } catch (_e) {}
+      try {
+        const channel = new BroadcastChannel(ADMIN_VIDEO_SETTINGS_CHANNEL);
+        channel.postMessage({ type: "ADMIN_VIDEO_SETTINGS_PER_FILE", payload: data || {} });
+        channel.close();
+      } catch (_e) {}
+    }
+
+    function updateVideoSettingsForFile(filename, next) {
+      if (!filename) return;
+      const settings = loadVideoSettingsByFile();
+      const current = (settings && typeof settings === "object") ? settings : {};
+      const updated = { ...(current[filename] || {}), ...(next || {}) };
+      if (updated.startTime == null && updated.duration == null) {
+        delete current[filename];
+      } else {
+        current[filename] = updated;
+      }
+      saveVideoSettingsByFile(current);
+    }
 
     function clamp01(n) {
       n = Number(n);
       if (!isFinite(n)) return 0;
       return Math.max(0, Math.min(1, n));
+    }
+
+    function validateVideoTimeInput(value, allowEmpty = true) {
+      const raw = String(value === null || value === undefined ? "" : value).trim();
+      if (raw === "") return { valid: allowEmpty, parsed: null, error: null };
+      if (!/^[0-9]+$/.test(raw)) {
+        return { valid: false, parsed: null, error: "Enter a whole number 0 or greater." };
+      }
+      const parsed = Number(raw);
+      if (!isFinite(parsed) || parsed < 0) {
+        return { valid: false, parsed: null, error: "Enter a valid non-negative number." };
+      }
+      return { valid: true, parsed: Math.floor(parsed), error: null };
+    }
+
+    function setVideoInputValidity($input, isValid, message) {
+      if (isValid) {
+        $input.removeClass("is-invalid");
+        $input.next(".invalid-feedback").text("");
+      } else {
+        $input.addClass("is-invalid");
+        $input.next(".invalid-feedback").text(message || "Invalid value.");
+      }
     }
 
     function loadSettings() {
@@ -1805,6 +1895,11 @@
 
     function saveSettings() {
       try { localStorage.setItem(LS_KEY, JSON.stringify(videoSettings)); } catch(_e) {}
+      try {
+        const channel = new BroadcastChannel(ADMIN_VIDEO_SETTINGS_CHANNEL);
+        channel.postMessage({ type: "ADMIN_VIDEO_SETTINGS", ...videoSettings });
+        channel.close();
+      } catch(_e) {}
     }
 
     function setAdminUIFromSettings() {
@@ -1823,8 +1918,7 @@
       const w = getDashboardWindowIfLinked();
       if (!w) return false;
       try {
-        w.postMessage({ type: "VIDEO_SET_VOLUME", volume: videoSettings.volume }, window.location.origin);
-        w.postMessage({ type: "VIDEO_SET_MUTED", muted: videoSettings.muted }, window.location.origin);
+        w.postMessage({ type: "ADMIN_VIDEO_SETTINGS", ...videoSettings }, window.location.origin);
         return true;
       } catch(_e) {
         return false;
@@ -1837,8 +1931,55 @@
       pushToDashboardIfPossible();
     }
 
+    function updateVideoSetting(name, value) {
+      if (name === "volume") {
+        videoSettings.volume = clamp01(value);
+      } else if (name === "muted") {
+        videoSettings.muted = !!value;
+      }
+      applySettings();
+    }
+
+    function setVideoRowSegmentInputs() {
+      const settingsByFile = loadVideoSettingsByFile();
+      $(".video-segment-start").each(function() {
+        const filename = $(this).data("filename");
+        const fileSettings = settingsByFile[filename] || {};
+        $(this).val(fileSettings.startTime != null ? fileSettings.startTime : "");
+        setVideoInputValidity($(this), true);
+      });
+      $(".video-segment-duration").each(function() {
+        const filename = $(this).data("filename");
+        const fileSettings = settingsByFile[filename] || {};
+        $(this).val(fileSettings.duration != null ? fileSettings.duration : "");
+        setVideoInputValidity($(this), true);
+      });
+    }
+
+    function saveVideoSegmentInput(filename, name, value) {
+      const validation = validateVideoTimeInput(value, name === "duration");
+      const $input = $(".video-segment-" + name + "[data-filename='" + filename + "']");
+      setVideoInputValidity($input, validation.valid, validation.error);
+      if (!validation.valid) return;
+      const next = {};
+      next[name] = validation.parsed;
+      if (validation.parsed == null) next[name] = null;
+      updateVideoSettingsForFile(filename, next);
+    }
+
+    $(document).on("input change", ".video-segment-start", function() {
+      const filename = $(this).data("filename");
+      saveVideoSegmentInput(filename, "startTime", $(this).val());
+    });
+
+    $(document).on("input change", ".video-segment-duration", function() {
+      const filename = $(this).data("filename");
+      saveVideoSegmentInput(filename, "duration", $(this).val());
+    });
+
     loadSettings();
     setAdminUIFromSettings();
+    setVideoRowSegmentInputs();
     pushToDashboardIfPossible();
 
     $("#videoMuteBtn").on("click", function() { videoSettings.muted = true; applySettings(); });

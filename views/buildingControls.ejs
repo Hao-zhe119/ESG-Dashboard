@@ -318,24 +318,28 @@
     /* ============================================================
        MATCH PAGE 3 GRID
     ============================================================ */
+    .building-group-stage,
     .multi-building-grid{
       display:grid;
       grid-template-columns:repeat(6,minmax(0,1fr));
-      gap:14px;
+      gap:12px;
       align-content:start;
       width:100%;
     }
 
     @media (max-width:1400px){
       :root{ --gridMaxW: 1200px; }
+      .building-group-stage,
       .multi-building-grid{ grid-template-columns:repeat(5,1fr); }
     }
     @media (max-width:1200px){
       :root{ --gridMaxW: 980px; }
+      .building-group-stage,
       .multi-building-grid{ grid-template-columns:repeat(4,1fr); }
     }
     @media (max-width:992px){
       :root{ --gridMaxW: 760px; --sideRail: 90px; }
+      .building-group-stage,
       .multi-building-grid{ grid-template-columns:repeat(3,1fr); }
     }
     @media (max-width:768px){
@@ -351,8 +355,8 @@
       background:var(--cardBg);
       color:var(--cardText);
       border-radius:14px;
-      padding:14px 16px;
-      min-height: 84px;
+      padding:10px 12px;
+      min-height: 72px;
       box-shadow:0 10px 22px rgba(0,0,0,.18);
       border:2px solid transparent;
       cursor:pointer;
@@ -362,6 +366,19 @@
       user-select:none;
       min-width:0;
       transition: transform .12s ease, box-shadow .12s ease;
+    }
+
+    .view#view-page5 .building-card{
+      min-height: 64px;
+    }
+
+    .view#view-page5 .building-name{
+      font-size:16px;
+    }
+
+    .view#view-page5 .building-metric{
+      font-size:13px;
+      margin-top:2px;
     }
 
     .building-card.active{
@@ -591,38 +608,23 @@
            VIEW: PAGE 5 (BUILDING DETAILS) - BUILDING PICKER
       ========================== -->
       <div id="view-page5" class="view">
-        <div class="slider-area">
-          <!-- Left navigation rail -->
-          <div class="side-rail left">
-            <button id="prevBtn" class="nav-btn" type="button" aria-label="Previous group">&#9664;</button>
-          </div>
+        <div class="control-wrap">
+          <div class="control-card">
+            <div class="control-title">Building Selection</div>
 
-          <!-- Slider viewport -->
-          <div class="slider-wrap">
-            <div id="slider" class="slider">
-              <!-- GROUP 1 -->
-              <div class="slide">
-                <div class="grid-center">
-                  <div class="grid-inner">
-                    <div id="grid1" class="multi-building-grid"></div>
-                  </div>
-                </div>
-              </div>
+            <div id="buildingGroupStage" class="building-group-stage"></div>
 
-              <!-- GROUP 2 -->
-              <div class="slide">
-                <div class="grid-center">
-                  <div class="grid-inner">
-                    <div id="grid2" class="multi-building-grid"></div>
-                  </div>
-                </div>
+            <div id="buildingDetailStage" class="building-detail-stage" style="display:none; margin-top: 12px;">
+              <div class="control-row" style="margin-bottom: 12px; align-items: center; gap: 10px;">
+                <button id="backToGroupsBtn" class="nav-btn small-btn" type="button">Back</button>
+                <div class="hint" style="margin: 0; font-size:0.95rem;">Choose the building after selecting a group.</div>
               </div>
+              <div id="groupBuildingsGrid" class="multi-building-grid"></div>
             </div>
-          </div>
 
-          <!-- Right navigation rail -->
-          <div class="side-rail right">
-            <button id="nextBtn" class="nav-btn" type="button" aria-label="Next group">&#9654;</button>
+            <div class="hint" style="margin-top:10px;">
+              Tap a group to reveal only that group’s buildings, or choose one of the other building cards directly.
+            </div>
           </div>
         </div>
       </div>
@@ -958,23 +960,13 @@
     // PAGE 5: BUILDING ORDER (Building Details page)
     // ============================================================
 
-    const page1Buildings = [
-      "E1","E2","E3","E4","E5","E6",
-      "W1","W2","W3","W4","W5","W6"
-    ];
+    const buildingGroups = {
+      E: ["E1","E2","E3","E4","E5","E6"],
+      W: ["W1","W2","W3","W4","W5","W6"],
+      O: ["ALC","BLK 43","ECMC","GREEN HOUSE","RPC","RPIC","SPORTS COMPLEX","THE ARCH","TRCC","XLC"]
+    };
 
-    const page2Buildings = [
-      "ALC",
-      "BLK 43",
-      "ECMC",
-      "GREEN HOUSE",
-      "RPC",
-      "RPIC",
-      "SPORTS COMPLEX",
-      "THE ARCH",
-      "TRCC",
-      "XLC"
-    ];
+    let activeBuildingGroup = null;
 
     // ============================================================
     // PAGE 5: DISPLAY LABELS + DESCRIPTIONS
@@ -1021,8 +1013,10 @@
     // PAGE 5: GRID RENDERING
     // ============================================================
 
-    const grid1 = document.getElementById("grid1");
-    const grid2 = document.getElementById("grid2");
+    const buildingGroupStage = document.getElementById("buildingGroupStage");
+    const buildingDetailStage = document.getElementById("buildingDetailStage");
+    const groupBuildingsGrid = document.getElementById("groupBuildingsGrid");
+    const backToGroupsBtn = document.getElementById("backToGroupsBtn");
     const buildingCards = {};
 
     function createCard(buildingCode){
@@ -1047,33 +1041,71 @@
       return card;
     }
 
-    if (grid1) page1Buildings.forEach(buildingCode => grid1.appendChild(createCard(buildingCode)));
-    if (grid2) page2Buildings.forEach(buildingCode => grid2.appendChild(createCard(buildingCode)));
+    function createGroupCard(groupKey){
+      const card = document.createElement("div");
+      card.className = "building-card group-card";
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
 
-    // ============================================================
-    // PAGE 5: SLIDER NAVIGATION
-    // ============================================================
+      const label = groupKey === "E" ? "E1 - E6" : "W1 - W6";
+      const description = groupKey === "E"
+        ? "Select from the East buildings"
+        : "Select from the West buildings";
 
-    const sliderEl = document.getElementById("slider");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
+      card.innerHTML = '<div class="building-name">' + label + '</div>' +
+        '<p class="building-metric">' + description + '</p>';
 
-    let currentSlide = 0;
+      card.addEventListener("click", () => showDetailStage(groupKey));
+      card.addEventListener("keydown", (evt) => { if (evt.key === "Enter") showDetailStage(groupKey); });
 
-    function updateSlider(){
-      if (sliderEl) sliderEl.style.transform = "translateX(-" + (currentSlide * 100) + "%)";
-      if (prevBtn) prevBtn.disabled = currentSlide === 0;
-      if (nextBtn) nextBtn.disabled = currentSlide === 1;
+      return card;
     }
 
-    function goToSlide(slideIndex){
-      currentSlide = Math.max(0, Math.min(1, slideIndex));
-      updateSlider();
+    function renderGroupSelection(){
+      if (!buildingGroupStage) return;
+      buildingGroupStage.innerHTML = "";
+      buildingGroupStage.appendChild(createGroupCard("E"));
+      buildingGroupStage.appendChild(createGroupCard("W"));
+
+      const otherBuildings = buildingGroups.O || [];
+      otherBuildings.forEach(buildingCode => buildingGroupStage.appendChild(createCard(buildingCode)));
     }
 
-    if (prevBtn) prevBtn.addEventListener("click", () => goToSlide(currentSlide - 1));
-    if (nextBtn) nextBtn.addEventListener("click", () => goToSlide(currentSlide + 1));
-    updateSlider();
+    function showGroupStage(){
+      if (buildingGroupStage) buildingGroupStage.style.display = "grid";
+      if (buildingDetailStage) buildingDetailStage.style.display = "none";
+      activeBuildingGroup = null;
+      renderGroupSelection();
+    }
+
+    function renderBuildingGroup(groupKey){
+      if (!groupBuildingsGrid) return;
+      const codes = buildingGroups[groupKey] || [];
+      groupBuildingsGrid.innerHTML = "";
+      codes.forEach(buildingCode => {
+        groupBuildingsGrid.appendChild(createCard(buildingCode));
+      });
+    }
+
+    function showDetailStage(groupKey){
+      activeBuildingGroup = groupKey;
+      if (buildingGroupStage) buildingGroupStage.style.display = "none";
+      if (buildingDetailStage) buildingDetailStage.style.display = "block";
+      renderBuildingGroup(groupKey);
+    }
+
+    if (backToGroupsBtn) {
+      backToGroupsBtn.addEventListener("click", showGroupStage);
+      backToGroupsBtn.addEventListener("keydown", (evt) => { if (evt.key === "Enter") showGroupStage(); });
+    }
+
+    showGroupStage();
+
+    // ============================================================
+    // PAGE 6: DYNAMIC SOLAR YEAR CARDS
+    // ============================================================
+
+
 
     // ============================================================
     // PAGE 6: DYNAMIC SOLAR YEAR CARDS
@@ -1348,8 +1380,13 @@
 
         selectedCard.classList.add("active");
 
-        currentSlide = page1Buildings.includes(building) ? 0 : 1;
-        updateSlider();
+        if (buildingGroups.E.includes(building)) {
+          showDetailStage("E");
+        } else if (buildingGroups.W.includes(building)) {
+          showDetailStage("W");
+        } else {
+          showGroupStage();
+        }
         return;
       }
 
@@ -1501,25 +1538,6 @@
       }
       postToMain({ type: "REQUEST_STATE" });
     }, 450);
-
-    // Touch swipe for building slider
-    let touchStartX = null;
-    const sliderWrapElement = document.querySelector(".slider-wrap");
-    if (sliderWrapElement) {
-      sliderWrapElement.addEventListener("touchstart", (touchEvent) => {
-        touchStartX = touchEvent.touches && touchEvent.touches[0] ? touchEvent.touches[0].clientX : null;
-      }, { passive: true });
-
-      sliderWrapElement.addEventListener("touchend", (touchEvent) => {
-        if (touchStartX == null) return;
-        const touchEndX = touchEvent.changedTouches && touchEvent.changedTouches[0] ? touchEvent.changedTouches[0].clientX : touchStartX;
-        const deltaX = touchEndX - touchStartX;
-        if (Math.abs(deltaX) > 60) {
-          goToSlide(currentSlide + (deltaX < 0 ? 1 : -1));
-        }
-        touchStartX = null;
-      }, { passive: true });
-    }
 
     console.log("Building Controls initialized");
   </script>
