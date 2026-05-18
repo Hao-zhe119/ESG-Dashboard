@@ -477,6 +477,25 @@ body.mode-interactive #progressBarContainer { display: none; }
   background: #000;
 }
 
+#page9 .carousel-item {
+  position: relative;
+}
+
+#page9 .carousel-caption-overlay {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: clamp(5px, 0.8vh, 10px) clamp(10px, 1.5vw, 20px);
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-size: clamp(13px, 1.8vw, 22px);
+  font-weight: 500;
+  text-align: center;
+  z-index: 5;
+  border-radius: 6px;
+  max-width: 90%;
+  pointer-events: none;
+}
+
 /* ========================================
    PAGES 5, 6, 7: THREE-PANEL LAYOUT
    ======================================== */
@@ -1341,6 +1360,12 @@ body.mode-interactive #page7 .three-panel {
           <% mediaImages.forEach(function(img, index){ %>
             <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
               <img src="/uploads/images/carousel/<%= img.filename %>" class="d-block w-100" />
+              <% if (img.caption_text) { %>
+                <div class="carousel-caption-overlay"
+                     style="left:<%= img.caption_x != null ? img.caption_x : 50 %>%; top:<%= img.caption_y != null ? img.caption_y : 85 %>%;">
+                  <%= img.caption_text %>
+                </div>
+              <% } %>
             </div>
           <% }) %>
         <% } else { %>
@@ -4075,6 +4100,7 @@ body.mode-interactive #page7 .three-panel {
     }
 
     // ============================================================
+    // ============================================================
     // CAROUSEL PAGE
     // ============================================================
     let imageCarouselTimerId = null;
@@ -4108,8 +4134,8 @@ body.mode-interactive #page7 .three-panel {
         wrap: true 
       });
       
-      carouselElement.addEventListener("slid.bs.carousel", () => { 
-        sendCarouselStateToControls(); 
+      carouselElement.addEventListener("slid.bs.carousel", () => {
+        sendCarouselStateToControls();
       });
 
       if (!is_auto_mode) { 

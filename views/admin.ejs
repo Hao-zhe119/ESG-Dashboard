@@ -927,8 +927,17 @@
                       <div class="text-muted small">
                         Enabled: <span class="enabled-label"><%= item.is_enabled ? "Yes" : "No" %></span>
                       </div>
+                      <% if (item.caption_text) { %>
+                        <div class="text-muted small mt-1 caption-info">Caption: <em><%= item.caption_text %></em></div>
+                      <% } %>
                     </div>
                     <div class="media-controls">
+                      <button class="btn btn-sm btn-outline-warning edit-overlay-btn"
+                        data-id="<%= item.id %>"
+                        data-filename="<%= item.filename %>"
+                        data-caption="<%= item.caption_text || '' %>"
+                        data-cx="<%= item.caption_x || 50 %>"
+                        data-cy="<%= item.caption_y || 85 %>">Edit</button>
                       <a class="btn btn-sm btn-outline-info"
                          href="/uploads/images/carousel/<%= item.filename %>"
                          target="_blank" rel="noopener noreferrer">Preview</a>
@@ -1003,6 +1012,53 @@
             <% } else { %>
               <p class="text-muted">No video records found in database.</p>
             <% } %>
+
+            <!-- Image Caption Editor (custom overlay, no Bootstrap modal) -->
+            <div id="overlayPanel" style="display:none; position:fixed; inset:0; z-index:9999;
+                 background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
+              <div style="background:#1e1e1e; border:1px solid #444; border-radius:10px;
+                          width:520px; max-width:95vw; max-height:90vh; overflow-y:auto; padding:24px;
+                          box-shadow:0 8px 32px rgba(0,0,0,0.6); position:relative;">
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                  <h5 style="margin:0; color:#fff;">Edit Image Caption</h5>
+                  <button id="overlayPanelClose" type="button"
+                          style="background:none; border:none; color:#aaa; font-size:22px; cursor:pointer; line-height:1;">&times;</button>
+                </div>
+
+                <div id="overlayModalStatus" class="alert d-none mb-3"></div>
+                <input type="hidden" id="overlayModalMediaId" value="">
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold text-light">Caption Text</label>
+                  <input type="text" class="form-control" id="overlayCaptionText" placeholder="Leave empty to remove caption...">
+                </div>
+
+                <div class="mb-2">
+                  <label class="form-label fw-semibold text-light">Caption Position</label>
+                  <div class="form-text text-muted mb-2">Click anywhere on the image to place the caption. Drag the label to fine-tune.</div>
+                  <div id="overlayDragContainer" style="position:relative; display:block; width:100%;
+                       cursor:crosshair; border-radius:6px; overflow:hidden; background:#111;">
+                    <img id="overlayModalPreview" src="" alt="Preview"
+                         style="width:100%; display:block; pointer-events:none; user-select:none;">
+                    <div id="overlayDragLabel"
+                         style="position:absolute; left:50%; top:85%; transform:translate(-50%,-50%);
+                                background:rgba(0,0,0,0.6); color:#fff; padding:4px 12px;
+                                border-radius:4px; font-size:14px; cursor:move;
+                                white-space:nowrap; max-width:90%; text-align:center;
+                                border:2px dashed rgba(255,255,255,0.6); user-select:none;">
+                      Caption Preview
+                    </div>
+                  </div>
+                  <div class="form-text text-muted mt-1">Position: <span id="overlayPosDisplay">50%, 85%</span></div>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+                  <button type="button" class="btn btn-secondary" id="overlayCancelBtn">Cancel</button>
+                  <button type="button" class="btn btn-primary" id="saveOverlayBtn">Save</button>
+                </div>
+              </div>
+            </div>
           </section>
 
           <!-- Upload Graph Data (XLSX) + Building Year Ranges -->
@@ -1659,10 +1715,24 @@
 
       let thumb = "";
       let previewHref = "";
+      let extraBodyHtml = "";
+      let editBtn = "";
 
       if (type === "image") {
         thumb = '<div class="media-thumb" aria-hidden="true"><img src="/uploads/images/carousel/' + filename + '" alt="" class="media-thumb" /></div>';
         previewHref = '/uploads/images/carousel/' + filename;
+        const captionText = item.caption_text || "";
+        if (captionText) {
+          extraBodyHtml += '<div class="text-muted small mt-1 caption-info">Caption: <em>' + captionText + '</em></div>';
+        }
+        const captionX = item.caption_x || 50;
+        const captionY = item.caption_y || 85;
+        editBtn = '<button class="btn btn-sm btn-outline-warning edit-overlay-btn"' +
+          ' data-id="' + id + '"' +
+          ' data-filename="' + filename + '"' +
+          ' data-caption="' + captionText.replace(/"/g, '&quot;') + '"' +
+          ' data-cx="' + captionX + '"' +
+          ' data-cy="' + captionY + '">Edit</button>';
       } else {
         thumb = '<div class="media-thumb" aria-hidden="true"><video preload="metadata" muted playsinline><source src="/uploads/videos/' + filename + '#t=0.1" type="video/mp4"></video></div>';
         previewHref = '/uploads/videos/' + filename;
@@ -1671,24 +1741,34 @@
       const fileSettings = loadVideoSettingsByFile()[filename] || {};
       const startValue = (typeof fileSettings.startTime !== "undefined" && fileSettings.startTime !== null) ? fileSettings.startTime : "";
       const durationValue = (typeof fileSettings.duration !== "undefined" && fileSettings.duration !== null) ? fileSettings.duration : "";
+
+      let videoSegmentHtml = "";
+      if (type === "video") {
+        videoSegmentHtml =
+          '<div class="d-flex flex-wrap gap-2 align-items-center mt-2">' +
+            '<div class="input-group input-group-sm" style="width: 128px;">' +
+              '<span class="input-group-text">Start</span>' +
+              '<input type="number" class="form-control video-segment-start" data-filename="' + filename + '" min="0" step="1" placeholder="0" value="' + startValue + '" />' +
+              '<div class="invalid-feedback">Start time must be a whole number 0 or greater.</div>' +
+            '</div>' +
+            '<div class="input-group input-group-sm" style="width: 160px;">' +
+              '<span class="input-group-text">Len</span>' +
+              '<input type="number" class="form-control video-segment-duration" data-filename="' + filename + '" min="0" step="1" placeholder="Full" value="' + durationValue + '" />' +
+              '<div class="invalid-feedback">Length must be a whole number 0 or greater, or left blank.</div>' +
+            '</div>' +
+          '</div>';
+      }
+
       return '<div class="media-row" data-id="' + id + '">' +
         '<div class="drag-handle" title="Drag to reorder">||</div>' +
         thumb +
-        '<div class="media-body"><strong title="' + filename + '">' + filename + '</strong><div class="text-muted small">Enabled: <span class="enabled-label">' + enabledYesNo + '</span></div>' +
-        '<div class="d-flex flex-wrap gap-2 align-items-center mt-2">' +
-          '<div class="input-group input-group-sm" style="width: 128px;">' +
-            '<span class="input-group-text">Start</span>' +
-            '<input type="number" class="form-control video-segment-start" data-filename="' + filename + '" min="0" step="1" placeholder="0" value="' + startValue + '" />' +
-            '<div class="invalid-feedback">Start time must be a whole number 0 or greater.</div>' +
-          '</div>' +
-          '<div class="input-group input-group-sm" style="width: 160px;">' +
-            '<span class="input-group-text">Len</span>' +
-            '<input type="number" class="form-control video-segment-duration" data-filename="' + filename + '" min="0" step="1" placeholder="Full" value="' + durationValue + '" />' +
-            '<div class="invalid-feedback">Length must be a whole number 0 or greater, or left blank.</div>' +
-          '</div>' +
-        '</div>' +
+        '<div class="media-body"><strong title="' + filename + '">' + filename + '</strong>' +
+        '<div class="text-muted small">Enabled: <span class="enabled-label">' + enabledYesNo + '</span></div>' +
+        extraBodyHtml +
+        videoSegmentHtml +
         '</div>' +
         '<div class="media-controls">' +
+        editBtn +
         '<a class="btn btn-sm btn-outline-info" href="' + previewHref + '" target="_blank" rel="noopener noreferrer">Preview</a>' +
         '<input type="hidden" class="sort-input" value="">' +
         '<select class="form-select form-select-sm enabled-select" style="width:auto;"><option value="1" ' + onSel + '>On</option><option value="0" ' + offSel + '>Off</option></select>' +
@@ -1807,6 +1887,145 @@
       $("#imageStatus")
         .removeClass("d-none")
         .removeClass("alert-success alert-danger")
+        .addClass("alert-" + type)
+        .text(message);
+    }
+
+    // ============================================================
+    // Image Overlay & Audio Modal
+    // ============================================================
+    function showOverlayPanel() {
+      const p = document.getElementById("overlayPanel");
+      p.style.display = "flex";
+    }
+
+    function hideOverlayPanel() {
+      const p = document.getElementById("overlayPanel");
+      p.style.display = "none";
+    }
+
+    document.getElementById("overlayPanelClose").addEventListener("click", hideOverlayPanel);
+    document.getElementById("overlayCancelBtn").addEventListener("click", hideOverlayPanel);
+
+    // Click backdrop (outside the white box) to close
+    document.getElementById("overlayPanel").addEventListener("click", function(e) {
+      if (e.target === this) hideOverlayPanel();
+    });
+
+    // Drag-to-position state
+    let _captionX = 50, _captionY = 85;
+
+    function updateDragLabel(x, y) {
+      _captionX = Math.round(Math.max(5, Math.min(95, x)));
+      _captionY = Math.round(Math.max(5, Math.min(95, y)));
+      const lbl = document.getElementById("overlayDragLabel");
+      if (lbl) {
+        lbl.style.left = _captionX + "%";
+        lbl.style.top  = _captionY + "%";
+      }
+      const disp = document.getElementById("overlayPosDisplay");
+      if (disp) disp.textContent = _captionX + "%, " + _captionY + "%";
+    }
+
+    // Sync label text with caption input
+    $(document).on("input", "#overlayCaptionText", function() {
+      const lbl = document.getElementById("overlayDragLabel");
+      if (lbl) lbl.textContent = this.value.trim() || "Caption Preview";
+    });
+
+    // Click on image container to reposition
+    $(document).on("click", "#overlayDragContainer", function(e) {
+      if ($(e.target).is("#overlayDragLabel")) return; // handled by drag
+      const rect = this.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width)  * 100;
+      const y = ((e.clientY - rect.top)  / rect.height) * 100;
+      updateDragLabel(x, y);
+    });
+
+    // Drag the label to reposition
+    (function() {
+      let dragging = false, startX, startY, startLeft, startTop;
+
+      $(document).on("mousedown", "#overlayDragLabel", function(e) {
+        e.preventDefault();
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        startLeft = _captionX; startTop = _captionY;
+      });
+
+      $(document).on("mousemove", function(e) {
+        if (!dragging) return;
+        const container = document.getElementById("overlayDragContainer");
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const dx = ((e.clientX - startX) / rect.width)  * 100;
+        const dy = ((e.clientY - startY) / rect.height) * 100;
+        updateDragLabel(startLeft + dx, startTop + dy);
+      });
+
+      $(document).on("mouseup", function() { dragging = false; });
+    })();
+
+    $(document).on("click", ".edit-overlay-btn", function() {
+      const id       = this.dataset.id;
+      const filename = this.dataset.filename;
+      const caption  = this.dataset.caption || "";
+      const cx       = parseFloat(this.dataset.cx) || 50;
+      const cy       = parseFloat(this.dataset.cy) || 85;
+
+      $("#overlayModalMediaId").val(id);
+      $("#overlayModalPreview").attr("src", "/uploads/images/carousel/" + encodeURIComponent(filename));
+      $("#overlayCaptionText").val(caption);
+      $("#overlayModalStatus").addClass("d-none").text("").removeClass("alert-success alert-danger");
+
+      const lbl = document.getElementById("overlayDragLabel");
+      if (lbl) lbl.textContent = caption || "Caption Preview";
+      updateDragLabel(cx, cy);
+
+      showOverlayPanel();
+    });
+
+    $("#saveOverlayBtn").on("click", async function() {
+      const id = $("#overlayModalMediaId").val();
+      if (!id) return;
+
+      const captionText = $("#overlayCaptionText").val().trim();
+
+      $(this).prop("disabled", true).text("Saving...");
+      try {
+        const res  = await fetch("/admin/media/" + id + "/save-overlay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ caption_text: captionText, caption_x: _captionX, caption_y: _captionY })
+        });
+        const json = await res.json();
+        if (json.success) {
+          const btn = $(".edit-overlay-btn[data-id='" + id + "']");
+          btn.attr("data-caption", captionText);
+          btn.attr("data-cx", _captionX);
+          btn.attr("data-cy", _captionY);
+
+          const row    = btn.closest(".media-row");
+          const bodyEl = row.find(".media-body");
+          bodyEl.find(".caption-info").remove();
+          if (captionText) {
+            bodyEl.append('<div class="text-muted small mt-1 caption-info">Caption: <em>' + captionText + '</em></div>');
+          }
+
+          showOverlayStatus("Saved!", "success");
+          setTimeout(() => hideOverlayPanel(), 900);
+        } else {
+          showOverlayStatus("Failed to save. " + (json.error || ""), "danger");
+        }
+      } catch (_e) {
+        showOverlayStatus("Error saving.", "danger");
+      }
+      $(this).prop("disabled", false).text("Save");
+    });
+
+    function showOverlayStatus(message, type) {
+      $("#overlayModalStatus")
+        .removeClass("d-none alert-success alert-danger")
         .addClass("alert-" + type)
         .text(message);
     }

@@ -50,6 +50,40 @@ const uploadCarouselImages = makeUploaderFor(path.join("images", "carousel"));
 const uploadBuildingImages = makeUploaderFor(path.join("images", "Buildings"));
 
 /* ==============================
+   CAPTION JSON STORE
+   Captions are stored in a local JSON file so no DB changes are needed.
+   File: public/uploads/captions.json
+   Structure: { "accountId_mediaId": { caption_text, caption_x, caption_y } }
+============================== */
+const CAPTIONS_FILE = path.join(__dirname, "public", "uploads", "captions.json");
+
+function readCaptions() {
+  try {
+    if (!fs.existsSync(CAPTIONS_FILE)) return {};
+    return JSON.parse(fs.readFileSync(CAPTIONS_FILE, "utf8") || "{}");
+  } catch (_e) { return {}; }
+}
+
+function writeCaptions(data) {
+  ensureDir(path.dirname(CAPTIONS_FILE));
+  fs.writeFileSync(CAPTIONS_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+
+function mergeCaptionsIntoItems(items, accountId) {
+  const captions = readCaptions();
+  return items.map(item => {
+    const key = accountId + "_" + item.id;
+    const cap = captions[key] || {};
+    return {
+      ...item,
+      caption_text: cap.caption_text || null,
+      caption_x: cap.caption_x != null ? cap.caption_x : 50,
+      caption_y: cap.caption_y != null ? cap.caption_y : 85
+    };
+  });
+}
+
+/* ==============================
    MYSQL CONNECTION
 ============================== */
 const connection = mysql.createConnection({
@@ -902,7 +936,7 @@ app.get("/", async (req, res) => {
         "SELECT * FROM dashboard_media WHERE account_id = ? AND media_type = 'video' AND is_enabled = 1 ORDER BY sort_order ASC, id ASC",
         [accountId]
       );
-      mediaImages = imgRows || [];
+      mediaImages = mergeCaptionsIntoItems(imgRows || [], accountId);
       mediaVideos = vidRows || [];
     } catch (e) {
       console.error("Failed to load media:", e);
@@ -1334,16 +1368,17 @@ app.get('/admin', requireAuth, async (req, res) => {
     console.log('Water-only years:', waterYears);
 
     // 6. Fetch media
-    const [mediaImages] = await db.query(
-      `SELECT * FROM dashboard_media 
-       WHERE account_id = ? AND media_type = 'image' 
+    const [mediaImagesRaw] = await db.query(
+      `SELECT * FROM dashboard_media
+       WHERE account_id = ? AND media_type = 'image'
        ORDER BY sort_order`,
       [accountId]
     );
+    const mediaImages = mergeCaptionsIntoItems(mediaImagesRaw || [], accountId);
 
     const [mediaVideos] = await db.query(
-      `SELECT * FROM dashboard_media 
-       WHERE account_id = ? AND media_type = 'video' 
+      `SELECT * FROM dashboard_media
+       WHERE account_id = ? AND media_type = 'video'
        ORDER BY sort_order`,
       [accountId]
     );
@@ -1508,10 +1543,42 @@ app.post("/admin/media/:id/delete", async (req, res) => {
       }
     }
 
+
     return res.redirect("/admin");
   } catch (e) {
     console.error("Failed to delete media:", e);
     return res.status(500).send("Failed to delete media.");
+  }
+});
+
+app.post("/admin/media/:id/save-overlay", async (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: "Unauthorized" });
+  const accountId = req.session.user.id;
+  const mediaId = parseInt(req.params.id, 10);
+
+  try {
+    const captionText = req.body.caption_text ? String(req.body.caption_text).trim() : null;
+    const captionX = parseFloat(req.body.caption_x);
+    const captionY = parseFloat(req.body.caption_y);
+
+    const captions = readCaptions();
+    const key = accountId + "_" + mediaId;
+
+    if (captionText) {
+      captions[key] = {
+        caption_text: captionText,
+        caption_x: isFinite(captionX) ? captionX : 50,
+        caption_y: isFinite(captionY) ? captionY : 85
+      };
+    } else {
+      delete captions[key];
+    }
+
+    writeCaptions(captions);
+    res.json({ success: true });
+  } catch (e) {
+    console.error("Error saving overlay:", e);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -1532,7 +1599,11 @@ app.get("/admin/media/json", requireAuth, async (req, res) => {
       [accountId, type]
     );
 
-    res.json({ type, items: rows || [] });
+    const items = type === "image"
+      ? mergeCaptionsIntoItems(rows || [], accountId)
+      : (rows || []);
+
+    res.json({ type, items });
   } catch (e) {
     console.error("media json error:", e);
     res.status(500).json({ error: "Failed to load media" });
