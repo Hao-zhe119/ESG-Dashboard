@@ -17,7 +17,7 @@
   --navH: 56px;
   --pad: clamp(12px, 1.1vw, 20px);
   --gap: clamp(10px, 1.2vw, 18px);
-  --progH: clamp(6px, 0.7vh, 10px);
+  --progH: 0px;
   --bFs: clamp(12px, 0.9vw, 16px);
   --vh: 1vh;
   --arrowGutter: clamp(72px, 5.5vw, 130px);
@@ -214,7 +214,8 @@ body::after {
 }
 
 .navbar .container-fluid {
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .navbar .navbar-toggler {
@@ -226,6 +227,13 @@ body::after {
 .navbar .navbar-nav {
   gap: 10px;
   align-items: center;
+}
+
+.navbar-left-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .navbar .nav-item {
@@ -417,51 +425,120 @@ body::after {
 body.is-fullscreen .navbar { display: none !important; }
 
 /* ========================================
-   ARROW BUTTONS
+   PAGE NAV + PROGRESS CONTROLS
    ======================================== */
-.arrow-btn {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18);
+.page-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 5px 10px;
+  border-radius: 999px;
   color: var(--text);
-  padding: clamp(8px, 1vh, 12px) clamp(12px, 1.2vw, 18px);
+  background: rgba(96,165,250,0.16);
+  border: 1px solid rgba(147,197,253,0.34);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.20);
+  backdrop-filter: blur(10px);
+}
+
+.page-nav-button {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
   border-radius: 50%;
-  cursor: pointer;
-  z-index: 1500;
-  font-size: clamp(18px, 1.8vw, 26px);
-  transition: 0.2s;
-  box-shadow: 0 10px 22px rgba(0,0,0,0.35);
-  user-select: none;
+  color: #ffffff;
+  background: rgba(255,255,255,0.12);
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.arrow-btn:hover { background: rgba(96,165,250,0.18); }
-#backArrowButton { left: clamp(10px, 1.2vw, 20px); }
-#nextArrowButton { right: clamp(10px, 1.2vw, 20px); }
-
-/* ========================================
-   PROGRESS BAR
-   ======================================== */
-#progressBarContainer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: var(--progH);
-  z-index: 2000;
-  background: var(--progressBg);
-  border-top: 1px solid rgba(255,255,255,0.10);
+.page-nav-button:hover,
+.page-nav-button:focus-visible {
+  outline: none;
+  background: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
 }
 
-#progressBarFill {
-  width: 0%;
-  height: 100%;
-  background: var(--progressFill);
-  transition: width 0.1s linear;
+.page-nav-button svg {
+  width: 16px;
+  height: 16px;
 }
 
-body.mode-interactive #progressBarContainer { display: none; }
+.page-nav-label {
+  min-width: 142px;
+  max-width: min(34vw, 240px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: #ffffff;
+}
+
+.progress-pill {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  background: rgba(96,165,250,0.16);
+  border: 1px solid rgba(147,197,253,0.34);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.20);
+  backdrop-filter: blur(10px);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.progress-pill:hover,
+.progress-pill:focus-visible {
+  outline: none;
+  background: rgba(96,165,250,0.26);
+  border-color: rgba(191,219,254,0.52);
+  transform: translateY(-1px);
+}
+
+.progress-ring {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.progress-ring-track,
+.progress-ring-fill {
+  fill: none;
+  stroke-width: 2.6;
+}
+
+.progress-ring-track {
+  stroke: rgba(255,255,255,0.22);
+}
+
+.progress-ring-fill {
+  stroke: #ffffff;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+.progress-icon {
+  position: relative;
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  color: #ffffff;
+}
+
+body.mode-interactive .progress-pill { display: none; }
 
 /* ========================================
    BUTTONS
@@ -1400,6 +1477,33 @@ body.mode-interactive #page7 .three-panel {
   <!-- NAVBAR -->
   <nav class="navbar navbar-expand-sm bg-light navbar-light border-bottom">
     <div class="container-fluid">
+      <div class="navbar-left-cluster" aria-label="Dashboard slideshow controls">
+        <div class="page-nav-pill" aria-label="Dashboard page navigation">
+          <button id="backArrowButton" class="page-nav-button" type="button" onclick="navigateToPreviousPage()" aria-label="Previous page">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </button>
+          <span id="pageNavLabel" class="page-nav-label">Welcome</span>
+          <button id="nextArrowButton" class="page-nav-button" type="button" onclick="navigateToNextPage()" aria-label="Next page">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </button>
+        </div>
+        <button id="progressPlayPauseButton" class="progress-pill" type="button" onclick="toggleAutoSlideshow()" aria-label="Pause slideshow" aria-pressed="false">
+          <svg class="progress-ring" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+            <circle class="progress-ring-track" cx="18" cy="18" r="15.5" pathLength="100"></circle>
+            <circle id="progressRingFill" class="progress-ring-fill" cx="18" cy="18" r="15.5" pathLength="100"></circle>
+          </svg>
+          <svg id="progressPauseIcon" class="progress-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+          </svg>
+          <svg id="progressPlayIcon" class="progress-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="display:none;">
+            <path d="M8 5.5v13l10-6.5-10-6.5z" fill="currentColor"></path>
+          </svg>
+        </button>
+      </div>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -1626,10 +1730,6 @@ body.mode-interactive #page7 .three-panel {
     </p>
   </div>
 
-  <button id="backArrowButton" class="arrow-btn" onclick="navigateToPreviousPage()">&#8592;</button>
-  <button id="nextArrowButton" class="arrow-btn" onclick="navigateToNextPage()">&#8594;</button>
-  <div id="progressBarContainer"><div id="progressBarFill"></div></div>
-  
   <script>
     // ============================================================
     // SERVER DATA
@@ -2280,8 +2380,11 @@ body.mode-interactive #page7 .three-panel {
     
     const backArrowButton = document.getElementById("backArrowButton");
     const nextArrowButton = document.getElementById("nextArrowButton");
-    const progressBarContainerElement = document.getElementById("progressBarContainer");
-    const progressBarFillElement = document.getElementById("progressBarFill");
+    const pageNavLabelElement = document.getElementById("pageNavLabel");
+    const progressPlayPauseButton = document.getElementById("progressPlayPauseButton");
+    const progressRingFillElement = document.getElementById("progressRingFill");
+    const progressPauseIconElement = document.getElementById("progressPauseIcon");
+    const progressPlayIconElement = document.getElementById("progressPlayIcon");
 
     let progressIntervalId = null;
     let progressStartTimestampMs = 0;
@@ -2289,8 +2392,84 @@ body.mode-interactive #page7 .three-panel {
     let progressElapsedMs = 0;
     let isAutoAdvanceEnabled = true;
     let progressActivePage = 1;
+    let isAutoSlideshowPaused = false;
     let pageTransitionSeq = 0;
     let pageTransitionBusy = false;
+
+    const PAGE_NAMES = {
+      1: "Welcome",
+      2: "Overview",
+      3: "Electricity",
+      4: "Water",
+      5: "Building Details",
+      6: "Solar",
+      7: "Waste",
+      8: "Video",
+      9: "Images",
+      10: "Thank You"
+    };
+
+    function getDashboardPageName(pageNumber) {
+      return PAGE_NAMES[Number(pageNumber)] || "Unknown";
+    }
+
+    function updatePageNavLabel() {
+      if (pageNavLabelElement) pageNavLabelElement.textContent = getDashboardPageName(currentPageNumber);
+    }
+
+    function setProgressVisual(percent) {
+      if (!progressRingFillElement) return;
+      const safePercent = Math.max(0, Math.min(100, Number(percent || 0)));
+      progressRingFillElement.style.strokeDashoffset = String(100 - safePercent);
+    }
+
+    function updatePlayPauseButtonState() {
+      if (!progressPlayPauseButton) return;
+      progressPlayPauseButton.setAttribute("aria-pressed", isAutoSlideshowPaused ? "true" : "false");
+      progressPlayPauseButton.setAttribute("aria-label", isAutoSlideshowPaused ? "Resume slideshow" : "Pause slideshow");
+      if (progressPauseIconElement) progressPauseIconElement.style.display = isAutoSlideshowPaused ? "none" : "";
+      if (progressPlayIconElement) progressPlayIconElement.style.display = isAutoSlideshowPaused ? "" : "none";
+    }
+
+    function pauseActiveAutoTimers() {
+      if (progressIntervalId) clearInterval(progressIntervalId);
+      progressIntervalId = null;
+      if (progressStartTimestampMs) progressElapsedMs = Math.max(0, Date.now() - progressStartTimestampMs);
+      clearThreeCycleTimer();
+      clearSolarCycleTimer();
+      clearWasteCycleTimer();
+      clearImageCarouselTimer();
+      clearVideoEndCountdown();
+      const video = document.getElementById("esgVideoElement");
+      if (video && currentPageNumber === 8) {
+        try { video.pause(); } catch (error) {}
+      }
+      updateProgressBarWidthFromState();
+    }
+
+    function resumeActiveAutoTimers() {
+      if (!is_auto_mode) return;
+      if (currentPageNumber === 8) {
+        const video = document.getElementById("esgVideoElement");
+        if (video) {
+          try { video.play().catch(() => {}); } catch (error) {}
+        }
+      }
+      if ([5, 6, 7, 9].includes(currentPageNumber)) {
+        onEnterPage(currentPageNumber);
+        return;
+      }
+      setProgressBarToComputedElapsed(progressTotalDurationMs, progressElapsedMs, isAutoAdvanceEnabled);
+    }
+
+    function toggleAutoSlideshow() {
+      if (!is_auto_mode) return;
+      isAutoSlideshowPaused = !isAutoSlideshowPaused;
+      updatePlayPauseButtonState();
+      if (isAutoSlideshowPaused) pauseActiveAutoTimers();
+      else resumeActiveAutoTimers();
+    }
+    window.toggleAutoSlideshow = toggleAutoSlideshow;
 
     function hardResetProgressBar() {
       if (progressIntervalId) clearInterval(progressIntervalId);
@@ -2300,39 +2479,39 @@ body.mode-interactive #page7 .three-panel {
       progressStartTimestampMs = 0;
       isAutoAdvanceEnabled = true;
       progressActivePage = currentPageNumber;
-      if (progressBarFillElement) progressBarFillElement.style.width = "0%";
-      if (progressBarContainerElement && is_auto_mode) progressBarContainerElement.style.display = "";
+      setProgressVisual(0);
     }
 
     function stopProgressBarAnimation() {
       if (progressIntervalId) clearInterval(progressIntervalId);
       progressIntervalId = null;
       progressElapsedMs = 0;
-      if (progressBarFillElement) progressBarFillElement.style.width = "0%";
+      setProgressVisual(0);
     }
 
     function setProgressBarToComputedElapsed(totalMs, elapsedMs, autoAdvance) {
       if (!is_auto_mode) return;
+      if (isAutoSlideshowPaused) return;
       progressTotalDurationMs = Math.max(1, Number(totalMs || 1));
       progressElapsedMs = Math.max(0, Number(elapsedMs || 0));
       progressStartTimestampMs = Date.now() - progressElapsedMs;
       isAutoAdvanceEnabled = !!autoAdvance;
       progressActivePage = currentPageNumber;
-      if (!progressBarFillElement) return;
       const percentage = Math.max(0, Math.min(100, (progressElapsedMs / progressTotalDurationMs) * 100));
-      progressBarFillElement.style.width = percentage + "%";
+      setProgressVisual(percentage);
       if (progressIntervalId) clearInterval(progressIntervalId);
       progressIntervalId = setInterval(() => {
+        if (isAutoSlideshowPaused) return;
         if (progressActivePage !== currentPageNumber) return;
         const now = Date.now();
         const elapsed = now - progressStartTimestampMs;
         progressElapsedMs = elapsed;
         const percent = Math.max(0, Math.min(100, (elapsed / progressTotalDurationMs) * 100));
-        progressBarFillElement.style.width = percent + "%";
+        setProgressVisual(percent);
         if (elapsed >= progressTotalDurationMs) {
           clearInterval(progressIntervalId);
           progressIntervalId = null;
-          progressBarFillElement.style.width = "100%";
+          setProgressVisual(100);
           if (isAutoAdvanceEnabled && progressActivePage === currentPageNumber) {
             navigateToNextPage();
           }
@@ -2341,13 +2520,13 @@ body.mode-interactive #page7 .three-panel {
     }
 
     function updateProgressBarWidthFromState() {
-      if (!progressBarFillElement) return;
       const percentage = Math.max(0, Math.min(100, (progressElapsedMs / progressTotalDurationMs) * 100));
-      progressBarFillElement.style.width = percentage + "%";
+      setProgressVisual(percentage);
     }
 
     function startManualProgress(totalMs, elapsedMs) {
       if (!is_auto_mode) return;
+      if (isAutoSlideshowPaused) return;
       if (progressIntervalId) clearInterval(progressIntervalId);
       progressIntervalId = null;
       progressTotalDurationMs = Math.max(1, Number(totalMs || 1));
@@ -2360,6 +2539,7 @@ body.mode-interactive #page7 .three-panel {
 
     function runProgressForPage(pageNum, totalMs, autoAdvance) {
       if (!is_auto_mode) return;
+      if (isAutoSlideshowPaused) return;
       setProgressBarToComputedElapsed(totalMs, 0, autoAdvance);
     }
 
@@ -2567,7 +2747,6 @@ body.mode-interactive #page7 .three-panel {
 
     function stopAndResetVideoElement() {
       clearVideoEndCountdown();
-      if (progressBarContainerElement && is_auto_mode) progressBarContainerElement.style.display = "";
       const video = document.getElementById("esgVideoElement");
       if (!video) return;
       try { video.onended = null; } catch (error) {}
@@ -2626,6 +2805,7 @@ body.mode-interactive #page7 .three-panel {
       nextElement.style.opacity = "1";
 
       currentPageNumber = next;
+      updatePageNavLabel();
       hardResetProgressBar();
       onEnterPage(next);
       sendControlPageUpdate();
@@ -4181,7 +4361,6 @@ body.mode-interactive #page7 .three-panel {
 
       if (is_auto_mode) {
         hardResetProgressBar();
-        if (progressBarContainerElement) progressBarContainerElement.style.display = "none";
       } else { 
         stopProgressBarAnimation(); 
       }
@@ -4199,7 +4378,6 @@ body.mode-interactive #page7 .three-panel {
 
       const startEndCountdownThenNextPage = () => {
         if (!is_auto_mode) return;
-        if (progressBarContainerElement) progressBarContainerElement.style.display = "";
         hardResetProgressBar();
         runProgressForPage(8, getPageDuration(8), true);
       };
@@ -4522,16 +4700,11 @@ body.mode-interactive #page7 .three-panel {
     });
 
     // ============================================================
-    // ARROW BUTTONS VISIBILITY
+    // NAV CONTROL STATE
     // ============================================================
-    function updateArrowButtonVisibility() {
-      if (is_auto_mode) {
-        if (backArrowButton) backArrowButton.style.display = "none";
-        if (nextArrowButton) nextArrowButton.style.display = "none";
-      } else {
-        if (backArrowButton) backArrowButton.style.display = "";
-        if (nextArrowButton) nextArrowButton.style.display = "";
-      }
+    function updateNavControlState() {
+      updatePageNavLabel();
+      updatePlayPauseButtonState();
     }
 
     // ============================================================
@@ -4606,7 +4779,7 @@ body.mode-interactive #page7 .three-panel {
     // ============================================================
     window.addEventListener("load", () => {
       updateChartModeToggle();
-      updateArrowButtonVisibility();
+      updateNavControlState();
       ensureAllBuildingsPrepared();
       onEnterPage(currentPageNumber);
 
