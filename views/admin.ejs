@@ -33,11 +33,40 @@
     z-index: 1030;
   }
 
-  body {
-    padding-top: var(--navH);
+  html {
+    background: transparent;
   }
 
-  body { background: var(--bg); color: var(--txt); }
+  body {
+    padding-top: var(--navH);
+    min-height: 100vh;
+    background: transparent;
+    color: var(--txt);
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background-image: url("/images/rp-main.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(5px);
+    z-index: -2;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.55);
+    z-index: -1;
+  }
+
   .admin-shell { min-height: calc(100vh - var(--navH)); }
 
   .admin-side {

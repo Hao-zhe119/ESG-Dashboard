@@ -63,8 +63,31 @@ html, body {
   height: 100%;
   font-family: Arial, sans-serif;
   color: var(--text);
-  background: var(--bg);
+  background: transparent;
   overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background-image: url("/images/rp-main.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(5px);
+  z-index: -2;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  z-index: -1;
 }
 
 /* ========================================
@@ -132,7 +155,7 @@ html, body {
   overflow: hidden;
   min-height: 0;
   min-width: 0;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
   transform: translateX(100%);
   opacity: 0;
@@ -160,16 +183,12 @@ html, body {
    PAGE BACKGROUNDS
    ======================================== */
 #page1, #page2, #page3, #page4, #page5, #page6, #page7, #page8, #page9, #page10 {
-  background: url("/images/rp-main.jpg") no-repeat center center / cover;
+  background: transparent;
 }
 
 #page1::before, #page2::before, #page3::before, #page4::before, #page5::before, 
 #page6::before, #page7::before, #page8::before, #page9::before, #page10::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(38, 45, 53, 0.72);
-  z-index: 0;
+  display: none;
 }
 
 #page1 > *, #page2 > *, #page3 > *, #page4 > *, #page8 > *, #page9 > *, #page10 > * {
