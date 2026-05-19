@@ -385,18 +385,9 @@
     .timer-page-name { width: 100%; order: -1; margin-bottom: 8px; }
   }
 
-  @keyframes sectionSlideUp {
-    from { opacity: 0; transform: translateY(50px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
   .admin-section {
     opacity: 1;
     transform: translateY(0);
-  }
-
-  .admin-section.animate-in {
-    animation: sectionSlideUp 0.9s cubic-bezier(0.22, 1, 0.36, 1);
   }
   </style>
 </head>
@@ -1253,14 +1244,12 @@
     const $sections = $(".admin-section");
 
     function showSection(id) {
-      $sections.addClass("d-none").removeClass("animate-in");
+      $sections.addClass("d-none");
 
       const $target = $("#" + id);
       if (!$target.length) return;
 
-      void $target[0].offsetHeight;
-
-      $target.removeClass("d-none").addClass("animate-in");
+      $target.removeClass("d-none");
     }
 
     function setActiveNavBySection(id) {
