@@ -12,6 +12,11 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- Inter Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Display:ital,opsz,wght@0,10..36,100..900;1,10..36,100..900&display=swap" rel="stylesheet">
+
 <style>
 :root {
   --navH: 56px;
@@ -60,7 +65,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: Arial, sans-serif;
+  font-family: "Inter Display", "Inter", sans-serif;
   color: var(--text);
   background: transparent;
   overflow: hidden;
@@ -137,7 +142,7 @@ body::after {
   align-items: center;
   gap: 10px;
   margin-bottom: clamp(20px, 3vh, 38px);
-  font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Inter Display", "Inter", sans-serif;
   font-size: clamp(0.66rem, 0.8vw, 0.86rem);
   font-weight: 500;
   letter-spacing: 0.24em;
@@ -163,7 +168,7 @@ body::after {
   position: relative;
   transform: none;
   margin: 0;
-  font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Inter Display", "Inter", sans-serif;
   font-size: clamp(2.9rem, 5.05vw, 7.4rem);
   font-weight: 200;
   line-height: 0.98;
@@ -184,7 +189,7 @@ body::after {
   right: clamp(28px, 4vw, 76px);
   bottom: calc(var(--progH) + clamp(32px, 8vh, 92px));
   min-width: clamp(220px, 22vw, 380px);
-  font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Inter Display", "Inter", sans-serif;
   text-align: right;
   background: rgba(255, 255, 255, 0.055);
   backdrop-filter: blur(20px) saturate(1.5);
@@ -2126,7 +2131,7 @@ body.mode-interactive #page7 .three-panel {
           context.save();
           context.textAlign = "center";
           context.textBaseline = "bottom";
-          context.font = "700 12px Arial";
+          context.font = "700 12px 'Inter Display'";
           context.fillStyle = CHART_TEXT_COLOR;
 
           datasets.forEach((dataset, datasetIndex) => {
