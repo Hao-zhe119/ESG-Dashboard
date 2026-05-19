@@ -1,0 +1,175 @@
+<%
+  const safeName = buildingRaw || buildingKey || "Building";
+  const years = Array.isArray(allYears) ? allYears.slice().sort((a, b) => b - a) : [];
+  const current = buildingMonthlyDetail || null;
+  const yearly = Array.isArray(buildingYearlyTotals) ? buildingYearlyTotals.slice().sort((a, b) => b.year - a.year) : [];
+
+  function totalFor(list) {
+    return (Array.isArray(list) ? list : []).reduce((sum, value) => sum + Number(value || 0), 0);
+  }
+
+  const latestElectricity = current ? totalFor(current.elec) : 0;
+  const latestWater = current ? totalFor(current.water) : 0;
+%>
+
+<div class="dynamic-info-panel">
+  <div class="dynamic-info-head">
+    <div class="dynamic-info-title"><%= safeName %></div>
+    <div class="dynamic-info-subtitle">Building performance summary</div>
+  </div>
+
+  <div class="dynamic-info-section">
+    <div class="dynamic-info-section-title">Latest available totals</div>
+    <div class="dynamic-info-metrics">
+      <div class="dynamic-info-metric">
+        <span class="label">Electricity</span>
+        <strong><%= latestElectricity.toLocaleString() %> kWh</strong>
+      </div>
+      <div class="dynamic-info-metric">
+        <span class="label">Water</span>
+        <strong><%= latestWater.toLocaleString() %> m³</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="dynamic-info-section">
+    <div class="dynamic-info-section-title">Available years</div>
+    <% if (years.length) { %>
+      <div class="dynamic-info-years">
+        <% years.forEach(function(year) { %>
+          <span class="year-pill"><%= year %></span>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <p class="dynamic-info-empty">No imported yearly data yet.</p>
+    <% } %>
+  </div>
+
+  <div class="dynamic-info-section">
+    <div class="dynamic-info-section-title">Yearly totals</div>
+    <% if (yearly.length) { %>
+      <table class="dynamic-info-table">
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Electricity</th>
+            <th>Water</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% yearly.slice(0, 6).forEach(function(item) { %>
+            <tr>
+              <td><%= item.year %></td>
+              <td><%= Number(item.electricity || 0).toLocaleString() %> kWh</td>
+              <td><%= Number(item.water || 0).toLocaleString() %> m³</td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p class="dynamic-info-empty">No annual summary available.</p>
+    <% } %>
+  </div>
+</div>
+
+<style>
+  .dynamic-info-panel {
+    font-family: Arial, sans-serif;
+    color: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dynamic-info-head {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(96,165,250,0.14);
+    border: 1px solid rgba(147,197,253,0.24);
+  }
+
+  .dynamic-info-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #dbeafe;
+  }
+
+  .dynamic-info-subtitle {
+    font-size: 0.85rem;
+    color: rgba(191,219,254,0.82);
+    margin-top: 4px;
+  }
+
+  .dynamic-info-section {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .dynamic-info-section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: rgba(248,250,252,0.82);
+  }
+
+  .dynamic-info-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dynamic-info-metric {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .dynamic-info-metric .label {
+    display: block;
+    font-size: 0.75rem;
+    color: rgba(248,250,252,0.62);
+    margin-bottom: 4px;
+  }
+
+  .dynamic-info-years {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .year-pill {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .dynamic-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .dynamic-info-table th,
+  .dynamic-info-table td {
+    padding: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    text-align: left;
+  }
+
+  .dynamic-info-table th {
+    color: rgba(248,250,252,0.86);
+    font-weight: 700;
+  }
+
+  .dynamic-info-empty {
+    margin: 0;
+    color: rgba(248,250,252,0.62);
+    font-size: 0.85rem;
+  }
+</style>
