@@ -189,9 +189,11 @@
 .waste-info-panel .info-head {
   text-align: center;
   padding: 10px 8px;
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  background: linear-gradient(135deg, rgba(209,250,229,0.78) 0%, rgba(167,243,208,0.78) 100%);
   border-radius: 8px;
   margin-bottom: 10px;
+  border: 1px solid rgba(255,255,255,0.32);
+  backdrop-filter: blur(4px);
 }
 
 .waste-info-panel .info-icon {
@@ -215,8 +217,10 @@
 .waste-info-panel .info-section {
   margin-bottom: 10px;
   padding: 8px;
-  background: #f9fafb;
+  background: rgba(249,250,251,0.78);
   border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.26);
+  backdrop-filter: blur(4px);
 }
 
 .waste-info-panel .info-section-h {
@@ -235,7 +239,7 @@
   justify-content: center;
   gap: 12px;
   padding: 10px 12px;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  background: linear-gradient(135deg, rgba(243,244,246,0.78) 0%, rgba(229,231,235,0.78) 100%);
 }
 
 .waste-info-panel .stat-inline-item {
@@ -275,7 +279,7 @@
 .waste-info-panel .stat-inline-divider {
   width: 1px;
   height: 24px;
-  background: #9ca3af;
+  background: rgba(156,163,175,0.76);
 }
 
 .waste-info-panel .breakdown-item {
@@ -306,7 +310,7 @@
 
 .waste-info-panel .breakdown-bar {
   height: 6px;
-  background: #e5e7eb;
+  background: rgba(229,231,235,0.72);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -359,12 +363,12 @@
 }
 
 .waste-info-panel .yoy-badge.positive {
-  background: #dcfce7;
+  background: rgba(220,252,231,0.82);
   color: #166534;
 }
 
 .waste-info-panel .yoy-badge.negative {
-  background: #fee2e2;
+  background: rgba(254,226,226,0.82);
   color: #991b1b;
 }
 
@@ -380,7 +384,7 @@
 .waste-info-panel .progress-bar {
   position: relative;
   height: 16px;
-  background: #e5e7eb;
+  background: rgba(229,231,235,0.72);
   border-radius: 8px;
   overflow: visible;
 }
@@ -413,7 +417,7 @@
   transform: translateX(-50%);
   width: 2px;
   height: 24px;
-  background: #374151;
+  background: rgba(55,65,81,0.82);
 }
 
 .waste-info-panel .progress-marker .marker-label {
@@ -449,22 +453,22 @@
 }
 
 .waste-info-panel .progress-status.excellent {
-  background: #dcfce7;
+  background: rgba(220,252,231,0.82);
   color: #166534;
 }
 
 .waste-info-panel .progress-status.good {
-  background: #d1fae5;
+  background: rgba(209,250,229,0.82);
   color: #047857;
 }
 
 .waste-info-panel .progress-status.average {
-  background: #fef3c7;
+  background: rgba(254,243,199,0.82);
   color: #92400e;
 }
 
 .waste-info-panel .progress-status.low {
-  background: #fee2e2;
+  background: rgba(254,226,226,0.82);
   color: #991b1b;
 }
 
@@ -482,7 +486,7 @@
 }
 
 .waste-info-panel .info-table th {
-  background: #f3f4f6;
+  background: rgba(243,244,246,0.78);
   font-weight: 600;
   color: #374151;
 }
@@ -493,6 +497,6 @@
 }
 
 .waste-info-panel .info-table tr.current-year {
-  background: #d1fae5;
+  background: rgba(209,250,229,0.78);
 }
 </style>

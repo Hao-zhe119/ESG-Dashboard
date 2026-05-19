@@ -572,7 +572,7 @@ body.mode-interactive #progressBarContainer { display: none; }
   padding: 0 !important;
   justify-content: flex-start;
   align-items: stretch;
-  background: var(--bg);
+  background: transparent;
 }
 
 .three-panel {
@@ -602,8 +602,8 @@ body.mode-interactive #page7 .three-panel {
 /* Default: Equal thirds */
 .three-panel .panel {
   flex: 0 0 calc((100% - (2 * var(--gap))) / 3);
-  background: #ffffff;
-  border: 1px solid rgba(17,24,39,0.10);
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(255,255,255,0.28);
   border-radius: 16px;
   padding: 12px;
   overflow: hidden;
@@ -613,6 +613,7 @@ body.mode-interactive #page7 .three-panel {
   flex-direction: column;
   box-shadow: 0 10px 22px rgba(0,0,0,0.18);
   color: #111827;
+  backdrop-filter: blur(6px);
 }
 
 #page5 .three-panel .panel-mid,
@@ -790,7 +791,7 @@ body.mode-interactive #page7 .three-panel {
   line-height: 1.05;
   border: 0.03px solid rgba(17,24,39,0.08);
   border-bottom: 1px solid rgba(17,24,39,0.08);
-  background: #ffffff;
+  background: rgba(255,255,255,0.78);
   cursor: pointer;
   overflow: hidden;
 }
@@ -875,7 +876,7 @@ body.mode-interactive #page7 .three-panel {
   line-height: 1.05;
   border: 0.03px solid rgba(17,24,39,0.08);
   border-bottom: 1px solid rgba(17,24,39,0.08);
-  background: #ffffff;
+  background: rgba(255,255,255,0.78);
   cursor: pointer;
   overflow: hidden;
 }
@@ -964,7 +965,7 @@ body.mode-interactive #page7 .three-panel {
   font-size: var(--bFs);
   line-height: 1.05;
   border-bottom: 1px solid rgba(17,24,39,0.08);
-  background: #ffffff;
+  background: rgba(255,255,255,0.78);
   cursor: pointer;
   overflow: hidden;
 }
@@ -1092,9 +1093,10 @@ body.mode-interactive #page7 .three-panel {
 
 #threeInfoBody .building-info-panel .bip-section {
   padding: 8px !important;
-  background: #f9fafb !important;
+  background: rgba(249,250,251,0.78) !important;
   border-radius: 8px !important;
-  border: 1px solid rgba(17,24,39,0.10) !important;
+  border: 1px solid rgba(255,255,255,0.26) !important;
+  backdrop-filter: blur(4px) !important;
 }
 
 #threeInfoBody .building-info-panel .bip-section-header {
@@ -1236,9 +1238,10 @@ body.mode-interactive #page7 .three-panel {
 .info-section {
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(17,24,39,0.10);
-  background: #ffffff;
+  border: 1px solid rgba(255,255,255,0.26);
+  background: rgba(255,255,255,0.78);
   overflow: hidden;
+  backdrop-filter: blur(4px);
 }
 
 .info-section-h {
