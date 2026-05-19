@@ -68,6 +68,32 @@
         .navbar {
             position: relative;
             z-index: 10;
+            background: transparent !important;
+            border: 0 !important;
+            padding: 8px 12px;
+        }
+
+        .navbar .container-fluid {
+            justify-content: flex-end;
+        }
+
+        .navbar .btn {
+            color: rgba(255,255,255,0.94) !important;
+            background: rgba(96,165,250,0.16) !important;
+            border: 1px solid rgba(147,197,253,0.34) !important;
+            border-radius: 999px !important;
+            padding: 8px 16px;
+            box-shadow: 0 10px 24px rgba(15,23,42,0.20);
+            backdrop-filter: blur(10px);
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .navbar .btn:hover,
+        .navbar .btn:focus-visible {
+            color: #ffffff !important;
+            background: rgba(96,165,250,0.26) !important;
+            border-color: rgba(191,219,254,0.52) !important;
+            transform: translateY(-1px);
         }
 
         .main-container {
@@ -111,23 +137,9 @@
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+    <nav class="navbar">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">
-                <img src="https://i.tracxn.com/logo/company/1465fcf4a73a187cfeb150e9a5d460a4?format=webp&height=120&width=120"
-                     alt="Logo" width="40" height="34" class="d-inline-block align-text-top">
-                ESG Dashboard
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="collapsibleNavbar">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="btn btn-outline-light" href="/login">Login</a>
-                    </li>
-                </ul>
-            </div>
+            <a class="btn btn-outline-light" href="/">Back</a>
         </div>
     </nav>
 
