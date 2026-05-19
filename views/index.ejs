@@ -92,45 +92,144 @@ body::after {
 /* ========================================
    PAGE 1: WELCOME
    ======================================== */
-#page1 { position: relative; }
+#page1 {
+  position: relative;
+  justify-content: center;
+  isolation: isolate;
+  background:
+    linear-gradient(115deg, rgba(2, 6, 12, 0.86) 0%, rgba(5, 16, 22, 0.54) 46%, rgba(2, 6, 12, 0.88) 100%),
+    linear-gradient(180deg, rgba(242, 247, 239, 0.04) 0%, rgba(29, 185, 120, 0.05) 55%, rgba(0, 0, 0, 0.24) 100%);
+}
 
-#page1 .welcome-logo {
-  height: 350px;
-  width: auto;
-  border-radius: 18px;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+#page1::before {
+  content: "";
   position: absolute;
-  top: 50%;
-  left: 100px;
-  transform: translateY(-50%);
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 100%),
+    linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 100%);
+  background-size: clamp(60px, 8vw, 128px) clamp(60px, 8vw, 128px);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.42) 22%, rgba(0,0,0,0.28) 72%, transparent 100%);
+  opacity: 0.28;
+  pointer-events: none;
+  z-index: -1;
+}
+
+#page1::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.36), transparent 18%, transparent 82%, rgba(0,0,0,0.42)),
+    linear-gradient(180deg, rgba(255,255,255,0.08), transparent 20%, transparent 72%, rgba(0,0,0,0.5));
+  pointer-events: none;
+  z-index: -1;
+}
+
+#page1 .welcome-content {
+  width: min(92vw, 1500px);
+  position: relative;
   z-index: 1;
 }
 
 #page1 .welcome-title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(2.2rem, 4.2vw, 4.5rem);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-align: center;
-  color: var(--text);
-  padding: 0 clamp(10px, 2vw, 24px);
-  max-width: 92vw;
+  position: relative;
+  transform: none;
+  margin: 0;
+  font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(2.9rem, 5.05vw, 7.4rem);
+  font-weight: 200;
+  line-height: 0.98;
+  letter-spacing: 0;
+  text-align: left;
+  color: rgba(248, 252, 249, 0.96);
+  max-width: 100%;
+  white-space: nowrap;
+  text-shadow: 0 16px 48px rgba(0,0,0,0.55);
 }
 
-#page1 .welcome-subtitle {
-  position: absolute;
-  right: clamp(12px, 2vw, 28px);
-  bottom: calc(var(--progH) + clamp(12px, 2.6vh, 28px));
-  font-size: clamp(12px, 1.4vw, 16px);
-  color: var(--muted);
+#page1 .welcome-kicker {
+  display: block;
+  margin-top: clamp(14px, 2.2vh, 28px);
+  font-size: clamp(1.2rem, 2.1vw, 2.65rem);
+  font-weight: 250;
+  line-height: 1.08;
+  letter-spacing: 0.18em;
+  color: rgba(208, 230, 216, 0.82);
+  text-shadow: 0 10px 32px rgba(0,0,0,0.52);
 }
 
 #welcome-page .welcome-rp-text,
 #page1 .welcome-rp-text {
   display: inline-block;
+}
+
+#page1 .welcome-time-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  position: fixed;
+  right: clamp(28px, 4vw, 76px);
+  bottom: calc(var(--progH) + clamp(32px, 8vh, 92px));
+  min-width: clamp(220px, 22vw, 380px);
+  font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  text-align: right;
+}
+
+#page1 .welcome-time {
+  font-size: clamp(3.4rem, 7.4vw, 8.8rem);
+  font-weight: 150;
+  line-height: 0.86;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 18px 48px rgba(0,0,0,0.58);
+}
+
+#page1 .welcome-date {
+  margin-top: clamp(12px, 2vh, 24px);
+  font-size: clamp(0.9rem, 1.3vw, 1.45rem);
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  color: rgba(206, 236, 221, 0.78);
+  text-transform: uppercase;
+}
+
+#page1 .welcome-accent-line {
+  width: min(34vw, 420px);
+  height: 1px;
+  margin-top: clamp(18px, 2.8vh, 34px);
+  background: linear-gradient(90deg, transparent, rgba(198, 236, 213, 0.86), rgba(114, 203, 168, 0.16));
+}
+
+@media (max-width: 980px) {
+  #page1 .welcome-content {
+    width: min(90vw, 760px);
+  }
+
+  #page1 .welcome-title,
+  #page1 .welcome-time-panel {
+    text-align: center;
+    align-items: center;
+  }
+
+  #page1 .welcome-title {
+    max-width: 92vw;
+    white-space: normal;
+    text-wrap: balance;
+  }
+
+  #page1 .welcome-time-panel {
+    position: static;
+    min-width: 0;
+    margin-top: clamp(34px, 6vh, 64px);
+  }
+
+  #page1 .welcome-accent-line {
+    width: min(72vw, 420px);
+    background: linear-gradient(90deg, transparent, rgba(198, 236, 213, 0.78), transparent);
+  }
 }
 
 /* ========================================
@@ -1555,12 +1654,17 @@ body.mode-interactive #page7 .three-panel {
 
   <!-- PAGE 1: WELCOME -->
   <div id="page1" class="page active-page">
-    <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
-    <h1 class="welcome-title">
-      WELCOME TO<br>
-      <span class="welcome-rp-text">REPUBLIC POLYTECHNIC'S</span><br>
-      ESG CENTRE!
-    </h1>
+    <div class="welcome-content">
+      <h1 class="welcome-title">
+        WELCOME TO THE ESG CENTRE
+        <span class="welcome-kicker">REPUBLIC POLYTECHNIC</span>
+      </h1>
+      <div class="welcome-time-panel" aria-label="Current time and date">
+        <div id="welcomeTime" class="welcome-time">00:00</div>
+        <div id="welcomeDate" class="welcome-date">MONDAY, 1 JANUARY</div>
+        <div class="welcome-accent-line" aria-hidden="true"></div>
+      </div>
+    </div>
   </div>
 
   <!-- PAGE 2: ALL BUILDINGS SUMMARY -->
@@ -4733,6 +4837,32 @@ body.mode-interactive #page7 .three-panel {
     document.addEventListener("MSFullscreenChange", updateFullscreenClass);
     window.addEventListener("resize", updateFullscreenClass);
     updateFullscreenClass();
+
+    // ============================================================
+    // WELCOME CLOCK
+    // ============================================================
+    function updateWelcomeClock() {
+      const timeEl = document.getElementById("welcomeTime");
+      const dateEl = document.getElementById("welcomeDate");
+      if (!timeEl || !dateEl) return;
+
+      const now = new Date();
+      timeEl.textContent = new Intl.DateTimeFormat("en-SG", {
+        timeZone: "Asia/Singapore",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).format(now);
+      dateEl.textContent = new Intl.DateTimeFormat("en-SG", {
+        timeZone: "Asia/Singapore",
+        weekday: "long",
+        day: "numeric",
+        month: "long"
+      }).format(now).toUpperCase();
+    }
+
+    updateWelcomeClock();
+    setInterval(updateWelcomeClock, 1000);
 
     // ============================================================
     // KEYBOARD NAVIGATION
