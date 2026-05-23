@@ -937,7 +937,8 @@
                         data-filename="<%= item.filename %>"
                         data-caption="<%= item.caption_text || '' %>"
                         data-cx="<%= item.caption_x || 50 %>"
-                        data-cy="<%= item.caption_y || 85 %>">Edit</button>
+                        data-cy="<%= item.caption_y || 85 %>"
+                        data-fs="<%= item.caption_font_size || 24 %>">Edit</button>
                       <a class="btn btn-sm btn-outline-info"
                          href="/uploads/images/carousel/<%= item.filename %>"
                          target="_blank" rel="noopener noreferrer">Preview</a>
@@ -978,6 +979,9 @@
                       <div class="text-muted small">
                         Enabled: <span class="enabled-label"><%= item.is_enabled ? "Yes" : "No" %></span>
                       </div>
+                      <% if (item.caption_text) { %>
+                        <div class="text-muted small mt-1 caption-info">Caption: <em><%= item.caption_text %></em></div>
+                      <% } %>
                       <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
                         <div class="input-group input-group-sm" style="width: 128px;">
                           <span class="input-group-text">Start</span>
@@ -992,6 +996,14 @@
                       </div>
                     </div>
                     <div class="media-controls">
+                      <button class="btn btn-sm btn-outline-warning edit-overlay-btn"
+                        data-id="<%= item.id %>"
+                        data-type="video"
+                        data-filename="<%= item.filename %>"
+                        data-caption="<%= item.caption_text || '' %>"
+                        data-cx="<%= item.caption_x || 50 %>"
+                        data-cy="<%= item.caption_y || 85 %>"
+                        data-fs="<%= item.caption_font_size || 24 %>">Edit</button>
                       <a class="btn btn-sm btn-outline-info"
                          href="/uploads/videos/<%= item.filename %>"
                          target="_blank" rel="noopener noreferrer">Preview</a>
@@ -1034,13 +1046,27 @@
                   <input type="text" class="form-control" id="overlayCaptionText" placeholder="Leave empty to remove caption...">
                 </div>
 
+                <div class="mb-3">
+                  <label class="form-label fw-semibold text-light">
+                    Font Size — <span id="fontSizeDisplay">24</span>px
+                  </label>
+                  <input type="range" class="form-range" id="overlayCaptionFontSize"
+                         min="10" max="80" step="1" value="24">
+                  <div style="display:flex; justify-content:space-between;">
+                    <small class="text-muted">Small (10px)</small>
+                    <small class="text-muted">Large (80px)</small>
+                  </div>
+                </div>
+
                 <div class="mb-2">
                   <label class="form-label fw-semibold text-light">Caption Position</label>
                   <div class="form-text text-muted mb-2">Click anywhere on the image to place the caption. Drag the label to fine-tune.</div>
                   <div id="overlayDragContainer" style="position:relative; display:block; width:100%;
                        cursor:crosshair; border-radius:6px; overflow:hidden; background:#111;">
                     <img id="overlayModalPreview" src="" alt="Preview"
-                         style="width:100%; display:block; pointer-events:none; user-select:none;">
+                         style="width:100%; display:none; pointer-events:none; user-select:none;">
+                    <video id="overlayVideoPreview" muted playsinline preload="metadata"
+                           style="width:100%; display:none; pointer-events:none; user-select:none;"></video>
                     <div id="overlayDragLabel"
                          style="position:absolute; left:50%; top:85%; transform:translate(-50%,-50%);
                                 background:rgba(0,0,0,0.6); color:#fff; padding:4px 12px;
@@ -1725,17 +1751,34 @@
         if (captionText) {
           extraBodyHtml += '<div class="text-muted small mt-1 caption-info">Caption: <em>' + captionText + '</em></div>';
         }
-        const captionX = item.caption_x || 50;
-        const captionY = item.caption_y || 85;
+        const captionX  = item.caption_x || 50;
+        const captionY  = item.caption_y || 85;
+        const captionFs = item.caption_font_size || 24;
         editBtn = '<button class="btn btn-sm btn-outline-warning edit-overlay-btn"' +
           ' data-id="' + id + '"' +
           ' data-filename="' + filename + '"' +
           ' data-caption="' + captionText.replace(/"/g, '&quot;') + '"' +
           ' data-cx="' + captionX + '"' +
-          ' data-cy="' + captionY + '">Edit</button>';
+          ' data-cy="' + captionY + '"' +
+          ' data-fs="' + captionFs + '">Edit</button>';
       } else {
         thumb = '<div class="media-thumb" aria-hidden="true"><video preload="metadata" muted playsinline><source src="/uploads/videos/' + filename + '#t=0.1" type="video/mp4"></video></div>';
         previewHref = '/uploads/videos/' + filename;
+        const vidCaptionText = item.caption_text || "";
+        const vidCaptionX    = item.caption_x    || 50;
+        const vidCaptionY    = item.caption_y    || 85;
+        const vidCaptionFs   = item.caption_font_size || 24;
+        if (vidCaptionText) {
+          extraBodyHtml += '<div class="text-muted small mt-1 caption-info">Caption: <em>' + vidCaptionText + '</em></div>';
+        }
+        editBtn = '<button class="btn btn-sm btn-outline-warning edit-overlay-btn"' +
+          ' data-id="' + id + '"' +
+          ' data-type="video"' +
+          ' data-filename="' + filename + '"' +
+          ' data-caption="' + vidCaptionText.replace(/"/g, '&quot;') + '"' +
+          ' data-cx="' + vidCaptionX + '"' +
+          ' data-cy="' + vidCaptionY + '"' +
+          ' data-fs="' + vidCaptionFs + '">Edit</button>';
       }
 
       const fileSettings = loadVideoSettingsByFile()[filename] || {};
@@ -1912,8 +1955,8 @@
       if (e.target === this) hideOverlayPanel();
     });
 
-    // Drag-to-position state
-    let _captionX = 50, _captionY = 85;
+    // Caption state
+    let _captionX = 50, _captionY = 85, _captionFontSize = 24;
 
     function updateDragLabel(x, y) {
       _captionX = Math.round(Math.max(5, Math.min(95, x)));
@@ -1931,6 +1974,14 @@
     $(document).on("input", "#overlayCaptionText", function() {
       const lbl = document.getElementById("overlayDragLabel");
       if (lbl) lbl.textContent = this.value.trim() || "Caption Preview";
+    });
+
+    // Sync font size slider — update label and preview
+    $(document).on("input", "#overlayCaptionFontSize", function() {
+      _captionFontSize = parseInt(this.value, 10);
+      $("#fontSizeDisplay").text(_captionFontSize);
+      const lbl = document.getElementById("overlayDragLabel");
+      if (lbl) lbl.style.fontSize = _captionFontSize + "px";
     });
 
     // Click on image container to reposition
@@ -1968,18 +2019,42 @@
 
     $(document).on("click", ".edit-overlay-btn", function() {
       const id       = this.dataset.id;
+      const type     = this.dataset.type || "image";
       const filename = this.dataset.filename;
       const caption  = this.dataset.caption || "";
       const cx       = parseFloat(this.dataset.cx) || 50;
       const cy       = parseFloat(this.dataset.cy) || 85;
+      const fs       = parseInt(this.dataset.fs, 10) || 24;
 
       $("#overlayModalMediaId").val(id);
-      $("#overlayModalPreview").attr("src", "/uploads/images/carousel/" + encodeURIComponent(filename));
       $("#overlayCaptionText").val(caption);
+      $("#overlayCaptionFontSize").val(fs);
+      $("#fontSizeDisplay").text(fs);
+      _captionFontSize = fs;
       $("#overlayModalStatus").addClass("d-none").text("").removeClass("alert-success alert-danger");
 
+      // Show correct preview type
+      const imgEl   = document.getElementById("overlayModalPreview");
+      const videoEl = document.getElementById("overlayVideoPreview");
+
+      if (type === "video") {
+        imgEl.style.display = "none";
+        imgEl.src = "";
+        videoEl.style.display = "block";
+        videoEl.src = "/uploads/videos/" + encodeURIComponent(filename) + "#t=2";
+        videoEl.load();
+      } else {
+        videoEl.style.display = "none";
+        videoEl.src = "";
+        imgEl.style.display = "block";
+        imgEl.src = "/uploads/images/carousel/" + encodeURIComponent(filename);
+      }
+
       const lbl = document.getElementById("overlayDragLabel");
-      if (lbl) lbl.textContent = caption || "Caption Preview";
+      if (lbl) {
+        lbl.textContent = caption || "Caption Preview";
+        lbl.style.fontSize = fs + "px";
+      }
       updateDragLabel(cx, cy);
 
       showOverlayPanel();
@@ -1996,7 +2071,7 @@
         const res  = await fetch("/admin/media/" + id + "/save-overlay", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ caption_text: captionText, caption_x: _captionX, caption_y: _captionY })
+          body: JSON.stringify({ caption_text: captionText, caption_x: _captionX, caption_y: _captionY, caption_font_size: _captionFontSize })
         });
         const json = await res.json();
         if (json.success) {

@@ -76,9 +76,10 @@ function mergeCaptionsIntoItems(items, accountId) {
     const cap = captions[key] || {};
     return {
       ...item,
-      caption_text: cap.caption_text || null,
-      caption_x: cap.caption_x != null ? cap.caption_x : 50,
-      caption_y: cap.caption_y != null ? cap.caption_y : 85
+      caption_text:      cap.caption_text      || null,
+      caption_x:         cap.caption_x         != null ? cap.caption_x         : 50,
+      caption_y:         cap.caption_y         != null ? cap.caption_y         : 85,
+      caption_font_size: cap.caption_font_size != null ? cap.caption_font_size : 24
     };
   });
 }
@@ -937,7 +938,7 @@ app.get("/", async (req, res) => {
         [accountId]
       );
       mediaImages = mergeCaptionsIntoItems(imgRows || [], accountId);
-      mediaVideos = vidRows || [];
+      mediaVideos = mergeCaptionsIntoItems(vidRows || [], accountId);
     } catch (e) {
       console.error("Failed to load media:", e);
       mediaImages = [];
@@ -1376,12 +1377,13 @@ app.get('/admin', requireAuth, async (req, res) => {
     );
     const mediaImages = mergeCaptionsIntoItems(mediaImagesRaw || [], accountId);
 
-    const [mediaVideos] = await db.query(
+    const [mediaVideosRaw] = await db.query(
       `SELECT * FROM dashboard_media
        WHERE account_id = ? AND media_type = 'video'
        ORDER BY sort_order`,
       [accountId]
     );
+    const mediaVideos = mergeCaptionsIntoItems(mediaVideosRaw || [], accountId);
 
     // 7. Get dashboard mode
     const [dashModeRows] = await db.query(
@@ -1557,18 +1559,20 @@ app.post("/admin/media/:id/save-overlay", async (req, res) => {
   const mediaId = parseInt(req.params.id, 10);
 
   try {
-    const captionText = req.body.caption_text ? String(req.body.caption_text).trim() : null;
-    const captionX = parseFloat(req.body.caption_x);
-    const captionY = parseFloat(req.body.caption_y);
+    const captionText     = req.body.caption_text ? String(req.body.caption_text).trim() : null;
+    const captionX        = parseFloat(req.body.caption_x);
+    const captionY        = parseFloat(req.body.caption_y);
+    const captionFontSize = parseInt(req.body.caption_font_size, 10);
 
     const captions = readCaptions();
     const key = accountId + "_" + mediaId;
 
     if (captionText) {
       captions[key] = {
-        caption_text: captionText,
-        caption_x: isFinite(captionX) ? captionX : 50,
-        caption_y: isFinite(captionY) ? captionY : 85
+        caption_text:      captionText,
+        caption_x:         isFinite(captionX)        ? captionX        : 50,
+        caption_y:         isFinite(captionY)        ? captionY        : 85,
+        caption_font_size: isFinite(captionFontSize) ? captionFontSize : 24
       };
     } else {
       delete captions[key];
@@ -1599,9 +1603,7 @@ app.get("/admin/media/json", requireAuth, async (req, res) => {
       [accountId, type]
     );
 
-    const items = type === "image"
-      ? mergeCaptionsIntoItems(rows || [], accountId)
-      : (rows || []);
+    const items = mergeCaptionsIntoItems(rows || [], accountId);
 
     res.json({ type, items });
   } catch (e) {
@@ -2835,7 +2837,7 @@ app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
    START SERVER
 ============================== */
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+app.listen(port, "127.0.0.1", () => {
   console.log(`Server running at http://localhost:${port}/`);
 });
 

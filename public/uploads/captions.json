@@ -1,1 +1,13 @@
-{}
+{
+  "1_29": {
+    "caption_text": "a",
+    "caption_x": 49,
+    "caption_y": 84
+  },
+  "1_30": {
+    "caption_text": "a",
+    "caption_x": 50,
+    "caption_y": 80,
+    "caption_font_size": 26
+  }
+}
