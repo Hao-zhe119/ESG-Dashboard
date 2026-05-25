@@ -1091,6 +1091,9 @@ app.get("/buildingControls", async (req, res) => {
   });
 });
 
+// Temporary route for interactive map page
+app.get('/interactivemap', (req, res) => {res.render('interactivemap');});
+
 /* ==============================
    LOGIN ROUTES
 ============================== */
