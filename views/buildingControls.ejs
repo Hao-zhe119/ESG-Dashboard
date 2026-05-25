@@ -26,9 +26,11 @@
 
       /* Buttons */
       --btnBg:      rgba(255,255,255,0.10);
-      --btnBd:      rgba(255,255,255,0.22);
-      --btnBgHover: rgba(96,165,250,0.18);
-      --btnBdHover: rgba(96,165,250,0.52);
+      --btnBd:      rgba(255,255,255,0.32);
+      --btnBgHover: rgba(96,165,250,0.24);
+      --btnBdHover: rgba(96,165,250,0.66);
+      --btnBgPressed: rgba(96,165,250,0.32);
+      --btnBdPressed: rgba(147,197,253,0.86);
 
       /* Spacing grid */
       --s1: 8px;
@@ -37,6 +39,7 @@
       --s4: 32px;
 
       --rail-w: 60px;
+      --tap-min: 48px;
     }
 
     html, body {
@@ -88,9 +91,9 @@
       justify-content: space-between;
       gap: var(--s3);
       background: var(--l2-bg);
-      border: 1px solid var(--l2-bd);
+      border: 1px solid rgba(255,255,255,0.16);
       border-radius: 16px;
-      padding: 10px 20px;
+      padding: 14px 20px;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       flex-shrink: 0;
@@ -124,8 +127,10 @@
     .topbar-right {
       display: flex;
       align-items: center;
-      gap: var(--s2);
+      gap: 14px;
       min-width: 0;
+      flex: 1;
+      justify-content: flex-end;
     }
 
     .qj-label {
@@ -142,41 +147,55 @@
       display: grid;
       grid-template-columns: repeat(5, auto);
       grid-template-rows: repeat(2, auto);
-      gap: 5px;
+      gap: 10px 12px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
+      padding: 2px 2px 4px;
+      max-width: 100%;
     }
 
     .qj-pill {
-      padding: 5px 12px;
+      padding: 10px 20px;
       border-radius: 999px;
       font-size: 12px;
       font-family: inherit;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.09);
+      color: rgba(255,255,255,0.82);
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
-      min-height: 28px;
+      min-height: var(--tap-min);
       display: flex;
       align-items: center;
       justify-content: center;
       outline: none;
       transition: background .14s ease, border-color .14s ease,
-                  color .14s ease, box-shadow .14s ease;
+                  color .14s ease, box-shadow .14s ease, transform .14s ease;
     }
 
     .qj-pill:hover {
-      background: rgba(96,165,250,0.15);
-      border-color: rgba(96,165,250,0.42);
+      background: rgba(96,165,250,0.22);
+      border-color: rgba(96,165,250,0.66);
       color: #fff;
+      box-shadow: 0 0 0 2px rgba(96,165,250,0.12);
+    }
+
+    .qj-pill:active {
+      background: var(--btnBgPressed);
+      border-color: var(--btnBdPressed);
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.22),
+                  0 0 18px rgba(96,165,250,0.26);
     }
 
     .qj-pill.active {
-      background: rgba(96,165,250,0.26);
-      border-color: rgba(96,165,250,0.82);
-      color: #93c5fd;
-      box-shadow: 0 0 0 2px rgba(96,165,250,0.16),
-                  0 0 14px rgba(96,165,250,0.22);
+      background: rgba(96,165,250,0.34);
+      border-color: rgba(147,197,253,0.95);
+      color: #dbeafe;
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.22),
+                  0 0 18px rgba(96,165,250,0.30);
     }
 
     .qj-pill.disabled {
@@ -184,6 +203,14 @@
       cursor: not-allowed;
       pointer-events: none;
       text-decoration: line-through;
+    }
+
+    .qj-pill:focus-visible,
+    .bld-tab:focus-visible,
+    .ctrl-btn:focus-visible,
+    .rail-btn:focus-visible {
+      outline: 3px solid rgba(147,197,253,0.82);
+      outline-offset: 3px;
     }
 
     /* ============================================================
@@ -204,14 +231,15 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: var(--s2);
+      gap: 10px;
+      padding-top: 42px;
     }
 
     .rail-btn {
-      width: 40px;
-      height: 40px;
+      width: 54px;
+      height: 54px;
       border-radius: 50%;
-      font-size: 17px;
+      font-size: 22px;
       padding: 0;
       display: flex;
       align-items: center;
@@ -222,13 +250,22 @@
       cursor: pointer;
       user-select: none;
       font-family: inherit;
-      transition: background .12s ease, border-color .12s ease, transform .12s ease;
+      transition: background .12s ease, border-color .12s ease, transform .12s ease, box-shadow .12s ease;
     }
 
     .rail-btn:hover {
       background: var(--btnBgHover);
       border-color: var(--btnBdHover);
       transform: translateY(-1px);
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.14);
+    }
+
+    .rail-btn:active {
+      background: var(--btnBgPressed);
+      border-color: var(--btnBdPressed);
+      transform: translateY(1px) scale(0.96);
+      box-shadow: 0 0 0 4px rgba(96,165,250,0.22),
+                  0 10px 24px rgba(0,0,0,0.22);
     }
 
     .rail-btn:disabled {
@@ -242,10 +279,10 @@
       flex-direction: column;
       align-items: center;
       background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.18);
       border-radius: 12px;
-      padding: 8px 12px;
-      min-width: 40px;
+      padding: 9px 12px;
+      min-width: 44px;
       gap: 0;
     }
 
@@ -275,7 +312,7 @@
     ============================================================ */
     .content-panel {
       background: var(--l2-bg);
-      border: 1px solid var(--l2-bd);
+      border: 1px solid rgba(255,255,255,0.16);
       border-radius: 24px;
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
@@ -288,7 +325,7 @@
     /* Panel header */
     .panel-header {
       flex-shrink: 0;
-      padding: var(--s2) var(--s3);
+      padding: var(--s3) var(--s3) var(--s2);
       border-bottom: 1px solid rgba(255,255,255,0.07);
       display: flex;
       flex-direction: column;
@@ -389,43 +426,52 @@
       display: flex;
       flex-direction: column;
       padding: var(--s2) var(--s3);
-      gap: var(--s2);
+      gap: 18px;
     }
 
     .buildings-tabs {
       display: flex;
-      gap: var(--s1);
+      gap: 12px;
       flex-shrink: 0;
+      overflow-x: auto;
+      padding-bottom: 2px;
     }
 
     .bld-tab {
-      padding: 6px 14px;
+      padding: 10px 20px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 500;
       font-family: inherit;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.62);
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.09);
+      color: rgba(255,255,255,0.78);
       cursor: pointer;
       user-select: none;
-      min-height: 30px;
+      min-height: var(--tap-min);
       display: flex;
       align-items: center;
-      transition: background .12s ease, border-color .12s ease, color .12s ease;
+      transition: background .12s ease, border-color .12s ease, color .12s ease, transform .12s ease, box-shadow .12s ease;
     }
 
     .bld-tab.active {
-      background: rgba(96,165,250,0.22);
-      border-color: rgba(96,165,250,0.72);
-      color: #93c5fd;
-      box-shadow: 0 0 0 2px rgba(96,165,250,0.12);
+      background: rgba(96,165,250,0.34);
+      border-color: rgba(147,197,253,0.94);
+      color: #dbeafe;
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.20);
     }
 
     .bld-tab:hover:not(.active) {
       background: rgba(96,165,250,0.10);
       border-color: rgba(96,165,250,0.35);
       color: #fff;
+    }
+
+    .bld-tab:active {
+      background: var(--btnBgPressed);
+      border-color: var(--btnBdPressed);
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.20);
     }
 
     .buildings-grid-wrap {
@@ -456,17 +502,22 @@
       gap: 2px;
       user-select: none;
       min-width: 0;
-      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
     }
 
     .building-card.active {
       border-color: var(--active);
-      box-shadow: 0 0 0 2px rgba(96,165,250,.22), 0 4px 16px rgba(0,0,0,.18);
+      box-shadow: 0 0 0 3px rgba(96,165,250,.28), 0 4px 16px rgba(0,0,0,.18);
     }
 
     .building-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(0,0,0,.22);
+    }
+
+    .building-card:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 0 0 3px rgba(96,165,250,.26), 0 4px 14px rgba(0,0,0,.20);
     }
 
     .building-name {
@@ -494,19 +545,23 @@
     .control-view {
       flex: 1;
       min-height: 0;
-      padding: var(--s2) var(--s3);
+      padding: 34px var(--s3) var(--s3);
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: var(--s2);
+      gap: 20px;
+      justify-content: flex-start;
     }
 
     /* Layer 3 card */
     .control-card {
       background: var(--l3-bg);
-      border: 1px solid var(--l3-bd);
+      border: 1px solid rgba(255,255,255,0.26);
       border-radius: 16px;
-      padding: var(--s2) var(--s3);
+      padding: 20px var(--s3);
+      max-width: 960px;
+      width: min(100%, 960px);
+      box-sizing: border-box;
     }
 
     .control-title {
@@ -520,13 +575,14 @@
 
     .control-row {
       display: flex;
-      gap: var(--s1);
+      gap: 12px;
       flex-wrap: wrap;
       align-items: center;
+      width: 100%;
     }
 
     .ctrl-btn {
-      padding: 9px 18px;
+      padding: 12px 24px;
       border-radius: 999px;
       font-size: 13px;
       font-family: inherit;
@@ -535,16 +591,28 @@
       color: #fff;
       cursor: pointer;
       user-select: none;
-      min-height: 38px;
+      min-height: var(--tap-min);
       display: inline-flex;
       align-items: center;
-      transition: background .12s ease, border-color .12s ease, transform .12s ease;
+      justify-content: center;
+      min-width: 150px;
+      flex: 1 1 170px;
+      transition: background .12s ease, border-color .12s ease, transform .12s ease, box-shadow .12s ease;
     }
 
     .ctrl-btn:hover {
       background: var(--btnBgHover);
       border-color: var(--btnBdHover);
       transform: translateY(-1px);
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.14);
+    }
+
+    .ctrl-btn:active {
+      background: var(--btnBgPressed);
+      border-color: var(--btnBdPressed);
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 0 0 4px rgba(96,165,250,0.22),
+                  0 10px 20px rgba(0,0,0,0.18);
     }
 
     .mini-label {
@@ -554,8 +622,72 @@
     }
 
     .range {
+      appearance: none;
+      -webkit-appearance: none;
       flex: 1;
-      max-width: 280px;
+      max-width: none;
+      min-width: 240px;
+      min-height: var(--tap-min);
+      padding: 16px 0;
+      cursor: pointer;
+      accent-color: #93c5fd;
+      background: transparent;
+      touch-action: pan-y;
+    }
+
+    .range::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.20);
+    }
+
+    .range::-webkit-slider-thumb {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      margin-top: -11px;
+      background: #dbeafe;
+      border: 2px solid rgba(96,165,250,0.98);
+      box-shadow: 0 0 0 10px rgba(96,165,250,0.10),
+                  0 4px 12px rgba(0,0,0,0.24);
+    }
+
+    .range:active::-webkit-slider-thumb {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 14px rgba(96,165,250,0.20),
+                  0 6px 16px rgba(0,0,0,0.28);
+    }
+
+    .range.is-seeking::-webkit-slider-thumb {
+      transform: scale(1.14);
+      box-shadow: 0 0 0 16px rgba(96,165,250,0.22),
+                  0 8px 18px rgba(0,0,0,0.30);
+    }
+
+    .range::-moz-range-track {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.20);
+    }
+
+    .range::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #dbeafe;
+      border: 2px solid rgba(96,165,250,0.98);
+      box-shadow: 0 0 0 10px rgba(96,165,250,0.10),
+                  0 4px 12px rgba(0,0,0,0.24);
+    }
+
+    .range.is-seeking::-moz-range-thumb {
+      transform: scale(1.14);
+      box-shadow: 0 0 0 16px rgba(96,165,250,0.22),
+                  0 8px 18px rgba(0,0,0,0.30);
     }
 
     .value-chip {
@@ -569,6 +701,127 @@
       font-size: 12px;
       color: #fff;
       font-variant-numeric: tabular-nums;
+      min-height: 34px;
+    }
+
+    .video-player {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      width: 100%;
+    }
+
+    .transport-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .transport-btn {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      border-radius: 50%;
+      padding: 0;
+      border: 1px solid var(--btnBd);
+      background: var(--btnBg);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+      font-size: 19px;
+      line-height: 1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      transition: background .14s ease, border-color .14s ease,
+                  transform .14s ease, box-shadow .14s ease;
+    }
+
+    .transport-btn.primary {
+      width: 60px;
+      height: 60px;
+      min-width: 60px;
+      background: rgba(96,165,250,0.30);
+      border-color: rgba(147,197,253,0.82);
+      font-size: 22px;
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.16),
+                  0 8px 22px rgba(0,0,0,0.20);
+    }
+
+    .transport-btn:hover {
+      background: var(--btnBgHover);
+      border-color: var(--btnBdHover);
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.14),
+                  0 8px 20px rgba(0,0,0,0.18);
+    }
+
+    .transport-btn:active,
+    .transport-btn.is-pressed {
+      background: var(--btnBgPressed);
+      border-color: var(--btnBdPressed);
+      transform: scale(0.94);
+      box-shadow: 0 0 0 5px rgba(96,165,250,0.24),
+                  0 10px 24px rgba(0,0,0,0.24);
+    }
+
+    .transport-btn:focus-visible {
+      outline: 3px solid rgba(147,197,253,0.82);
+      outline-offset: 3px;
+    }
+
+    .play-icon,
+    .pause-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .pause-icon {
+      opacity: 0;
+      transform: scale(0.78) rotate(-8deg);
+    }
+
+    .transport-btn.is-playing .play-icon {
+      opacity: 0;
+      transform: scale(0.78) rotate(8deg);
+    }
+
+    .transport-btn.is-playing .pause-icon {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+
+    .seek-row {
+      display: grid;
+      grid-template-columns: minmax(42px, auto) minmax(240px, 1fr) minmax(42px, auto);
+      align-items: center;
+      gap: 12px;
+      width: min(100%, 860px);
+    }
+
+    .time-chip {
+      min-width: 42px;
+      color: rgba(255,255,255,0.72);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    .video-range {
+      width: 100%;
+      min-width: 0;
     }
 
     /* Year grid  (Layer 3 — white cards) */
@@ -591,17 +844,22 @@
       flex-direction: column;
       gap: 2px;
       user-select: none;
-      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
     }
 
     .year-card.active {
       border-color: var(--active);
-      box-shadow: 0 0 0 2px rgba(96,165,250,.20), 0 4px 14px rgba(0,0,0,.16);
+      box-shadow: 0 0 0 3px rgba(96,165,250,.28), 0 4px 14px rgba(0,0,0,.16);
     }
 
     .year-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 18px rgba(0,0,0,.20);
+    }
+
+    .year-card:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 0 0 3px rgba(96,165,250,.26), 0 4px 14px rgba(0,0,0,.18);
     }
 
     .year-title    { font-size: 17px; font-weight: 700; margin: 0; }
@@ -631,7 +889,7 @@
     }
     @media (max-width:  768px) {
       body { padding: 10px; gap: 10px; }
-      :root { --rail-w: 46px; }
+      :root { --rail-w: 58px; }
       .workspace { gap: 10px; }
       .topbar { flex-wrap: wrap; padding: 10px 14px; gap: 10px; }
       .topbar-right { width: 100%; overflow-x: auto; padding-bottom: 2px; }
@@ -640,7 +898,7 @@
         grid-template-columns: repeat(10, auto);
         grid-template-rows: auto;
       }
-      .rail-btn  { width: 36px; height: 36px; font-size: 15px; }
+      .rail-btn  { width: 52px; height: 52px; font-size: 20px; }
       .ri-num    { font-size: 16px; }
       .ph-title  { font-size: 20px; }
       .buildings-view { padding: var(--s2); }
@@ -648,9 +906,17 @@
       .multi-building-grid { grid-template-columns: repeat(2,1fr); }
     }
     @media (max-width: 480px) {
-      :root { --rail-w: 38px; }
-      .rail-indicator { padding: 6px 8px; min-width: 34px; }
+      :root { --rail-w: 54px; }
+      .rail-indicator { padding: 7px 8px; min-width: 38px; }
       .ri-num { font-size: 14px; }
+      .transport-row { gap: 8px; padding: 6px 8px; }
+      .transport-btn { width: 46px; height: 46px; min-width: 46px; }
+      .transport-btn.primary { width: 56px; height: 56px; min-width: 56px; }
+      .seek-row {
+        grid-template-columns: minmax(34px, auto) minmax(120px, 1fr) minmax(34px, auto);
+        gap: 8px;
+      }
+      .time-chip { min-width: 34px; font-size: 11px; }
     }
   </style>
 </head>
@@ -774,14 +1040,24 @@
             </div>
             <div class="control-card">
               <div class="control-title">Video Playback</div>
-              <div class="control-row">
-                <button id="vidPlayPauseBtn" class="ctrl-btn" type="button">Play / Pause</button>
-                <button id="vidNextBtn"      class="ctrl-btn" type="button">Next Video</button>
-              </div>
-              <div class="control-row" style="margin-top:var(--s2);">
-                <span class="mini-label">Seek</span>
-                <input id="vidSeek" class="range" type="range" min="0" max="1000" value="0" />
-                <span class="value-chip" id="vidTimeChip">&mdash;</span>
+              <div class="video-player">
+                <div class="transport-row" aria-label="Video transport controls">
+                  <button id="vidPrevBtn" class="transport-btn" type="button" aria-label="Previous video">
+                    <span aria-hidden="true">&#9664;&#9664;</span>
+                  </button>
+                  <button id="vidPlayPauseBtn" class="transport-btn primary" type="button" aria-label="Play video">
+                    <span class="play-icon" aria-hidden="true">&#9654;</span>
+                    <span class="pause-icon" aria-hidden="true">&#10074;&#10074;</span>
+                  </button>
+                  <button id="vidNextBtn" class="transport-btn" type="button" aria-label="Next video">
+                    <span aria-hidden="true">&#9654;&#9654;</span>
+                  </button>
+                </div>
+                <div class="seek-row">
+                  <span class="time-chip" id="vidCurrentTime">0:00</span>
+                  <input id="vidSeek" class="range video-range" type="range" min="0" max="1000" value="0" aria-label="Video seek position" />
+                  <span class="time-chip" id="vidDurationTime">&mdash;</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1144,14 +1420,16 @@
     // ============================================================
     // PAGE 8 — VIDEO CONTROLS
     // ============================================================
+    const vidPrevBtn      = document.getElementById("vidPrevBtn");
     const vidPlayPauseBtn = document.getElementById("vidPlayPauseBtn");
     const vidNextBtn      = document.getElementById("vidNextBtn");
     const vidSeek         = document.getElementById("vidSeek");
-    const vidTimeChip     = document.getElementById("vidTimeChip");
+    const vidCurrentTime  = document.getElementById("vidCurrentTime");
+    const vidDurationTime = document.getElementById("vidDurationTime");
 
     let userIsSeeking      = false;
     let seekLockUntil      = 0;
-    let nextVideoLockUntil = 0;
+    let videoActionLockUntil = 0;
 
     function lockSeekUi(ms){ seekLockUntil = Date.now() + (ms || 900); }
 
@@ -1160,25 +1438,49 @@
       return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
     }
 
-    if (vidPlayPauseBtn) vidPlayPauseBtn.addEventListener("click", () => {
+    function pulseTransportButton(btn){
+      if (!btn) return;
+      btn.classList.add("is-pressed");
+      setTimeout(() => btn.classList.remove("is-pressed"), 180);
+    }
+
+    function setVideoPlayingState(isPlaying){
+      if (!vidPlayPauseBtn) return;
+      vidPlayPauseBtn.classList.toggle("is-playing", !!isPlaying);
+      vidPlayPauseBtn.setAttribute("aria-label", isPlaying ? "Pause video" : "Play video");
+    }
+
+    function triggerVideoTransport(btn, payload, delayMs){
       if (!hasVideos) return;
-      goToPageThen(8, { type:"VIDEO_PLAY_PAUSE" }, 80);
+      const now = Date.now();
+      if (now < videoActionLockUntil) return;
+      videoActionLockUntil = now + 420;
+      pulseTransportButton(btn);
+      if (payload.type === "VIDEO_PLAY_PAUSE" && vidPlayPauseBtn) {
+        setVideoPlayingState(!vidPlayPauseBtn.classList.contains("is-playing"));
+      }
+      postToMain({ type:"NAV_PAGE", page:8 });
+      setTimeout(() => postToMain(payload), Number(delayMs || 120));
+    }
+
+    if (vidPrevBtn) vidPrevBtn.addEventListener("click", e => {
+      e.preventDefault(); e.stopPropagation();
+      triggerVideoTransport(vidPrevBtn, { type:"VIDEO_PREV" }, 180);
+    });
+
+    if (vidPlayPauseBtn) vidPlayPauseBtn.addEventListener("click", () => {
+      triggerVideoTransport(vidPlayPauseBtn, { type:"VIDEO_PLAY_PAUSE" }, 80);
     });
 
     if (vidNextBtn) vidNextBtn.addEventListener("click", e => {
       e.preventDefault(); e.stopPropagation();
-      if (!hasVideos) return;
-      const now = Date.now();
-      if (now < nextVideoLockUntil) return;
-      nextVideoLockUntil = now + 900;
-      postToMain({ type:"NAV_PAGE", page:8 });
-      setTimeout(() => postToMain({ type:"VIDEO_NEXT" }), 250);
+      triggerVideoTransport(vidNextBtn, { type:"VIDEO_NEXT" }, 180);
     });
 
     if (vidSeek) {
       vidSeek.value = "0";
-      const bS = () => { userIsSeeking = true;  };
-      const eS = () => { userIsSeeking = false; };
+      const bS = () => { userIsSeeking = true; vidSeek.classList.add("is-seeking"); };
+      const eS = () => { userIsSeeking = false; vidSeek.classList.remove("is-seeking"); };
       vidSeek.addEventListener("pointerdown", bS);
       vidSeek.addEventListener("mousedown",   bS);
       vidSeek.addEventListener("touchstart",  bS, { passive:true });
@@ -1280,12 +1582,13 @@
 
       if (d.type === "VIDEO_STATE") {
         const ct = Number(d.currentTime), dur = Number(d.duration);
+        if (typeof d.paused === "boolean") setVideoPlayingState(!d.paused);
+        if (isFinite(ct) && vidCurrentTime) vidCurrentTime.textContent = formatTime(ct);
+        if (isFinite(dur) && dur > 0 && vidDurationTime) vidDurationTime.textContent = formatTime(dur);
+        else if (vidDurationTime) vidDurationTime.textContent = "\u2014";
         const ok = !userIsSeeking && Date.now() > seekLockUntil;
         if (ok && isFinite(ct) && isFinite(dur) && dur > 0 && vidSeek) {
           vidSeek.value = String(Math.round((ct/dur)*1000));
-          if (vidTimeChip) vidTimeChip.textContent = formatTime(ct) + " / " + formatTime(dur);
-        } else if (isFinite(ct) && isFinite(dur) && dur > 0 && vidTimeChip) {
-          vidTimeChip.textContent = formatTime(ct) + " / " + formatTime(dur);
         }
         return;
       }
