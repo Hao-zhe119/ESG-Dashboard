@@ -409,13 +409,18 @@ body::after {
 .account-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-width: 112px;
+  height: 44px;
+  padding: 5px 12px !important;
   white-space: nowrap;
 }
 
 .account-pill svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
   transition: transform 0.2s ease;
 }
 
@@ -423,11 +428,27 @@ body::after {
   transform: rotate(180deg);
 }
 
+.account-pill-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.44);
+}
+
+.account-pill-name {
+  color: #ffffff;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .account-menu {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 230px;
+  width: 260px;
   padding: 16px;
   border-radius: 18px;
   background: rgba(16,24,39,0.76);
@@ -484,18 +505,39 @@ body::after {
   letter-spacing: 0;
 }
 
-.account-menu .logout-btn {
-  display: block;
+.account-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.account-menu .account-menu-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  margin-top: 12px;
   color: #ffffff !important;
-  background: rgba(220,38,38,0.86) !important;
-  border: 1px solid rgba(254,202,202,0.34) !important;
+  background: rgba(96,165,250,0.22) !important;
+  border: 1px solid rgba(191,219,254,0.34) !important;
   border-radius: 999px !important;
   padding: 9px 16px;
   font-weight: 800;
   text-align: center;
   text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-menu .account-menu-action:hover,
+.account-menu .account-menu-action:focus-visible {
+  background: rgba(96,165,250,0.34) !important;
+  color: #ffffff !important;
+}
+
+.account-menu .logout-btn {
+  background: rgba(220,38,38,0.86) !important;
+  border-color: rgba(254,202,202,0.34) !important;
 }
 
 .account-menu .logout-btn:hover,
@@ -1647,23 +1689,12 @@ body.mode-interactive #page7 .three-panel {
               <button class="chart-mode-option" id="chartModeLineBtn" type="button" onclick="setChartMode('line')">Line</button>
             </div>
           </li>
-          <% if (String(dashboardMode || '').toLowerCase() === 'interactive') { %>
-          <li class="nav-item">
-            <button class="btn btn-success" id="openBuildingControlsBtn" onclick="openBuildingControlsWindow()">
-               Building Controls
-            </button>
-          </li>
-          <% } %>
-          <% if (user) { %>
-          <li class="nav-item">
-            <a class="btn btn-outline-secondary" href="/admin">Admin Dashboard</a>
-          </li>
-          <% } %>
           <li class="nav-item">
             <% if (user) { %>
               <div class="account-menu-wrap">
                 <button class="btn btn-outline-secondary account-pill" id="accountMenuButton" type="button" aria-expanded="false" aria-controls="accountMenu">
-                  Logged in to: <%= user.account %>
+                  <img class="account-pill-avatar" src="<%= user.profile_picture || user.profilePicture || user.avatar || user.avatar_url || '/images/RPlogo.png' %>" alt="<%= user.account %> profile picture">
+                  <span class="account-pill-name"><%= user.account %></span>
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                     <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
                   </svg>
@@ -1673,7 +1704,11 @@ body.mode-interactive #page7 .three-panel {
                     <img class="account-avatar" src="<%= user.profile_picture || user.profilePicture || user.avatar || user.avatar_url || '/images/RPlogo.png' %>" alt="<%= user.account %> profile picture">
                     <div class="account-greeting">Hello, <%= user.account %>!</div>
                   </div>
-                  <a class="logout-btn" href="/logout" role="menuitem">Logout</a>
+                  <div class="account-actions">
+                    <button class="account-menu-action" id="openBuildingControlsBtn" type="button" onclick="openBuildingControlsWindow()" role="menuitem">Building Controls</button>
+                    <a class="account-menu-action" href="/admin" role="menuitem">Admin Dashboard</a>
+                    <a class="account-menu-action logout-btn" href="/logout" role="menuitem">Logout</a>
+                  </div>
                 </div>
               </div>
             <% } else { %>
