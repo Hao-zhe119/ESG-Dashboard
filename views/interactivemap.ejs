@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RP Campus Interactive Map</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:        #00c896;
+      --green-dim:    #00c89640;
+      --dark:         #050d0a;
+      --panel:        #0a1a14cc;
+      --panel-solid:  #0a1a14;
+      --panel-border: #1a3a2a;
+      --text:         #c8ffe8;
+      --text-dim:     #6a9980;
+      --accent:       #00ffb3;
+      --e-color:      #00d4ff;
+      --w-color:      #4f8fff;
+      --other-color:  #ffb347;
+    }
+
+    html, body { height: 100%; background: var(--dark); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; position: relative; }
+
+    /* Z-index layering — model is background, all UI floats above */
+    .loading-overlay { z-index: 9999; }
+    .map-header, .legend, .controls-hint, .zoom-controls, .cycle-bar { z-index: 100; }
+    .info-panel, .cycle-panel { z-index: 200; }
+
+    /* ── LOADING ── */
+    .loading-overlay {
+      position: fixed; inset: 0; background: var(--dark);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      z-index: 9999; transition: opacity 0.8s ease;
+    }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .loading-logo { font-family: 'Rajdhani', sans-serif; font-size: 2rem; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); }
+    .loading-sub { font-size: 0.78rem; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+    .loading-bar { width: 220px; height: 2px; background: var(--panel-border); border-radius: 2px; overflow: hidden; }
+    .loading-bar-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--accent)); width: 0%; transition: width 0.3s; }
+
+    /* ── HEADER ── */
+    .map-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px;
+      background: linear-gradient(180deg, rgba(5,13,10,0.97) 0%, transparent 100%);
+    }
+    .header-left h1 {
+      font-family: 'Rajdhani', sans-serif; font-size: 1.35rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
+    }
+    .header-left p { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.05em; margin-top: 1px; }
+
+    /* ── AUTO-CYCLE PROGRESS BAR ── */
+    .cycle-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 3px;
+      background: rgba(255,255,255,0.06); z-index: 300;
+    }
+    .cycle-bar-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--green), var(--accent));
+      transition: width 0.2s linear;
+    }
+
+    /* ── BACK BUTTON ── */
+    .back-btn {
+      display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+      border: 1px solid var(--panel-border); border-radius: 6px;
+      background: var(--panel); color: var(--text-dim);
+      font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; font-weight: 600;
+      letter-spacing: 0.08em; text-decoration: none; transition: all 0.2s;
+    }
+    .back-btn:hover { border-color: var(--green); color: var(--accent); }
+
+    /* ── MODEL VIEWER ── */
+    model-viewer {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: transparent;
+      --progress-bar-color: transparent;
+      --progress-mask: transparent;
+      z-index: 0;
+    }
+
+    /* Force model to always render centred inside the viewer */
+    model-viewer::part(default-ar-button) { display: none; }
+
+
+    /* ── HOTSPOT BASE ── */
+    .hotspot { display: block; position: relative; cursor: pointer; text-decoration: none; }
+
+    /* Pulse rings — 3 rings for drama */
+    .hotspot::before, .hotspot::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      border-radius: 50%; pointer-events: none;
+    }
+    .hotspot::before {
+      width: 32px; height: 32px;
+      border: 1.5px solid currentColor;
+      animation: pulse-ring 2s ease-out infinite;
+    }
+    .hotspot::after {
+      width: 20px; height: 20px;
+      border: 1px solid currentColor;
+      animation: pulse-ring 2s ease-out infinite 0.6s;
+      opacity: 0.6;
+    }
+
+    /* Inner dot */
+    .hotspot-dot {
+      width: 13px; height: 13px; border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 10px currentColor, 0 0 24px currentColor;
+      transition: transform 0.25s, box-shadow 0.25s;
+      position: relative; z-index: 2;
+    }
+    .hotspot:hover .hotspot-dot, .hotspot.active .hotspot-dot {
+      transform: scale(1.6);
+      box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+    }
+
+    /* Active hotspot ring */
+    .hotspot.active::before {
+      animation: pulse-ring-active 1.2s ease-out infinite;
+      border-width: 2px;
+    }
+
+    /* Color categories */
+    .hotspot.e-block  { color: var(--e-color); }
+    .hotspot.w-block  { color: var(--w-color); }
+    .hotspot.other    { color: var(--other-color); }
+
+    /* Label */
+    .hotspot-label {
+      position: absolute; left: 50%; bottom: calc(100% + 12px);
+      transform: translateX(-50%) translateY(6px);
+      white-space: nowrap; background: var(--panel-solid);
+      border: 1px solid var(--panel-border); border-radius: 4px;
+      padding: 4px 10px;
+      font-family: 'Rajdhani', sans-serif; font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 0.08em; color: currentColor;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .hotspot-label::after {
+      content: ''; position: absolute; top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent; border-top-color: var(--panel-border);
+    }
+    .hotspot:hover .hotspot-label, .hotspot.active .hotspot-label {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+
+    @keyframes pulse-ring {
+      0%   { transform: translate(-50%,-50%) scale(0.7); opacity: 0.9; }
+      100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0; }
+    }
+    @keyframes pulse-ring-active {
+      0%   { transform: translate(-50%,-50%) scale(0.8); opacity: 1; }
+      100% { transform: translate(-50%,-50%) scale(2.8); opacity: 0; }
+    }
+
+    /* ── INFO PANEL ── */
+    .info-panel {
+      position: fixed; bottom: 24px; right: 24px; width: 280px;
+      background: var(--panel-solid); border: 1px solid var(--panel-border);
+      border-radius: 12px; padding: 0; z-index: 200;
+      opacity: 0; transform: translateY(16px) scale(0.97);
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none; overflow: hidden;
+    }
+    .info-panel.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+
+    .info-panel-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .info-panel-category {
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; margin-bottom: 3px;
+    }
+    .info-panel-title {
+      font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700;
+      letter-spacing: 0.06em; color: var(--accent);
+    }
+    .info-panel-close {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border);
+      color: var(--text-dim); cursor: pointer; font-size: 0.9rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .info-panel-close:hover { background: rgba(255,100,100,0.15); color: #ff6b6b; border-color: #ff6b6b; }
+
+    .info-panel-body { padding: 12px 16px; }
+    .info-panel-loading { text-align: center; color: var(--text-dim); font-size: 0.78rem; padding: 16px 0; }
+
+    .info-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .metric-card {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--panel-border);
+      border-radius: 8px; padding: 8px 10px;
+    }
+    .metric-card-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 3px; }
+    .metric-card-value { font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text); }
+
+    .info-panel-actions { display: flex; gap: 8px; }
+    .info-btn {
+      flex: 1; padding: 9px 8px; border-radius: 7px;
+      font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; font-weight: 600;
+      letter-spacing: 0.06em; text-align: center; text-decoration: none;
+      transition: all 0.2s; cursor: pointer; border: none;
+    }
+    .info-btn-primary { background: var(--green); color: var(--dark); }
+    .info-btn-primary:hover { background: var(--accent); }
+    .info-btn-secondary { background: transparent; border: 1px solid var(--panel-border); color: var(--text-dim); }
+    .info-btn-secondary:hover { border-color: var(--green); color: var(--text); }
+
+    /* ── AUTO-CYCLE PANEL ── */
+    .cycle-panel {
+      position: fixed; bottom: 24px; left: 24px; z-index: 200;
+      background: var(--panel-solid); border: 1px solid var(--panel-border);
+      border-radius: 10px; padding: 10px 14px;
+      display: flex; flex-direction: column; gap: 6px; min-width: 180px;
+    }
+    .cycle-label {
+      font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .cycle-building {
+      font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; color: var(--accent);
+    }
+    .cycle-controls { display: flex; gap: 6px; align-items: center; }
+    .cycle-btn {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--panel-border);
+      color: var(--text-dim); cursor: pointer; font-size: 0.8rem;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .cycle-btn:hover { background: rgba(0,200,150,0.15); border-color: var(--green); color: var(--accent); }
+    .cycle-btn.active-play { background: rgba(0,200,150,0.2); border-color: var(--green); color: var(--accent); }
+    .cycle-counter { font-size: 0.7rem; color: var(--text-dim); margin-left: auto; }
+
+    /* ── ZOOM CONTROLS ── */
+    .zoom-controls {
+      position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+      z-index: 200; display: flex; flex-direction: column; gap: 6px;
+    }
+    .zoom-btn {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--panel); border: 1px solid var(--panel-border);
+      color: var(--text-dim); cursor: pointer; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .zoom-btn:hover { background: rgba(0,200,150,0.15); border-color: var(--green); color: var(--accent); }
+    .zoom-divider { height: 1px; background: var(--panel-border); margin: 2px 0; }
+      50%       { box-shadow: 0 0 0 6px rgba(0,200,150,0); }
+    }
+
+    /* ── LEGEND ── */
+    .legend {
+      position: fixed; top: 70px; left: 24px; z-index: 100;
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.68rem; color: var(--text-dim); }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── CONTROLS HINT ── */
+    .controls-hint {
+      position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 16px; z-index: 100; animation: fadeout 0.8s ease 5s forwards;
+    }
+    .hint-item {
+      font-size: 0.7rem; color: var(--text-dim);
+      background: rgba(10,26,20,0.85); border: 1px solid var(--panel-border);
+      border-radius: 20px; padding: 5px 12px; white-space: nowrap;
+    }
+    @keyframes fadeout { to { opacity: 0; pointer-events: none; } }
+
+    /* ── FLY-IN ANIMATION ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .map-header, .legend, .zoom-controls {
+      animation: fadeInUp 0.8s ease both;
+    }
+    .legend { animation-delay: 0.3s; }
+    .zoom-controls { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+
+  <!-- Loading -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-logo">RP CAMPUS MAP</div>
+    <div class="loading-sub">Loading 3D Model...</div>
+    <div class="loading-bar"><div class="loading-bar-fill" id="loadingFill"></div></div>
+  </div>
+
+  <!-- Header -->
+  <header class="map-header">
+    <div class="header-left">
+      <h1>RP Campus Interactive Map</h1>
+      <p>Click a building to view sustainability data</p>
+    </div>
+    <a href="/" class="back-btn">← Dashboard</a>
+  </header>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--e-color);box-shadow:0 0 6px var(--e-color)"></div> E Block</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--w-color);box-shadow:0 0 6px var(--w-color)"></div> W Block</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--other-color);box-shadow:0 0 6px var(--other-color)"></div> Other Buildings</div>
+  </div>
+
+  <!-- Controls hint -->
+  <div class="controls-hint">
+    <div class="hint-item">🖱 Drag to rotate</div>
+    <div class="hint-item">🔍 Scroll to zoom</div>
+    <div class="hint-item">📍 Click dot to select</div>
+  </div>
+
+  <!-- Zoom Controls -->
+  <div class="zoom-controls">
+    <button class="zoom-btn" id="zoomIn" title="Zoom In">+</button>
+    <div class="zoom-divider"></div>
+    <button class="zoom-btn" id="zoomOut" title="Zoom Out">−</button>
+    <div class="zoom-divider"></div>
+    <button class="zoom-btn" id="resetView" title="Reset View" style="font-size:0.75rem;">⟳</button>
+
+  </div>
+
+
+  <!-- 3D Model Viewer — fixed full-screen so the model is always centred -->
+  <model-viewer
+    id="campusViewer"
+    src="/models/campusmap.glb"
+    alt="RP Campus 3D Map"
+    shadow-intensity="1"
+    camera-controls
+    auto-rotate
+    auto-rotate-delay="4000"
+    rotation-per-second="5deg"
+    min-camera-orbit="auto 20deg 60%"
+    max-camera-orbit="auto 82deg 130%"
+    min-field-of-view="25deg"
+    max-field-of-view="45deg"
+    interpolation-decay="80"
+    camera-orbit="0deg 55deg 90%"
+    camera-target="0m 0m 0m"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:radial-gradient(ellipse at center,#0c1f18 0%,#050d0a 100%);z-index:0;"
+  >
+
+    <!-- E Block (cyan) -->
+    <a href="/building-left/e1" slot="hotspot-e1" class="hotspot e-block" data-position="1.133 5.043 6.066" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">E1</span>
+    </a>
+    <a href="/building-left/e2" slot="hotspot-e2" class="hotspot e-block" data-position="3.530 5.043 4.866" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">E2</span>
+    </a>
+    <a href="/building-left/e3" slot="hotspot-e3" class="hotspot e-block" data-position="1.206 5.043 3.421" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">E3</span>
+    </a>
+    <a href="/building-left/e4" slot="hotspot-e4" class="hotspot e-block" data-position="3.462 5.043 2.542" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">E4</span>
+    </a>
+    <a href="/building-left/e5" slot="hotspot-e5" class="hotspot e-block" data-position="3.685 5.043 -1.400" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">E5</span>
+    </a>
+    <a href="/building-left/e6" slot="hotspot-e6" class="hotspot e-block" data-position="1.154 5.043 -1.998" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">E6</span>
+    </a>
+
+    <!-- W Block (blue) -->
+    <a href="/building-left/w1" slot="hotspot-w1" class="hotspot w-block" data-position="-1.149 5.071 7.817" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">W1</span>
+    </a>
+    <a href="/building-left/w2" slot="hotspot-w2" class="hotspot w-block" data-position="-3.709 5.012 5.862" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">W2</span>
+    </a>
+    <a href="/building-left/w3" slot="hotspot-w3" class="hotspot w-block" data-position="-3.490 5.012 3.014" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">W3</span>
+    </a>
+    <a href="/building-left/w4" slot="hotspot-w4" class="hotspot w-block" data-position="-1.238 5.012 2.509" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">W4</span>
+    </a>
+    <a href="/building-left/w5" slot="hotspot-w5" class="hotspot w-block" data-position="-3.674 5.025 0.033" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">W5</span>
+    </a>
+    <a href="/building-left/w6" slot="hotspot-w6" class="hotspot w-block" data-position="-1.215 5.012 -1.604" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">W6</span>
+    </a>
+
+    <!-- Other buildings (orange) -->
+    <a href="/building-left/ecmc" slot="hotspot-ecmc" class="hotspot other" data-position="8.791 -0.000 1.581" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">ECMC</span>
+    </a>
+    <a href="/building-left/rpc" slot="hotspot-rpc" class="hotspot other" data-position="1.536 1.165 10.668" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">RPC</span>
+    </a>
+    <a href="/building-left/trcc" slot="hotspot-trcc" class="hotspot other" data-position="6.118 1.044 7.689" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">TRCC</span>
+    </a>
+    <a href="/building-left/sports-complex" slot="hotspot-sports" class="hotspot other" data-position="-4.943 0.812 -8.541" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">Sports Complex</span>
+    </a>
+    <a href="/building-left/the-arch" slot="hotspot-arch" class="hotspot other" data-position="-9.294 0.714 -8.553" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">The Arch</span>
+    </a>
+    <a href="/building-left/green-house" slot="hotspot-greenhouse" class="hotspot other" data-position="-1.558 0.855 -7.149" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">Green House</span>
+    </a>
+    <a href="/building-left/blk-43" slot="hotspot-blk43" class="hotspot other" data-position="-7.049 0.875 2.103" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">Blk 43</span>
+    </a>
+    <a href="/building-left/rpic" slot="hotspot-rpic" class="hotspot other" data-position="-6.550 1.605 -0.884" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">RPIC</span>
+    </a>
+    <a href="/building-left/xlc" slot="hotspot-xlc" class="hotspot other" data-position="0.963 0.000 -10.601" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">XLC</span>
+    </a>
+    <a href="/building-left/alc" slot="hotspot-alc" class="hotspot other" data-position="1.043 0.000 -8.335" data-normal="0 1 0">
+      <div class="hotspot-dot"></div><span class="hotspot-label">ALC</span>
+    </a>
+
+  </model-viewer>
+
+  <!-- Info Panel -->
+  <div class="info-panel" id="infoPanel">
+    <div class="info-panel-header">
+      <div>
+        <div class="info-panel-category" id="panelCategory">Building</div>
+        <div class="info-panel-title" id="panelTitle">—</div>
+      </div>
+      <button class="info-panel-close" onclick="closePanel()">✕</button>
+    </div>
+    <div class="info-panel-body">
+      <div id="panelMetrics" class="info-panel-loading">Loading data...</div>
+      <div class="info-panel-actions" style="margin-top:12px">
+        <a href="#" id="panelViewBtn" class="info-btn info-btn-primary">View Full Data</a>
+        <button onclick="closePanel()" class="info-btn info-btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auto-cycle Panel -->
+  <div class="cycle-panel" id="cyclePanel">
+    <div class="cycle-label">Auto Tour</div>
+    <div class="cycle-building" id="cycleBuildingName">—</div>
+    <div class="cycle-controls">
+      <button class="cycle-btn" id="cyclePrev" title="Previous">‹</button>
+      <button class="cycle-btn active-play" id="cyclePlayPause" title="Pause">⏸</button>
+      <button class="cycle-btn" id="cycleNext" title="Next">›</button>
+      <span class="cycle-counter" id="cycleCounter">1 / 22</span>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="cycle-bar"><div class="cycle-bar-fill" id="cycleBarFill"></div></div>
+
+  <script>
+    const viewer   = document.getElementById('campusViewer');
+    const overlay  = document.getElementById('loadingOverlay');
+    const loadFill = document.getElementById('loadingFill');
+    const infoPanel    = document.getElementById('infoPanel');
+    const panelTitle   = document.getElementById('panelTitle');
+    const panelCategory= document.getElementById('panelCategory');
+    const panelMetrics = document.getElementById('panelMetrics');
+    const panelViewBtn = document.getElementById('panelViewBtn');
+    const cycleBarFill = document.getElementById('cycleBarFill');
+    const cycleNameEl  = document.getElementById('cycleBuildingName');
+    const cycleCounter = document.getElementById('cycleCounter');
+    const playPauseBtn = document.getElementById('cyclePlayPause');
+
+    // ── HOME VIEW ──
+    // 180deg = rotated to face the front entrance of the campus
+    // 55deg  = comfortable top-down tilt
+    // 90%    = fills the screen nicely
+    // If the front is still wrong, try 0deg, 90deg, or 270deg for the first value
+    const HOME_ORBIT  = '0deg 55deg 90%';
+    const HOME_TARGET = '0m 0m 0m';
+
+    // ── BUILDING DATA ──
+    const buildings = [
+      { slug:'e1',  name:'Block E1',       cat:'E Block',    catClass:'e-block' },
+      { slug:'e2',  name:'Block E2',       cat:'E Block',    catClass:'e-block' },
+      { slug:'e3',  name:'Block E3',       cat:'E Block',    catClass:'e-block' },
+      { slug:'e4',  name:'Block E4',       cat:'E Block',    catClass:'e-block' },
+      { slug:'e5',  name:'Block E5',       cat:'E Block',    catClass:'e-block' },
+      { slug:'e6',  name:'Block E6',       cat:'E Block',    catClass:'e-block' },
+      { slug:'w1',  name:'Block W1',       cat:'W Block',    catClass:'w-block' },
+      { slug:'w2',  name:'Block W2',       cat:'W Block',    catClass:'w-block' },
+      { slug:'w3',  name:'Block W3',       cat:'W Block',    catClass:'w-block' },
+      { slug:'w4',  name:'Block W4',       cat:'W Block',    catClass:'w-block' },
+      { slug:'w5',  name:'Block W5',       cat:'W Block',    catClass:'w-block' },
+      { slug:'w6',  name:'Block W6',       cat:'W Block',    catClass:'w-block' },
+      { slug:'ecmc',          name:'ECMC',          cat:'Facility', catClass:'other' },
+      { slug:'rpc',           name:'RPC',           cat:'Facility', catClass:'other' },
+      { slug:'trcc',          name:'TRCC',          cat:'Facility', catClass:'other' },
+      { slug:'sports-complex',name:'Sports Complex',cat:'Facility', catClass:'other' },
+      { slug:'the-arch',      name:'The Arch',      cat:'Facility', catClass:'other' },
+      { slug:'green-house',   name:'Green House',   cat:'Facility', catClass:'other' },
+      { slug:'blk-43',        name:'Block 43',      cat:'Facility', catClass:'other' },
+      { slug:'rpic',          name:'RPIC',          cat:'Facility', catClass:'other' },
+      { slug:'xlc',           name:'XLC',           cat:'Facility', catClass:'other' },
+      { slug:'alc',           name:'ALC',           cat:'Facility', catClass:'other' },
+    ];
+
+    // Slot name map: slug → hotspot slot id suffix
+    const slotMap = {
+      'e1':'e1','e2':'e2','e3':'e3','e4':'e4','e5':'e5','e6':'e6',
+      'w1':'w1','w2':'w2','w3':'w3','w4':'w4','w5':'w5','w6':'w6',
+      'ecmc':'ecmc','rpc':'rpc','trcc':'trcc','sports-complex':'sports',
+      'the-arch':'arch','green-house':'greenhouse','blk-43':'blk43',
+      'rpic':'rpic','xlc':'xlc','alc':'alc'
+    };
+
+    // ── LOADING ──
+    // Store the original orbit after model finishes loading — reset always returns here
+    let originalOrbit  = HOME_ORBIT;
+    let originalTarget = HOME_TARGET;
+
+    viewer.addEventListener('progress', e => {
+      loadFill.style.width = (e.detail.totalProgress * 100).toFixed(0) + '%';
+    });
+
+    viewer.addEventListener('load', () => {
+      setTimeout(() => overlay.classList.add('hidden'), 600);
+      // Fly-in animation
+      viewer.cameraOrbit  = '20deg 70deg 120%';
+      viewer.cameraTarget = HOME_TARGET;
+      setTimeout(() => {
+        viewer.cameraOrbit  = HOME_ORBIT;
+        viewer.cameraTarget = HOME_TARGET;
+        // Save this as the original position after fly-in settles
+        setTimeout(() => {
+          originalOrbit  = HOME_ORBIT;
+          originalTarget = HOME_TARGET;
+        }, 600);
+      }, 120);
+    });
+
+    // ── ACTIVE HOTSPOT ──
+    let activeSlug = null;
+    function setActiveHotspot(slug) {
+      document.querySelectorAll('.hotspot').forEach(h => h.classList.remove('active'));
+      if (slug) {
+        const slot = slotMap[slug];
+        const el = slot ? document.querySelector(`[slot="hotspot-${slot}"]`) : null;
+        if (el) el.classList.add('active');
+      }
+      activeSlug = slug;
+    }
+
+    // ── FETCH BUILDING METRICS ──
+    const dataCache = {};
+    function loadBuildingData(slug, name) {
+      panelTitle.textContent = name;
+      panelViewBtn.setAttribute('href', `/building-left/${slug}`);
+      panelMetrics.innerHTML = '<div class="info-panel-loading">Loading data...</div>';
+
+      if (dataCache[slug]) { renderMetrics(dataCache[slug]); return; }
+
+      fetch(`/building-left/${encodeURIComponent(slug)}`)
+        .then(r => r.text())
+        .then(html => {
+          // Parse electricity and water from returned HTML
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+
+          // Try to extract numbers from the page
+          const text = doc.body ? doc.body.innerText : '';
+          let elec = null, water = null;
+
+          const elecMatch = text.match(/electricity[^\d]*([\d,]+)\s*kwh/i);
+          const waterMatch = text.match(/water[^\d]*([\d,]+)\s*m/i);
+          if (elecMatch) elec = elecMatch[1];
+          if (waterMatch) water = waterMatch[1];
+
+          const result = { elec, water };
+          dataCache[slug] = result;
+          renderMetrics(result);
+        })
+        .catch(() => {
+          panelMetrics.innerHTML = '<div class="info-panel-loading">No data available yet.</div>';
+        });
+    }
+
+    function renderMetrics(data) {
+      if (data.elec || data.water) {
+        panelMetrics.innerHTML = `
+          <div class="info-metrics">
+            <div class="metric-card">
+              <div class="metric-card-label">⚡ Electricity</div>
+              <div class="metric-card-value">${data.elec ? data.elec + ' kWh' : 'N/A'}</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-card-label">💧 Water</div>
+              <div class="metric-card-value">${data.water ? data.water + ' m³' : 'N/A'}</div>
+            </div>
+          </div>`;
+      } else {
+        panelMetrics.innerHTML = `
+          <div class="info-metrics">
+            <div class="metric-card">
+              <div class="metric-card-label">⚡ Electricity</div>
+              <div class="metric-card-value" style="color:var(--text-dim);font-size:0.8rem">See full data</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-card-label">💧 Water</div>
+              <div class="metric-card-value" style="color:var(--text-dim);font-size:0.8rem">See full data</div>
+            </div>
+          </div>`;
+      }
+    }
+
+    // ── OPEN PANEL ──
+    function openPanel(b) {
+      const catColors = { 'E Block':'var(--e-color)', 'W Block':'var(--w-color)', 'Facility':'var(--other-color)' };
+      panelCategory.textContent = b.cat;
+      panelCategory.style.color = catColors[b.cat] || 'var(--accent)';
+      panelTitle.textContent = b.name;
+      panelTitle.style.color = catColors[b.cat] || 'var(--accent)';
+      infoPanel.classList.add('visible');
+      setActiveHotspot(b.slug);
+      loadBuildingData(b.slug, b.name);
+    }
+
+    function closePanel() {
+      infoPanel.classList.remove('visible');
+      setActiveHotspot(null);
+      if (!cycleRunning) viewer.autoRotate = true;
+    }
+
+    // ── HOTSPOT CLICKS ──
+    document.querySelectorAll('.hotspot').forEach(hotspot => {
+      hotspot.addEventListener('click', e => {
+        e.preventDefault();
+        const href = hotspot.getAttribute('href');
+        const slug = href.split('/building-left/')[1];
+        const b = buildings.find(b => b.slug === slug);
+        if (!b) return;
+        pauseCycle();
+        viewer.autoRotate = false;
+        openPanel(b);
+      });
+    });
+
+    // Click on empty model area closes panel
+    viewer.addEventListener('click', e => {
+      if (!e.target.closest('.hotspot')) closePanel();
+    });
+
+    // ── AUTO-CYCLE ──
+    let cycleIdx = 0;
+    let cycleRunning = true;
+    let cycleTimer = null;
+    let cycleStartTime = null;
+    const CYCLE_DURATION = 5000; // 5s per building
+
+    function startCycleTimer() {
+      clearCycleTimer();
+      cycleStartTime = Date.now();
+      cycleBarFill.style.transition = 'none';
+      cycleBarFill.style.width = '0%';
+
+      setTimeout(() => {
+        cycleBarFill.style.transition = `width ${CYCLE_DURATION}ms linear`;
+        cycleBarFill.style.width = '100%';
+      }, 30);
+
+      cycleTimer = setTimeout(() => {
+        cycleIdx = (cycleIdx + 1) % buildings.length;
+        showCycleBuilding();
+      }, CYCLE_DURATION);
+    }
+
+    function clearCycleTimer() {
+      if (cycleTimer) clearTimeout(cycleTimer);
+      cycleTimer = null;
+      cycleBarFill.style.transition = 'none';
+      cycleBarFill.style.width = '0%';
+    }
+
+    function showCycleBuilding() {
+      const b = buildings[cycleIdx];
+      cycleNameEl.textContent = b.name;
+      cycleCounter.textContent = `${cycleIdx + 1} / ${buildings.length}`;
+      setActiveHotspot(b.slug);
+      if (cycleRunning) startCycleTimer();
+    }
+
+    function pauseCycle() {
+      cycleRunning = false;
+      clearCycleTimer();
+      playPauseBtn.textContent = '▶';
+      playPauseBtn.classList.remove('active-play');
+    }
+
+    function resumeCycle() {
+      cycleRunning = true;
+      playPauseBtn.textContent = '⏸';
+      playPauseBtn.classList.add('active-play');
+      closePanel();
+      viewer.autoRotate = true;
+      showCycleBuilding();
+    }
+
+    playPauseBtn.addEventListener('click', () => {
+      if (cycleRunning) pauseCycle(); else resumeCycle();
+    });
+
+    document.getElementById('cyclePrev').addEventListener('click', () => {
+      pauseCycle();
+      cycleIdx = (cycleIdx - 1 + buildings.length) % buildings.length;
+      showCycleBuilding();
+      openPanel(buildings[cycleIdx]);
+    });
+
+    document.getElementById('cycleNext').addEventListener('click', () => {
+      pauseCycle();
+      cycleIdx = (cycleIdx + 1) % buildings.length;
+      showCycleBuilding();
+      openPanel(buildings[cycleIdx]);
+    });
+
+    // ── ZOOM CONTROLS ──
+    function getOrbit() {
+      const parts = viewer.getCameraOrbit();
+      return { theta: parts.theta, phi: parts.phi, radius: parts.radius };
+    }
+
+    document.getElementById('zoomIn').addEventListener('click', () => {
+      const o = getOrbit();
+      const newR = Math.max(o.radius * 0.75, viewer.getDimensions ? 5 : 0.5);
+      viewer.cameraOrbit = `${o.theta}rad ${o.phi}rad ${newR}m`;
+    });
+
+    document.getElementById('zoomOut').addEventListener('click', () => {
+      const o = getOrbit();
+      viewer.cameraOrbit = `${o.theta}rad ${o.phi}rad ${o.radius * 1.35}m`;
+    });
+
+    let isResetting = false;
+
+    function resetToHome() {
+      isResetting = true;
+      clearTimeout(viewer._resumeTimer);
+      viewer.autoRotate   = false;
+      viewer.cameraTarget = originalTarget;
+      viewer.cameraOrbit  = originalOrbit;
+      setTimeout(() => {
+        isResetting = false;
+        viewer.autoRotate = cycleRunning;
+      }, 800);
+    }
+
+    document.getElementById('resetView').addEventListener('click', resetToHome);
+
+    // Pause auto-rotate on manual drag — ignore during reset
+    viewer.addEventListener('camera-change', e => {
+      if (isResetting) return;
+      if (e.detail.source === 'user-interaction') {
+        viewer.autoRotate = false;
+        clearTimeout(viewer._resumeTimer);
+        viewer._resumeTimer = setTimeout(() => {
+          if (cycleRunning) viewer.autoRotate = true;
+        }, 6000);
+      }
+    });
+
+
+
+    // ── START ──
+    viewer.addEventListener('load', () => {
+      setTimeout(() => { showCycleBuilding(); }, 800);
+    });
+  </script>
+</body>
+</html>
