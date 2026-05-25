@@ -1,0 +1,75 @@
+{
+  "defaultTimersSeconds": {
+    "1": 15,
+    "2": 60,
+    "3": 60,
+    "4": 60,
+    "5": 60,
+    "6": 60,
+    "7": 60,
+    "8": 4,
+    "9": 30,
+    "10": 15
+  },
+  "interactiveMode": {
+    "autoRevertEnabled": true,
+    "idleTimeoutMinutes": 15,
+    "lastActivityAt": "2026-05-25T17:00:15.925Z"
+  },
+  "automation": {
+    "applyDefaultTimingEnabled": true,
+    "autoHibernateEnabled": false,
+    "autoHibernateDryRun": true,
+    "autoHibernateSchedule": {
+      "startTime": "22:00",
+      "endTime": "07:00",
+      "activeProfileId": "default"
+    },
+    "autoHibernateProfiles": [
+      {
+        "id": "default",
+        "name": "Default Hibernate Schedule",
+        "startTime": "22:00",
+        "endTime": "07:00",
+        "isDefault": true,
+        "createdAt": null
+      }
+    ],
+    "lastHibernateDryRunAt": "2026-05-25T17:00:31.655Z",
+    "healthCheckEnabled": true,
+    "healthCheckIntervalSeconds": 30
+  },
+  "timerProfiles": [],
+  "buildingPageGroups": {
+    "3": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6"
+    ],
+    "4": [
+      "W1",
+      "W2",
+      "W3",
+      "W4",
+      "W5",
+      "W6"
+    ],
+    "5": [
+      "ECMC",
+      "RPC",
+      "TRCC",
+      "Sports Complex",
+      "The Arch",
+      "Green House"
+    ],
+    "6": [
+      "BLK 43",
+      "RPIC",
+      "XLC",
+      "ALC"
+    ]
+  }
+}

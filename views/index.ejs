@@ -1427,6 +1427,8 @@ body.mode-interactive #page7 .three-panel {
     const mediaImages = <%- JSON.stringify(mediaImages || []) %>;
     const building_label_map = <%- JSON.stringify(buildingLabelMap || {}) %>;
     const building_card_label_map = <%- JSON.stringify(buildingCardLabelMap || {}) %>;
+    const runtime_config = <%- JSON.stringify(runtimeConfig || {}) %>;
+    const access_profile = <%- JSON.stringify(accessProfile || 'public') %>;
 
     // ============================================================
     // TIMERS DATA
@@ -1439,17 +1441,18 @@ body.mode-interactive #page7 .three-panel {
     // TIMER CONFIGURATION
     // Default durations in milliseconds
     // ============================================================
+    const configured_default_timers_seconds = (runtime_config && runtime_config.defaultTimersSeconds) ? runtime_config.defaultTimersSeconds : {};
     const DEFAULT_PAGE_DURATIONS = {
-      1: 15000,    // Welcome: 15 seconds
-      2: 60000,   // Building Overview: 1 minutes
-      3: 60000,   // Electricity Compare: 1 minutes
-      4: 60000,   // Water Compare: 1 minutes
-      5: 60000,   // Building 3-Panel (per building cycle): 1 minutes
-      6: 60000,    // Solar (per year cycle): 1 minute
-      7: 60000,    // Waste (per year cycle): 1 minute
-      8: 4000,    // Video end countdown: 4 seconds
-      9: 30000,    // Carousel: 30 seconds per image
-      10: 15000    // Thank You: 15 seconds
+      1: Number(configured_default_timers_seconds[1] || configured_default_timers_seconds["1"] || 15) * 1000,
+      2: Number(configured_default_timers_seconds[2] || configured_default_timers_seconds["2"] || 60) * 1000,
+      3: Number(configured_default_timers_seconds[3] || configured_default_timers_seconds["3"] || 60) * 1000,
+      4: Number(configured_default_timers_seconds[4] || configured_default_timers_seconds["4"] || 60) * 1000,
+      5: Number(configured_default_timers_seconds[5] || configured_default_timers_seconds["5"] || 60) * 1000,
+      6: Number(configured_default_timers_seconds[6] || configured_default_timers_seconds["6"] || 60) * 1000,
+      7: Number(configured_default_timers_seconds[7] || configured_default_timers_seconds["7"] || 60) * 1000,
+      8: Number(configured_default_timers_seconds[8] || configured_default_timers_seconds["8"] || 4) * 1000,
+      9: Number(configured_default_timers_seconds[9] || configured_default_timers_seconds["9"] || 30) * 1000,
+      10: Number(configured_default_timers_seconds[10] || configured_default_timers_seconds["10"] || 15) * 1000
     };
 
     /**
@@ -2050,6 +2053,58 @@ body.mode-interactive #page7 .three-panel {
       if (!is_auto_mode) return;
       setProgressBarToComputedElapsed(totalMs, 0, autoAdvance);
     }
+
+    // ============================================================
+    // INTERACTIVE MODE AUTO-REVERT
+    // ============================================================
+    const interactive_config = (runtime_config && runtime_config.interactiveMode) ? runtime_config.interactiveMode : {};
+    const interactive_auto_revert_enabled = !!interactive_config.autoRevertEnabled;
+    const interactive_idle_timeout_ms = Math.max(1, Number(interactive_config.idleTimeoutMinutes || 15)) * 60 * 1000;
+    let interactiveLastActivityAt = Date.now();
+    let interactiveActivityPingTimer = null;
+    let interactiveRevertTimer = null;
+
+    function pingInteractiveActivity() {
+      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+      try {
+        fetch("/dashboard/interactive-activity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activityAt: new Date().toISOString() })
+        }).catch(() => {});
+      } catch (error) {}
+    }
+
+    function markInteractiveActivityClient() {
+      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+      interactiveLastActivityAt = Date.now();
+      if (interactiveActivityPingTimer) return;
+      interactiveActivityPingTimer = setTimeout(() => {
+        interactiveActivityPingTimer = null;
+        pingInteractiveActivity();
+      }, 1000);
+    }
+
+    function startInteractiveAutoRevertWatcher() {
+      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+      pingInteractiveActivity();
+      if (interactiveRevertTimer) clearInterval(interactiveRevertTimer);
+      interactiveRevertTimer = setInterval(async () => {
+        if (Date.now() - interactiveLastActivityAt < interactive_idle_timeout_ms) return;
+        try {
+          await fetch("/dashboard/interactive-revert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({})
+          });
+        } catch (error) {}
+        window.location.href = "/?mode=auto";
+      }, 5000);
+    }
+
+    ["mousemove", "mousedown", "keydown", "touchstart", "scroll"].forEach((eventName) => {
+      window.addEventListener(eventName, markInteractiveActivityClient, { passive: true });
+    });
 
     // ============================================================
     // ADMIN VIDEO SETTINGS
@@ -4235,6 +4290,7 @@ body.mode-interactive #page7 .three-panel {
     window.addEventListener("message", (event) => {
       if (event.origin !== window.location.origin) return;
       if (!event.data) return;
+      markInteractiveActivityClient();
 
       if (event.data.type === "SET_BUILDING") {
         const buildingCode = normalizeBuildingKey(event.data.building);
@@ -4516,6 +4572,7 @@ body.mode-interactive #page7 .three-panel {
     window.addEventListener("load", () => {
       updateArrowButtonVisibility();
       ensureAllBuildingsPrepared();
+      startInteractiveAutoRevertWatcher();
       onEnterPage(currentPageNumber);
 
       setTimeout(() => {
