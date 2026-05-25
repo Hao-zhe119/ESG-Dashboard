@@ -402,6 +402,7 @@
           <a class="nav-link active" href="#" data-target="sec-dashboard-settings">Dashboard Settings</a>
           <a class="nav-link" href="#" data-target="sec-building-description">Building Description</a>
           <a class="nav-link" href="#" data-target="sec-video-settings">Video Settings</a>
+          <a class="nav-link" href="#" data-target="sec-operational-settings">Operational Settings</a>
           <a class="nav-link" href="#" data-target="sec-manage-media">Manage Media</a>
           <a class="nav-link" href="#" data-target="sec-upload-graph">Data Management</a>
         </nav>
@@ -416,6 +417,11 @@
           <div class="d-flex align-items-center justify-content-between mb-3">
             <h2 class="mb-0 text-white">Admin Dashboard</h2>
           </div>
+          <% if (typeof runtimeConfig !== "undefined" && runtimeConfig && typeof buildingsLoadError !== "undefined" && buildingsLoadError) { %>
+            <div class="alert alert-warning">
+              No-XAMPP test mode: MySQL/XAMPP is not connected, so data upload/building records are unavailable. Dashboard configuration, timer profiles, health checks, and automation toggles still work from JSON config.
+            </div>
+          <% } %>
 
           <!-- Dashboard Settings -->
           <section id="sec-dashboard-settings" class="section-card mb-4 admin-section">
@@ -424,9 +430,10 @@
             <!-- Dashboard Mode Panel -->
             <div class="mb-4">
               <h5 class="text-white mb-3">Dashboard Mode</h5>
-              <form action="/admin/dashboard-mode" method="POST" class="row g-2 align-items-center">
-                <div class="col-auto">
-                  <select class="form-select" name="dashboard_mode" style="min-width: 220px;">
+              <form action="/admin/dashboard-mode" method="POST" class="row g-3 align-items-start" id="dashboardModeForm">
+                <div class="col-12 col-md-5">
+                  <label class="form-label" for="dashboardModeSelect">Mode</label>
+                  <select class="form-select" name="dashboard_mode" id="dashboardModeSelect" style="min-width: 220px;">
                     <option value="auto" <%= (typeof dashboardMode !== "undefined" && dashboardMode === "auto") ? "selected" : "" %>>
                       Auto Mode
                     </option>
@@ -435,13 +442,36 @@
                     </option>
                   </select>
                 </div>
-                <div class="col-auto">
-                  <button type="submit" class="btn btn-primary">Save Mode</button>
+                <div class="col-12 col-md-5">
+                  <label class="form-label" for="idleTimeoutMinutes">Interactive idle timeout (minutes)</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="idleTimeoutMinutes"
+                    name="idle_timeout_minutes"
+                    min="1"
+                    max="240"
+                    value="<%= (typeof interactiveConfig !== 'undefined' && interactiveConfig && interactiveConfig.idleTimeoutMinutes) ? interactiveConfig.idleTimeoutMinutes : 15 %>">
+                  <small class="text-muted">Only active when Interactive Mode is selected.</small>
+                </div>
+                <div class="col-12">
+                  <div class="form-check form-switch">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      role="switch"
+                      id="interactiveAutoRevertToggle"
+                      <%= (typeof interactiveConfig !== "undefined" && interactiveConfig && interactiveConfig.autoRevertEnabled) ? "checked" : "" %>>
+                    <label class="form-check-label" for="interactiveAutoRevertToggle">Enable Interactive Mode auto-revert</label>
+                  </div>
                 </div>
                 <div class="col-12">
                   <small class="text-muted">
                     Auto: timed kiosk flow with progress bars. Interactive: no progress bars and no timed auto-advance.
                   </small>
+                </div>
+                <div class="col-12">
+                  <button type="submit" class="btn btn-primary">Save Mode</button>
                 </div>
               </form>
             </div>
@@ -457,6 +487,61 @@
             <div class="alert alert-secondary mb-3">
               <strong>Configure Page Timers:</strong> Set the display duration for each dashboard page in <strong>MM:SS</strong> format.
               Changes are <strong>saved automatically</strong>. These timers are used in Auto Mode.
+            </div>
+
+            <div class="border border-secondary rounded p-3 mb-3">
+              <button
+                class="btn btn-outline-light btn-sm d-flex align-items-center justify-content-between w-100"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#timerToolsCollapse"
+                aria-expanded="false"
+                aria-controls="timerToolsCollapse">
+                <span>Timer defaults and profiles</span>
+                <span aria-hidden="true">v</span>
+              </button>
+
+              <div class="collapse mt-3" id="timerToolsCollapse">
+                <div class="row g-3">
+                  <div class="col-12 col-lg-5">
+                    <div class="form-check form-switch mb-2">
+                      <input
+                        class="form-check-input automation-toggle"
+                        type="checkbox"
+                        role="switch"
+                        id="applyDefaultTimingToggle"
+                        data-key="applyDefaultTimingEnabled"
+                        <%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.applyDefaultTimingEnabled) ? "checked" : "" %>>
+                      <label class="form-check-label" for="applyDefaultTimingToggle">Apply Default Timing</label>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm" id="applyDefaultTimersBtn" type="button">
+                      Apply Default Page Timers
+                    </button>
+                    <div class="small text-muted mt-2">
+                      Requires the toggle to be ON and asks for confirmation before updating active timers.
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-lg-7">
+                    <label class="form-label" for="timerProfileName">Timer profile name</label>
+                    <div class="input-group input-group-sm mb-2">
+                      <input class="form-control" id="timerProfileName" type="text" maxlength="60" placeholder="e.g. Midterm Demo Timing">
+                      <button class="btn btn-outline-success" id="saveTimerProfileBtn" type="button">Save Profile</button>
+                    </div>
+                    <div class="input-group input-group-sm">
+                      <select class="form-select" id="timerProfileSelect">
+                        <option value="">Select timer profile</option>
+                        <% (typeof timerProfiles !== "undefined" ? timerProfiles : []).forEach(function(profile) { %>
+                          <option value="<%= profile.id %>"><%= profile.name %></option>
+                        <% }); %>
+                      </select>
+                      <button class="btn btn-outline-info" id="loadTimerProfileBtn" type="button">Load</button>
+                      <button class="btn btn-outline-danger" id="deleteTimerProfileBtn" type="button">Delete</button>
+                    </div>
+                    <div id="timerProfileStatus" class="small text-muted mt-2"></div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div id="timerSettingsContainer">
@@ -873,6 +958,110 @@
             </div>
           </section>
 
+          <!-- Operational Settings -->
+          <section id="sec-operational-settings" class="section-card mb-4 admin-section d-none">
+            <h4>Operational Settings</h4>
+
+            <div class="alert alert-secondary">
+              Operational toggles apply immediately. There is no separate Save Automation button.
+            </div>
+
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <div class="card bg-dark text-white border-secondary h-100">
+                  <div class="card-body">
+                    <div class="form-check form-switch">
+                      <input
+                        class="form-check-input automation-toggle"
+                        type="checkbox"
+                        role="switch"
+                        id="healthCheckToggle"
+                        data-key="healthCheckEnabled"
+                        <%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.healthCheckEnabled) ? "checked" : "" %>>
+                      <label class="form-check-label" for="healthCheckToggle">Health Check Monitoring</label>
+                    </div>
+                    <div class="small text-muted mt-2">
+                      Monitors backend status, database access, dashboard readiness, and Node process health.
+                    </div>
+                    <div class="mt-3">
+                      <button class="btn btn-outline-info btn-sm" id="refreshHealthBtn" type="button">Check Health</button>
+                      <span class="badge bg-secondary ms-2" id="healthStatusBadge">
+                        <%= (typeof healthSnapshot !== "undefined" && healthSnapshot && healthSnapshot.status) ? healthSnapshot.status : "unknown" %>
+                      </span>
+                    </div>
+                    <pre class="small text-muted mt-3 mb-0" id="healthDetails" style="white-space: pre-wrap;"><%= JSON.stringify(typeof healthSnapshot !== "undefined" ? healthSnapshot : {}, null, 2) %></pre>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <div class="card bg-dark text-white border-secondary h-100">
+                  <div class="card-body">
+                    <div class="form-check form-switch">
+                      <input
+                        class="form-check-input automation-toggle"
+                        type="checkbox"
+                        role="switch"
+                        id="autoHibernateToggle"
+                        data-key="autoHibernateEnabled"
+                        <%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoHibernateEnabled) ? "checked" : "" %>>
+                      <label class="form-check-label" for="autoHibernateToggle">Auto-Hibernate</label>
+                    </div>
+                    <div class="small text-muted mt-2">
+                      Set when hibernate should run. Dry run tests the script path without hibernating your laptop.
+                    </div>
+                    <div class="row g-2 mt-3">
+                      <div class="col-6">
+                        <label class="form-label" for="hibernateStartTime">From</label>
+                        <input
+                          type="time"
+                          class="form-control form-control-sm"
+                          id="hibernateStartTime"
+                          value="<%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoHibernateSchedule && automationConfig.autoHibernateSchedule.startTime) ? automationConfig.autoHibernateSchedule.startTime : "22:00" %>">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label" for="hibernateEndTime">To</label>
+                        <input
+                          type="time"
+                          class="form-control form-control-sm"
+                          id="hibernateEndTime"
+                          value="<%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoHibernateSchedule && automationConfig.autoHibernateSchedule.endTime) ? automationConfig.autoHibernateSchedule.endTime : "07:00" %>">
+                      </div>
+                      <div class="col-12">
+                        <small class="text-muted">Saved automatically. Real hibernate remains disabled in the script until approved.</small>
+                      </div>
+                    </div>
+                    <div class="mt-3">
+                      <label class="form-label" for="hibernateProfileName">Hibernate profile name</label>
+                      <div class="input-group input-group-sm mb-2">
+                        <input class="form-control" id="hibernateProfileName" type="text" maxlength="60" placeholder="e.g. Night Lab Schedule">
+                        <button class="btn btn-outline-success" id="saveHibernateProfileBtn" type="button">Save Profile</button>
+                      </div>
+                      <div class="input-group input-group-sm">
+                        <select class="form-select" id="hibernateProfileSelect">
+                          <option value="">Select hibernate profile</option>
+                          <% ((typeof automationConfig !== "undefined" && automationConfig && Array.isArray(automationConfig.autoHibernateProfiles)) ? automationConfig.autoHibernateProfiles : []).forEach(function(profile) { %>
+                            <option value="<%= profile.id %>"><%= profile.name %><%= profile.isDefault ? " (Default)" : "" %></option>
+                          <% }); %>
+                        </select>
+                        <button class="btn btn-outline-info" id="loadHibernateProfileBtn" type="button">Load</button>
+                        <button class="btn btn-outline-primary" id="defaultHibernateProfileBtn" type="button">Default</button>
+                        <button class="btn btn-outline-danger" id="deleteHibernateProfileBtn" type="button">Delete</button>
+                      </div>
+                    </div>
+                    <button class="btn btn-outline-warning btn-sm mt-3" id="hibernateDryRunBtn" type="button">
+                      Run Hibernate Dry Run
+                    </button>
+                    <div class="small text-muted mt-2" id="hibernateDryRunStatus">
+                      Last dry run:
+                      <%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.lastHibernateDryRunAt) ? automationConfig.lastHibernateDryRunAt : "Never" %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <!-- Manage Media -->
           <section id="sec-manage-media" class="section-card mb-4 admin-section d-none">
             <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
@@ -1263,6 +1452,320 @@
     $(document).on("submit", 'form[action*="/admin/media/"][action$="/delete"]', function() {
       const sectionHash = (location.hash || "#sec-dashboard-settings");
       this.action = this.action.split("#")[0] + sectionHash;
+    });
+
+    const TIMER_PROFILES_INITIAL = <%- JSON.stringify(typeof timerProfiles !== "undefined" ? timerProfiles : []) %>;
+    let timerProfilesState = Array.isArray(TIMER_PROFILES_INITIAL) ? TIMER_PROFILES_INITIAL.slice() : [];
+
+    function updateIdleTimeoutState() {
+      const isInteractive = $("#dashboardModeSelect").val() === "interactive";
+      $("#idleTimeoutMinutes").prop("disabled", !isInteractive).toggleClass("text-muted", !isInteractive);
+      $("#interactiveAutoRevertToggle").prop("disabled", !isInteractive);
+    }
+
+    $("#dashboardModeSelect").on("change", updateIdleTimeoutState);
+    $("#interactiveAutoRevertToggle, #idleTimeoutMinutes").on("change", async function() {
+      try {
+        await postJson("/admin/config/interactive-auto-revert", {
+          enabled: $("#interactiveAutoRevertToggle").prop("checked"),
+          idleTimeoutMinutes: $("#idleTimeoutMinutes").val()
+        });
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+    updateIdleTimeoutState();
+
+    function setTimerProfileStatus(message, type) {
+      const classes = "text-muted text-success text-danger text-warning";
+      const $status = $("#timerProfileStatus");
+      $status.removeClass(classes).addClass(type ? "text-" + type : "text-muted").text(message || "");
+    }
+
+    function refreshTimerProfileSelect(profiles) {
+      timerProfilesState = Array.isArray(profiles) ? profiles : [];
+      const $select = $("#timerProfileSelect");
+      const selected = $select.val();
+      $select.empty().append('<option value="">Select timer profile</option>');
+      timerProfilesState.forEach(function(profile) {
+        $select.append($("<option>").val(profile.id).text(profile.name));
+      });
+      if (selected) $select.val(selected);
+    }
+
+    function updateTimerInputsFromRows(rows) {
+      (rows || []).forEach(function(timer) {
+        const pageNumber = Number(timer.page_number);
+        const totalSeconds = Math.max(0, Number(timer.duration_seconds || 0));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        const $row = $('.timer-row[data-page-number="' + pageNumber + '"]');
+        if (!$row.length) return;
+        $row.find(".timer-minutes").val(String(minutes).padStart(2, "0"));
+        $row.find(".timer-seconds").val(String(seconds).padStart(2, "0"));
+        updateSecondsDisplay($row);
+      });
+    }
+
+    function collectTimerRowsFromInputs() {
+      const rows = [];
+      $(".timer-row").each(function() {
+        const $row = $(this);
+        rows.push({
+          page_number: Number($row.data("page-number")),
+          page_name: String($row.find(".timer-page-name").text() || "").trim(),
+          duration_seconds: getTimerSeconds($row)
+        });
+      });
+      return rows;
+    }
+
+    async function postJson(url, body) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {})
+      });
+      const json = await response.json().catch(function() { return {}; });
+      if (!response.ok || json.ok === false) {
+        throw new Error(json.error || response.statusText || "Request failed");
+      }
+      return json;
+    }
+
+    $(".automation-toggle").on("change", async function() {
+      const toggle = this;
+      const key = toggle.dataset.key;
+      const enabled = !!toggle.checked;
+      toggle.disabled = true;
+      try {
+        const json = await postJson("/admin/automation/toggle", { key, enabled });
+        if (key === "healthCheckEnabled") renderHealth(json.health || {});
+      } catch (error) {
+        alert(error.message);
+        toggle.checked = !enabled;
+      } finally {
+        toggle.disabled = false;
+      }
+    });
+
+    $("#applyDefaultTimersBtn").on("click", async function() {
+      if (!$("#applyDefaultTimingToggle").prop("checked")) {
+        alert("Turn on Apply Default Timing before applying defaults.");
+        return;
+      }
+      if (!confirm("Apply the configured default page timings to the active dashboard timers?")) return;
+      try {
+        const json = await postJson("/admin/timers/apply-defaults", {});
+        updateTimerInputsFromRows(json.timers || []);
+        setTimerChip("saved");
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    $("#saveTimerProfileBtn").on("click", async function() {
+      const name = String($("#timerProfileName").val() || "").trim();
+      if (!name) {
+        setTimerProfileStatus("Enter a profile name first.", "warning");
+        return;
+      }
+      try {
+        const json = await postJson("/admin/timer-profiles", { name, timers: collectTimerRowsFromInputs() });
+        refreshTimerProfileSelect(json.profiles || []);
+        $("#timerProfileSelect").val(json.profile.id);
+        $("#timerProfileName").val("");
+        setTimerProfileStatus("Profile saved.", "success");
+      } catch (error) {
+        setTimerProfileStatus(error.message, "danger");
+      }
+    });
+
+    $("#loadTimerProfileBtn").on("click", async function() {
+      const profileId = $("#timerProfileSelect").val();
+      if (!profileId) {
+        setTimerProfileStatus("Select a profile to load.", "warning");
+        return;
+      }
+      if (!confirm("Load this timer profile into the active dashboard timers?")) return;
+      try {
+        const json = await postJson("/admin/timer-profiles/" + encodeURIComponent(profileId) + "/load", {});
+        updateTimerInputsFromRows(json.timers || []);
+        setTimerProfileStatus("Profile loaded.", "success");
+      } catch (error) {
+        setTimerProfileStatus(error.message, "danger");
+      }
+    });
+
+    $("#deleteTimerProfileBtn").on("click", async function() {
+      const profileId = $("#timerProfileSelect").val();
+      if (!profileId) {
+        setTimerProfileStatus("Select a profile to delete.", "warning");
+        return;
+      }
+      if (!confirm("Delete this timer profile?")) return;
+      try {
+        const response = await fetch("/admin/timer-profiles/" + encodeURIComponent(profileId), { method: "DELETE" });
+        const json = await response.json();
+        if (!response.ok || json.ok === false) throw new Error(json.error || "Delete failed");
+        refreshTimerProfileSelect(json.profiles || []);
+        setTimerProfileStatus("Profile deleted.", "success");
+      } catch (error) {
+        setTimerProfileStatus(error.message, "danger");
+      }
+    });
+
+    function renderHealth(snapshot) {
+      const health = snapshot && snapshot.status ? snapshot : {};
+      $("#healthStatusBadge").text(health.status || "unknown");
+      $("#healthDetails").text(JSON.stringify(health, null, 2));
+    }
+
+    $("#refreshHealthBtn").on("click", async function() {
+      try {
+        const response = await fetch("/admin/health/json", { headers: { "Accept": "application/json" } });
+        const json = await response.json();
+        renderHealth(json.health || {});
+      } catch (error) {
+        renderHealth({ status: "degraded", checkedAt: new Date().toISOString(), checks: { ui: { ok: false, message: error.message } } });
+      }
+    });
+
+    function hibernateSchedulePayload() {
+      return {
+        startTime: $("#hibernateStartTime").val(),
+        endTime: $("#hibernateEndTime").val()
+      };
+    }
+
+    function refreshHibernateProfileSelect(profiles) {
+      const $select = $("#hibernateProfileSelect");
+      const selected = $select.val();
+      $select.empty().append('<option value="">Select hibernate profile</option>');
+      (profiles || []).forEach(function(profile) {
+        $select.append($("<option>").val(profile.id).text(profile.name + (profile.isDefault ? " (Default)" : "")));
+      });
+      if (selected) $select.val(selected);
+    }
+
+    function applyHibernateAutomationToUi(automation) {
+      const schedule = automation && automation.autoHibernateSchedule ? automation.autoHibernateSchedule : {};
+      if (schedule.startTime) $("#hibernateStartTime").val(schedule.startTime);
+      if (schedule.endTime) $("#hibernateEndTime").val(schedule.endTime);
+      if (automation && Array.isArray(automation.autoHibernateProfiles)) {
+        refreshHibernateProfileSelect(automation.autoHibernateProfiles);
+      }
+    }
+
+    let hibernateSettingsTimer = null;
+    $("#hibernateStartTime, #hibernateEndTime").on("input change", function() {
+      if (hibernateSettingsTimer) clearTimeout(hibernateSettingsTimer);
+      hibernateSettingsTimer = setTimeout(async function() {
+        try {
+          const json = await postJson("/admin/automation/hibernate-settings", hibernateSchedulePayload());
+          $("#hibernateDryRunStatus")
+            .removeClass("text-danger")
+            .addClass("text-muted")
+            .text("Hibernate schedule saved: " + json.automation.autoHibernateSchedule.startTime + " to " + json.automation.autoHibernateSchedule.endTime + ". Last dry run: " + (json.automation.lastHibernateDryRunAt || "Never"));
+        } catch (error) {
+          $("#hibernateDryRunStatus")
+            .removeClass("text-success")
+            .addClass("text-danger")
+            .text(error.message);
+        }
+      }, 500);
+    });
+
+    $("#saveHibernateProfileBtn").on("click", async function() {
+      const name = String($("#hibernateProfileName").val() || "").trim();
+      if (!name) {
+        $("#hibernateDryRunStatus").removeClass("text-success").addClass("text-danger").text("Enter a hibernate profile name first.");
+        return;
+      }
+      try {
+        const json = await postJson("/admin/automation/hibernate-profiles", { name, ...hibernateSchedulePayload() });
+        refreshHibernateProfileSelect(json.profiles || []);
+        $("#hibernateProfileSelect").val(json.profile.id);
+        $("#hibernateProfileName").val("");
+        $("#hibernateDryRunStatus").removeClass("text-danger").addClass("text-success").text("Hibernate profile saved.");
+      } catch (error) {
+        $("#hibernateDryRunStatus").removeClass("text-success").addClass("text-danger").text(error.message);
+      }
+    });
+
+    $("#loadHibernateProfileBtn").on("click", async function() {
+      const profileId = $("#hibernateProfileSelect").val();
+      if (!profileId) {
+        $("#hibernateDryRunStatus").removeClass("text-success").addClass("text-danger").text("Select a hibernate profile to load.");
+        return;
+      }
+      try {
+        const json = await postJson("/admin/automation/hibernate-profiles/" + encodeURIComponent(profileId) + "/load", {});
+        applyHibernateAutomationToUi(json.automation || {});
+        $("#hibernateDryRunStatus").removeClass("text-danger").addClass("text-success").text("Hibernate profile loaded.");
+      } catch (error) {
+        $("#hibernateDryRunStatus").removeClass("text-success").addClass("text-danger").text(error.message);
+      }
+    });
+
+    $("#defaultHibernateProfileBtn").on("click", async function() {
+      const profileId = $("#hibernateProfileSelect").val();
+      if (!profileId) {
+        $("#hibernateDryRunStatus").removeClass("text-success").addClass("text-danger").text("Select a hibernate profile to set as default.");
+        return;
+      }
+      try {
+        const json = await postJson("/admin/automation/hibernate-profiles/" + encodeURIComponent(profileId) + "/default", {});
+        applyHibernateAutomationToUi(json.automation || {});
+        $("#hibernateDryRunStatus").removeClass("text-danger").addClass("text-success").text("Default hibernate profile updated.");
+      } catch (error) {
+        $("#hibernateDryRunStatus").removeClass("text-success").addClass("text-danger").text(error.message);
+      }
+    });
+
+    $("#deleteHibernateProfileBtn").on("click", async function() {
+      const profileId = $("#hibernateProfileSelect").val();
+      if (!profileId) {
+        $("#hibernateDryRunStatus").removeClass("text-success").addClass("text-danger").text("Select a hibernate profile to delete.");
+        return;
+      }
+      if (!confirm("Delete this hibernate profile?")) return;
+      try {
+        const response = await fetch("/admin/automation/hibernate-profiles/" + encodeURIComponent(profileId), { method: "DELETE" });
+        const json = await response.json();
+        if (!response.ok || json.ok === false) throw new Error(json.error || "Delete failed");
+        refreshHibernateProfileSelect(json.profiles || []);
+        $("#hibernateDryRunStatus").removeClass("text-danger").addClass("text-success").text("Hibernate profile deleted.");
+      } catch (error) {
+        $("#hibernateDryRunStatus").removeClass("text-success").addClass("text-danger").text(error.message);
+      }
+    });
+
+    $("#hibernateDryRunBtn").on("click", async function() {
+      if (!$("#autoHibernateToggle").prop("checked")) {
+        alert("Turn on Auto-Hibernate before running the dry run.");
+        return;
+      }
+
+      const $btn = $(this);
+      const original = $btn.text();
+      $btn.prop("disabled", true).text("Running...");
+
+      try {
+        await postJson("/admin/automation/hibernate-settings", hibernateSchedulePayload());
+        const json = await postJson("/admin/automation/hibernate-dry-run", {});
+        $("#hibernateDryRunStatus")
+          .removeClass("text-danger")
+          .addClass("text-success")
+          .text((json.message || "Dry run successful.") + " Script output: " + (json.scriptOutput || "OK") + " Last dry run: " + (json.checkedAt || "now"));
+      } catch (error) {
+        $("#hibernateDryRunStatus")
+          .removeClass("text-success")
+          .addClass("text-danger")
+          .text(error.message);
+      } finally {
+        $btn.prop("disabled", false).text(original);
+      }
     });
 
     // ============================================================
