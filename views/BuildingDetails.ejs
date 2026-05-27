@@ -12,10 +12,6 @@
     ? building_desc 
     : '';
   
-  const safeFilename = (typeof filename !== 'undefined' && filename) 
-    ? filename 
-    : null;
-  
   const safeElecStart = (typeof elec_start_year !== 'undefined') ? elec_start_year : null;
   const safeElecEnd = (typeof elec_end_year !== 'undefined') ? elec_end_year : null;
   const safeWaterStart = (typeof water_start_year !== 'undefined') ? water_start_year : null;
@@ -47,21 +43,6 @@
     <div class="bip-title"><%= safeDisplayLabel %></div>
     <div class="bip-subtitle">Building Information</div>
   </div>
-
-  <!-- Image Section -->
-  <% if (safeFilename) { %>
-  <div class="bip-section bip-section-image">
-    <div class="bip-section-header">📷 Building Image</div>
-    <div class="bip-image-container">
-      <img 
-        src="/uploads/images/Buildings/<%= safeFilename %>" 
-        alt="<%= safeDisplayLabel %>" 
-        class="bip-image"
-        onerror="this.parentElement.innerHTML='<div style=\'padding:20px;text-align:center;color:#9ca3af;height:100%;display:flex;align-items:center;justify-content:center;\'>Image not available</div>'"
-      />
-    </div>
-  </div>
-  <% } %>
 
   <!-- Data Availability Section -->
   <div class="bip-section">
@@ -126,7 +107,7 @@
     padding: 14px 12px;
     background: rgba(15,19,24,0.72);
     border-radius: 12px;
-    border: 1px solid rgba(147,197,253,0.22);
+    border: 1px solid rgba(255,255,255,0.14);
   }
 
   .building-info-panel .bip-icon {
@@ -137,13 +118,13 @@
   .building-info-panel .bip-title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #dbeafe;
+    color: #f8fafc;
     margin-bottom: 2px;
   }
 
   .building-info-panel .bip-subtitle {
     font-size: 0.85rem;
-    color: rgba(191,219,254,0.82);
+    color: rgba(226,232,240,0.68);
     font-weight: 500;
   }
 
@@ -156,43 +137,14 @@
     backdrop-filter: blur(8px);
   }
 
-  /* Image section grows to fill available space */
-  .building-info-panel .bip-section-image {
-    flex: 1 1 auto;
-    min-height: 150px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
   .building-info-panel .bip-section-header {
     flex-shrink: 0;
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 500;
     color: rgba(248,250,252,0.86);
     margin-bottom: 10px;
     padding-bottom: 6px;
     border-bottom: 1px solid rgba(255,255,255,0.12);
-  }
-
-  .building-info-panel .bip-image-container {
-    flex: 1 1 auto;
-    min-height: 0;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(30,41,59,0.54);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .building-info-panel .bip-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
   }
 
   .building-info-panel .bip-table {
@@ -210,7 +162,7 @@
 
   .building-info-panel .bip-table th {
     background: rgba(30,41,59,0.58);
-    font-weight: 600;
+    font-weight: 700;
     color: rgba(248,250,252,0.86);
     font-size: 0.75rem;
     text-transform: uppercase;
@@ -235,7 +187,7 @@
     padding: 3px 8px;
     border-radius: 12px;
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.025em;
   }
@@ -276,8 +228,5 @@
       padding: 6px 8px;
     }
 
-    .building-info-panel .bip-section-image {
-      min-height: 120px;
-    }
   }
 </style>
