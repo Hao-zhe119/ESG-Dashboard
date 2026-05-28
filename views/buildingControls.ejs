@@ -920,6 +920,53 @@
       }
       .time-chip { min-width: 34px; font-size: 11px; }
     }
+
+    /* ── Chart mode toggle ── */
+    .ctrl-chart-row {
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .ctrl-chart-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .ctrl-chart-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .ctrl-chart-btn {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: rgba(255,255,255,0.65);
+      font-weight: 700;
+      font-size: 12px;
+      font-family: inherit;
+      padding: 7px 18px;
+      min-width: 52px;
+      min-height: 38px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .ctrl-chart-btn:hover { color: #ffffff; }
+    .ctrl-chart-btn.active {
+      color: #ffffff;
+      background: rgba(15,19,24,0.56);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+    }
   </style>
 </head>
 
@@ -977,6 +1024,13 @@
         <span class="ph-label" id="phLabel">PAGE 1</span>
         <h2  class="ph-title" id="phTitle">Welcome</h2>
         <p   class="ph-hint"  id="topHint">Welcome page — no additional controls.</p>
+        <div id="chartModeRow" class="ctrl-chart-row" role="group" aria-label="Chart display mode" style="display:none;">
+          <span class="ctrl-chart-label">Chart</span>
+          <div class="ctrl-chart-toggle">
+            <button id="ctrlChartBar"  class="ctrl-chart-btn active" type="button">Bar</button>
+            <button id="ctrlChartLine" class="ctrl-chart-btn"        type="button">Line</button>
+          </div>
+        </div>
       </div>
 
       <!-- Body -->
@@ -1123,6 +1177,20 @@
     const headerSubtitle  = document.getElementById("headerSubtitle");
     const pagePills       = Array.from(document.querySelectorAll(".qj-pill[data-page]"));
 
+    const chartModeRow  = document.getElementById("chartModeRow");
+    const ctrlChartBar  = document.getElementById("ctrlChartBar");
+    const ctrlChartLine = document.getElementById("ctrlChartLine");
+    let currentChartMode = "bar";
+
+    function updateChartModeUI(mode) {
+      currentChartMode = mode === "line" ? "line" : "bar";
+      if (ctrlChartBar)  ctrlChartBar.classList.toggle("active",  currentChartMode === "bar");
+      if (ctrlChartLine) ctrlChartLine.classList.toggle("active", currentChartMode === "line");
+    }
+
+    if (ctrlChartBar)  ctrlChartBar.addEventListener("click",  () => { updateChartModeUI("bar");  postToMain({ type:"SET_CHART_MODE", mode:"bar"  }); });
+    if (ctrlChartLine) ctrlChartLine.addEventListener("click", () => { updateChartModeUI("line"); postToMain({ type:"SET_CHART_MODE", mode:"line" }); });
+
     // ============================================================
     // RELIABLE PAGE NAVIGATION
     // ============================================================
@@ -1215,6 +1283,8 @@
       if (topHint) topHint.textContent = enabled
         ? getPageHint(page)
         : "Page " + page + " (" + getPageName(page) + ") is currently skipped — no content available.";
+      const isChartPage = Number(page) >= 3 && Number(page) <= 7;
+      if (chartModeRow) chartModeRow.style.display = isChartPage ? "flex" : "none";
     }
 
     function selectDashboardPage(page, alsoTellMain){
@@ -1551,6 +1621,7 @@
         if (typeof d.hasVideos    === "boolean") hasVideos    = d.hasVideos;
         if (typeof d.hasImages    === "boolean") hasImages    = d.hasImages;
         if (Array.isArray(d.enabledPages))       enabledPages = d.enabledPages.slice();
+        if (typeof d.chartMode    === "string")  updateChartModeUI(d.chartMode);
         updateMediaAvailabilityUI();
 
         if (d.allYears && Array.isArray(d.allYears)) {
@@ -1572,6 +1643,7 @@
         return;
       }
 
+      if (d.type === "CHART_MODE_STATE") { updateChartModeUI(d.mode); return; }
       if (d.type === "SOLAR_STATE")    { setSolarActiveFromExternal(d.year); return; }
       if (d.type === "WASTE_STATE")    { setWasteActiveFromExternal(d.year); return; }
 

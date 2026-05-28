@@ -1841,6 +1841,89 @@ body.mode-interactive #page7 .three-panel {
     margin-top: 12px;
   }
 }
+
+/* ── Legend colour picker popup ── */
+#legendColorPicker {
+  position: fixed;
+  z-index: 10000;
+  display: none;
+  background: rgba(13, 17, 23, 0.97);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 14px;
+  padding: 12px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  width: 208px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.70);
+  font-family: "Inter Display","Inter",sans-serif;
+}
+#legendColorPicker .lcp-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(248,250,252,0.82);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#legendColorPicker .lcp-dot {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.30);
+  display: inline-block;
+}
+#legendColorPicker .lcp-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#legendColorPicker .lcp-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+#legendColorPicker .lcp-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 7px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+  padding: 0;
+}
+#legendColorPicker .lcp-swatch:hover {
+  transform: scale(1.14);
+  border-color: rgba(255,255,255,0.55);
+}
+#legendColorPicker .lcp-swatch.lcp-active {
+  border-color: rgba(255,255,255,0.90);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.22);
+}
+#legendColorPicker .lcp-reset-btn {
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 8px;
+  color: rgba(248,250,252,0.60);
+  font-size: 0.72rem;
+  font-weight: 400;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, color 0.15s;
+}
+#legendColorPicker .lcp-reset-btn:hover {
+  background: rgba(255,255,255,0.12);
+  color: #f8fafc;
+}
 </style>
 
 </head>
@@ -2468,14 +2551,15 @@ body.mode-interactive #page7 .three-panel {
     }
 
     function chartModeDataset({ label, data, color, yAxisID }) {
+      const c = legendColorOverrides[label] || color;
       if (chartDisplayMode === "line") {
         return {
           label,
           type: "line",
           data,
-          borderColor: color,
-          backgroundColor: (context) => createChartGradient(context, color),
-          pointBackgroundColor: color,
+          borderColor: c,
+          backgroundColor: (context) => createChartGradient(context, c),
+          pointBackgroundColor: c,
           pointBorderColor: "#ffffff",
           pointBorderWidth: 1,
           pointRadius: 4,
@@ -2492,10 +2576,10 @@ body.mode-interactive #page7 .three-panel {
         label,
         type: "bar",
         data,
-        backgroundColor: hexToRgba(color, 0.24),
-        borderColor: color,
+        backgroundColor: hexToRgba(c, 0.24),
+        borderColor: c,
         borderWidth: 2,
-        hoverBackgroundColor: hexToRgba(color, 0.38),
+        hoverBackgroundColor: hexToRgba(c, 0.38),
         hoverBorderColor: "#ffffff",
         yAxisID,
         order: 2
@@ -2530,6 +2614,12 @@ body.mode-interactive #page7 .three-panel {
       try { localStorage.setItem("rpChartDisplayMode", chartDisplayMode); } catch (error) {}
       updateChartModeToggle();
       refreshCurrentChart();
+      sendChartModeToControls();
+    }
+
+    function sendChartModeToControls() {
+      if (is_auto_mode) return;
+      safePostToControls({ type: "CHART_MODE_STATE", mode: chartDisplayMode });
     }
 
     function toggleChartMode() {
@@ -2539,23 +2629,12 @@ body.mode-interactive #page7 .three-panel {
     function createLegendClickHandler() {
       return function(event, legendItem, legend) {
         const chart = legend.chart;
-        const clickedIndex = legendItem.datasetIndex;
-        const clickedDataset = chart.data.datasets[clickedIndex];
-        if (!clickedDataset) return;
-        const meta = chart.getDatasetMeta(clickedIndex);
-        meta.hidden = meta.hidden === null ? !chart.data.datasets[clickedIndex].hidden : !meta.hidden;
-        chart.data.datasets.forEach((dataset, index) => {
-          if (dataset.type === "line" && dataset.snapToBarIndex === clickedIndex) {
-            const lineMeta = chart.getDatasetMeta(index);
-            lineMeta.hidden = meta.hidden;
-          }
-        });
-        if (clickedDataset.type === "line" && typeof clickedDataset.snapToBarIndex === "number") {
-          const barIndex = clickedDataset.snapToBarIndex;
-          const barMeta = chart.getDatasetMeta(barIndex);
-          if (barMeta) barMeta.hidden = meta.hidden;
-        }
-        chart.update();
+        const datasetIndex = legendItem.datasetIndex;
+        if (chart.data.datasets[datasetIndex] == null) return;
+        const native = event.native || event;
+        const x = (native && native.clientX != null) ? native.clientX : (native && native.x) || 0;
+        const y = (native && native.clientY != null) ? native.clientY : (native && native.y) || 0;
+        showLegendColorPicker(chart, datasetIndex, legendItem.text || "", x, y);
       };
     }
 
@@ -2688,6 +2767,118 @@ body.mode-interactive #page7 .three-panel {
       const step = Math.floor(yearColorPalette.length / Math.min(totalYears, yearColorPalette.length));
       const colorIndex = (yearIndex * step) % yearColorPalette.length;
       return yearColorPalette[colorIndex];
+    }
+
+    // ============================================================
+    // LEGEND COLOUR PICKER
+    // ============================================================
+    const LEGEND_COLOR_SWATCHES = [
+      { name: "Red",    hex: "#ef4444" },
+      { name: "Orange", hex: "#f97316" },
+      { name: "Amber",  hex: "#f59e0b" },
+      { name: "Yellow", hex: "#eab308" },
+      { name: "Lime",   hex: "#84cc16" },
+      { name: "Green",  hex: "#22c55e" },
+      { name: "Teal",   hex: "#14b8a6" },
+      { name: "Cyan",   hex: "#06b6d4" },
+      { name: "Sky",    hex: "#0ea5e9" },
+      { name: "Blue",   hex: "#3b82f6" },
+      { name: "Indigo", hex: "#6366f1" },
+      { name: "Violet", hex: "#8b5cf6" },
+      { name: "Purple", hex: "#a855f7" },
+      { name: "Pink",   hex: "#ec4899" },
+      { name: "Rose",   hex: "#f43f5e" },
+      { name: "White",  hex: "#f8fafc" }
+    ];
+
+    let legendColorOverrides = (function () {
+      try { return JSON.parse(localStorage.getItem("rpLegendColors") || "{}"); } catch (e) { return {}; }
+    })();
+
+    function saveLegendColorOverrides() {
+      try { localStorage.setItem("rpLegendColors", JSON.stringify(legendColorOverrides)); } catch (e) {}
+    }
+
+    function applyColorToDataset(chart, datasetIndex, color) {
+      const ds = chart.data.datasets[datasetIndex];
+      if (!ds) return;
+      const type = ds.type || chart.config.type || "bar";
+      if (type === "line") {
+        ds.borderColor = color;
+        ds.pointBackgroundColor = color;
+        ds.backgroundColor = (ctx) => createChartGradient(ctx, color);
+      } else {
+        ds.borderColor = color;
+        ds.backgroundColor = hexToRgba(color, 0.24);
+        ds.hoverBackgroundColor = hexToRgba(color, 0.38);
+      }
+    }
+
+    let _lcpCloseListener = null;
+
+    function closeLegendColorPicker() {
+      const picker = document.getElementById("legendColorPicker");
+      if (picker) picker.style.display = "none";
+      if (_lcpCloseListener) {
+        document.removeEventListener("click", _lcpCloseListener);
+        _lcpCloseListener = null;
+      }
+    }
+
+    function showLegendColorPicker(chart, datasetIndex, label, clientX, clientY) {
+      let picker = document.getElementById("legendColorPicker");
+      if (!picker) {
+        picker = document.createElement("div");
+        picker.id = "legendColorPicker";
+        document.body.appendChild(picker);
+      }
+
+      const ds = chart.data.datasets[datasetIndex];
+      const currentColor = legendColorOverrides[label] ||
+        (ds && typeof ds.borderColor === "string" ? ds.borderColor : "#ffffff");
+      const safeLabel = label.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+      const safeAttr = label.replace(/"/g, "&quot;");
+
+      picker.innerHTML =
+        `<div class="lcp-header"><span class="lcp-dot" style="background:${currentColor}"></span><span class="lcp-label">${safeLabel}</span></div>` +
+        `<div class="lcp-swatches">${LEGEND_COLOR_SWATCHES.map(s =>
+          `<button class="lcp-swatch${legendColorOverrides[label] === s.hex ? " lcp-active" : ""}" title="${s.name}" style="background:${s.hex}" data-hex="${s.hex}" data-lbl="${safeAttr}"></button>`
+        ).join("")}</div>` +
+        `<button class="lcp-reset-btn" data-lbl="${safeAttr}">↩ Reset to Default</button>`;
+
+      const pw = 208, ph = 190;
+      let left = clientX - 10;
+      let top = clientY + 14;
+      if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+      if (top + ph > window.innerHeight - 8) top = clientY - ph - 14;
+      picker.style.left = Math.max(8, left) + "px";
+      picker.style.top = Math.max(8, top) + "px";
+      picker.style.display = "block";
+
+      picker.querySelectorAll(".lcp-swatch").forEach(btn => {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          legendColorOverrides[btn.dataset.lbl] = btn.dataset.hex;
+          saveLegendColorOverrides();
+          applyColorToDataset(chart, datasetIndex, btn.dataset.hex);
+          chart.update("none");
+          closeLegendColorPicker();
+        };
+      });
+
+      picker.querySelector(".lcp-reset-btn").onclick = function (e) {
+        e.stopPropagation();
+        delete legendColorOverrides[this.dataset.lbl];
+        saveLegendColorOverrides();
+        closeLegendColorPicker();
+        refreshCurrentChart();
+      };
+
+      if (_lcpCloseListener) document.removeEventListener("click", _lcpCloseListener);
+      _lcpCloseListener = function (e) {
+        if (!picker.contains(e.target)) closeLegendColorPicker();
+      };
+      setTimeout(() => document.addEventListener("click", _lcpCloseListener), 150);
     }
 
     // ============================================================
@@ -3012,7 +3203,8 @@ body.mode-interactive #page7 .three-panel {
         oldestYear: oldestYear,
         newestYear: newestYear,
         latestYear: latestDataYear,
-        currentPage: currentPageNumber
+        currentPage: currentPageNumber,
+        chartMode: chartDisplayMode
       });
     }
 
@@ -4877,6 +5069,11 @@ body.mode-interactive #page7 .three-panel {
     window.addEventListener("message", (event) => {
       if (event.origin !== window.location.origin) return;
       if (!event.data) return;
+
+      if (event.data.type === "SET_CHART_MODE") {
+        setChartMode(event.data.mode);
+        return;
+      }
 
       if (event.data.type === "SET_BUILDING") {
         const buildingCode = normalizeBuildingKey(event.data.building);
