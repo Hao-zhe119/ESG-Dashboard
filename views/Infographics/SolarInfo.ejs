@@ -47,21 +47,25 @@
     </div>
   </div>
 
+  <%
+    const hasGreenhouse = (solarYearlyTotals || []).some(t => Number(t.greenHouse || 0) > 0);
+  %>
   <!-- Breakdown -->
   <div class="info-section">
     <div class="info-section-h">📊 Generation Breakdown</div>
-    
+
     <div class="breakdown-item">
       <div class="breakdown-header">
-        <span class="breakdown-label">🏙️ Urban Renewables</span>
+        <span class="breakdown-label"><%= hasGreenhouse ? '🏙️ Urban Renewables' : '☀️ Solar Generation' %></span>
         <span id="urbanValue" class="breakdown-value" data-value="<%= urbanTotal %>">0 kWh</span>
       </div>
       <div class="breakdown-bar">
-        <div id="urbanBar" class="breakdown-fill urban" data-percent="<%= urbanPercent %>" style="width: 0%;"></div>
+        <div id="urbanBar" class="breakdown-fill urban" data-percent="<%= hasGreenhouse ? urbanPercent : 100 %>" style="width: 0%;"></div>
       </div>
-      <div id="urbanPercent" class="breakdown-percent" data-percent="<%= urbanPercent %>">0% of total</div>
+      <div id="urbanPercent" class="breakdown-percent" data-percent="<%= hasGreenhouse ? urbanPercent : 100 %>"><%= hasGreenhouse ? '0% of total' : '100% of total' %></div>
     </div>
-    
+
+    <% if (hasGreenhouse) { %>
     <div class="breakdown-item">
       <div class="breakdown-header">
         <span class="breakdown-label">🌿 Green House</span>
@@ -72,6 +76,7 @@
       </div>
       <div id="greenhousePercent" class="breakdown-percent" data-percent="<%= ghPercent %>">0% of total</div>
     </div>
+    <% } %>
   </div>
 
   <% if (yoyChange !== null) { %>
@@ -101,17 +106,18 @@
       <thead>
         <tr>
           <th>Year</th>
-          <th>Urban</th>
-          <th>Green House</th>
-          <th>Total</th>
+          <% if (hasGreenhouse) { %><th>Urban</th><th>Green House</th><% } %>
+          <th>Total (kWh)</th>
         </tr>
       </thead>
       <tbody>
         <% solarYearlyTotals.sort((a, b) => b.year - a.year).slice(0, 5).forEach(function(item) { %>
         <tr class="<%= item.year === Number(year) ? 'current-year' : '' %>">
           <td><%= item.year %></td>
+          <% if (hasGreenhouse) { %>
           <td><%= formatNum(item.urbanRenewables) %></td>
           <td><%= formatNum(item.greenHouse) %></td>
+          <% } %>
           <td><strong><%= formatNum(item.total) %></strong></td>
         </tr>
         <% }); %>

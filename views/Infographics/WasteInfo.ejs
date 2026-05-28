@@ -37,6 +37,8 @@
   if (recyclingRateNum >= 50) recyclingStatus = 'excellent';
   else if (recyclingRateNum >= 30) recyclingStatus = 'good';
   else if (recyclingRateNum < 20) recyclingStatus = 'low';
+
+  const hasRecyclable = (wasteYearlyTotals || []).some(t => Number(t.recyclableWaste || 0) > 0);
 %>
 
 <div class="slug-sandbox waste-info-panel">
@@ -53,11 +55,13 @@
       <span class="stat-inline-label">🗑️ Total Waste:</span>
       <span class="stat-inline-value"><%= formatNum(totalWaste) %>kg</span>
     </div>
+    <% if (hasRecyclable) { %>
     <div class="stat-inline-divider"></div>
     <div class="stat-inline-item">
       <span class="stat-inline-label">♻️ Recycling Rate:</span>
       <span class="stat-inline-value <%= recyclingStatus %>"><%= recyclingRate %>%</span>
     </div>
+    <% } %>
   </div>
 
   <!-- Breakdown -->
@@ -75,6 +79,7 @@
       <div id="generalWastePercent" class="breakdown-percent" data-percent="<%= generalPercent %>">0% of total</div>
     </div>
     
+    <% if (hasRecyclable) { %>
     <div class="breakdown-item">
       <div class="breakdown-header">
         <span class="breakdown-label">♻️ Recyclable Waste</span>
@@ -85,14 +90,13 @@
       </div>
       <div id="recyclableWastePercent" class="breakdown-percent" data-percent="<%= recyclablePercent %>">0% of total</div>
     </div>
+    <% } %>
   </div>
 
-  <% if (yoyChange !== null || recyclingRateChange !== null) { %>
+  <% if (yoyChange !== null) { %>
   <!-- Year-over-Year Comparison -->
   <div class="info-section">
     <div class="info-section-h">📈 Year-over-Year Change</div>
-    
-    <% if (yoyChange !== null) { %>
     <div class="yoy-comparison">
       <div class="yoy-item">
         <span class="yoy-label">Total Waste:</span>
@@ -104,9 +108,7 @@
         </span>
       </div>
     </div>
-    <% } %>
-    
-    <% if (recyclingRateChange !== null) { %>
+    <% if (hasRecyclable && recyclingRateChange !== null) { %>
     <div class="yoy-comparison" style="margin-top: 6px;">
       <div class="yoy-item">
         <span class="yoy-label">Recycling Rate:</span>
@@ -122,6 +124,7 @@
   </div>
   <% } %>
 
+  <% if (hasRecyclable) { %>
   <!-- Recycling Progress -->
   <div class="info-section">
     <div class="info-section-h">🎯 Recycling Progress</div>
@@ -150,6 +153,7 @@
       <% } %>
     </div>
   </div>
+  <% } %>
 
   <% if (wasteYearlyTotals && wasteYearlyTotals.length > 1) { %>
   <!-- Historical Data -->
@@ -159,18 +163,19 @@
       <thead>
         <tr>
           <th>FY</th>
-          <th>General</th>
-          <th>Recycled</th>
-          <th>Rate</th>
+          <th>General (kg)</th>
+          <% if (hasRecyclable) { %><th>Recycled</th><th>Rate</th><% } %>
         </tr>
       </thead>
       <tbody>
         <% wasteYearlyTotals.sort((a, b) => b.year - a.year).forEach(function(item) { %>
         <tr class="<%= item.year === Number(fiscalYear) ? 'current-year' : '' %>">
           <td><%= item.year %></td>
-          <td><%= formatNum(item.generalWaste) %></td>
+          <td><strong><%= formatNum(item.generalWaste) %></strong></td>
+          <% if (hasRecyclable) { %>
           <td><%= formatNum(item.recyclableWaste) %></td>
-          <td><strong><%= item.recyclingRate %>%</strong></td>
+          <td><%= item.recyclingRate %>%</td>
+          <% } %>
         </tr>
         <% }); %>
       </tbody>

@@ -15,7 +15,7 @@
   <!-- Inter Display -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter+Display:ital,opsz,wght@0,10..36,100..900;1,10..36,100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter+Display:ital,opsz,wght@0,10..36,100..900;1,10..36,100..900&display=swap" rel="stylesheet">
 
 <style>
 :root {
@@ -2093,7 +2093,7 @@ body.mode-interactive #page7 .three-panel {
       </div>
       <div class="panel panel-mid">
         <div class="three-building-title" id="solarChartTitle">
-          Solar (Urban Renewables &amp; Green House)
+          Solar Generation
         </div>
         <div class="three-chart-wrap">
           <canvas id="solarThreeChart"></canvas>
@@ -2114,7 +2114,7 @@ body.mode-interactive #page7 .three-panel {
       </div>
       <div class="panel panel-mid">
         <div class="three-building-title" id="wasteChartTitle">
-          Waste (General &amp; Recyclable)
+          General Waste
         </div>
         <div class="three-chart-wrap">
           <canvas id="wasteThreeChart"></canvas>
@@ -2446,7 +2446,7 @@ body.mode-interactive #page7 .three-panel {
           context.save();
           context.textAlign = "center";
           context.textBaseline = "bottom";
-          context.font = "700 12px 'Inter Display'";
+          context.font = "500 9px 'IBM Plex Mono', monospace";
           context.fillStyle = CHART_TEXT_COLOR;
 
           datasets.forEach((dataset, datasetIndex) => {
@@ -2517,11 +2517,19 @@ body.mode-interactive #page7 .three-panel {
 
     try { Chart.register(snapLinePointsToBars); } catch (error) {}
 
+    // Global chart typography — mono, compact, data-like
+    try {
+      Chart.defaults.font.family = "'IBM Plex Mono', 'Courier New', monospace";
+      Chart.defaults.font.size   = 10;
+      Chart.defaults.font.weight = "400";
+    } catch (e) {}
+
     // ============================================================
     // CHART OPTIONS + HELPERS
     // ============================================================
-    const CHART_TEXT_COLOR = "#ffffff";
-    const CHART_GRID_COLOR = "rgba(255,255,255,0.18)";
+    const CHART_TEXT_COLOR = "rgba(255,255,255,0.50)";   // tick labels + bar value labels
+    const CHART_AXIS_COLOR = "rgba(255,255,255,0.15)";   // axis border lines
+    const CHART_GRID_COLOR = "rgba(255,255,255,0.07)";   // grid lines (minimal)
     let chartDisplayMode = (function() {
       try {
         return localStorage.getItem("rpChartDisplayMode") === "line" ? "line" : "bar";
@@ -2562,9 +2570,9 @@ body.mode-interactive #page7 .three-panel {
           pointBackgroundColor: c,
           pointBorderColor: "#ffffff",
           pointBorderWidth: 1,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          borderWidth: 3,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          borderWidth: 2,
           tension: 0.25,
           fill: "origin",
           yAxisID,
@@ -2658,15 +2666,22 @@ body.mode-interactive #page7 .three-panel {
             onClick: createLegendClickHandler(),
             labels: {
               color: CHART_TEXT_COLOR,
-              filter: (legendItem) => !String(legendItem.text || "").startsWith("_")
+              filter: (legendItem) => !String(legendItem.text || "").startsWith("_"),
+              font: { size: 10 },
+              boxWidth: 10,
+              padding: 10
             }
           },
-          tooltip: { enabled: true }
+          tooltip: {
+            enabled: true,
+            titleFont: { size: 11 },
+            bodyFont:  { size: 10 }
+          }
         },
         scales: {
-          x: { ticks: { color: CHART_TEXT_COLOR }, grid: { color: CHART_GRID_COLOR }, border: { color: CHART_TEXT_COLOR } },
-          y: { ticks: { color: CHART_TEXT_COLOR }, grid: { color: CHART_GRID_COLOR }, border: { color: CHART_TEXT_COLOR }, position: "left", beginAtZero: true },
-          y1: { ticks: { color: CHART_TEXT_COLOR }, grid: { color: CHART_GRID_COLOR, drawOnChartArea: false }, border: { color: CHART_TEXT_COLOR }, position: "right", beginAtZero: true }
+          x: { ticks: { color: CHART_TEXT_COLOR, font: { size: 10 } }, grid: { color: CHART_GRID_COLOR }, border: { color: CHART_AXIS_COLOR } },
+          y: { ticks: { color: CHART_TEXT_COLOR, font: { size: 10 } }, grid: { color: CHART_GRID_COLOR }, border: { color: CHART_AXIS_COLOR }, position: "left", beginAtZero: true },
+          y1: { ticks: { color: CHART_TEXT_COLOR, font: { size: 10 } }, grid: { color: CHART_GRID_COLOR, drawOnChartArea: false }, border: { color: CHART_AXIS_COLOR }, position: "right", beginAtZero: true }
         }
       };
     }
@@ -3933,9 +3948,9 @@ body.mode-interactive #page7 .three-panel {
                   color: CHART_TEXT_COLOR,
                   filter: (legendItem) => !String(legendItem.text || "").startsWith("_"),
                   usePointStyle: false,
-                  boxWidth: 12,
+                  boxWidth: 10,
                   padding: 8,
-                  font: { size: 11 }
+                  font: { size: 10 }
                 }
               }
             }
@@ -3983,8 +3998,11 @@ body.mode-interactive #page7 .three-panel {
       const ctx = document.getElementById("electricityCompareChart");
       if (!ctx) return;
 
-      const sortedYears = [...allYears].sort((yearA, yearB) => yearA - yearB);
-      
+      // Only include years that actually have building-level data
+      const sortedYears = [...allYears]
+        .sort((yearA, yearB) => yearA - yearB)
+        .filter(year => (overviewByYear[year] || []).some(r => Number(r.electricity || 0) > 0));
+
       const dataByYear = {};
       sortedYears.forEach(year => {
         const rows = overviewByYear[year] || [];
@@ -3992,10 +4010,10 @@ body.mode-interactive #page7 .three-panel {
         rows.forEach(rowItem => {
           const key = normalizeBuildingKey(rowItem && rowItem.building);
           if (!key) return;
-          map[key] = { 
-            label: key, 
-            electricity: Number(rowItem.electricity || 0), 
-            water: Number(rowItem.water || 0) 
+          map[key] = {
+            label: key,
+            electricity: Number(rowItem.electricity || 0),
+            water: Number(rowItem.water || 0)
           };
         });
         dataByYear[year] = map;
@@ -4038,9 +4056,9 @@ body.mode-interactive #page7 .three-panel {
           const options = baseChartOptions();
           const aspectRatio = window.innerWidth / Math.max(1, window.innerHeight);
           const isUltra = (window.innerWidth >= 4000) || (aspectRatio >= 3.0);
-          const tickSize = isUltra ? 18 : 12;
-          options.plugins.legend.labels.font = { size: isUltra ? 18 : 12 };
-          options.plugins.tooltip.titleFont = { size: isUltra ? 20 : 14 };
+          const tickSize = isUltra ? 14 : 10;
+          options.plugins.legend.labels.font = { size: isUltra ? 14 : 10 };
+          options.plugins.tooltip.titleFont = { size: isUltra ? 16 : 11 };
           options.plugins.tooltip.bodyFont = { size: tickSize };
           options.scales.x.ticks.font = { size: tickSize };
           options.scales.y.ticks.font = { size: tickSize };
@@ -4069,8 +4087,11 @@ body.mode-interactive #page7 .three-panel {
       const ctx = document.getElementById("waterCompareChart");
       if (!ctx) return;
 
-      const sortedYears = [...allYears].sort((yearA, yearB) => yearA - yearB);
-      
+      // Only include years that actually have building-level water data
+      const sortedYears = [...allYears]
+        .sort((yearA, yearB) => yearA - yearB)
+        .filter(year => (overviewByYear[year] || []).some(r => Number(r.water || 0) > 0));
+
       const dataByYear = {};
       sortedYears.forEach(year => {
         const rows = overviewByYear[year] || [];
@@ -4078,10 +4099,10 @@ body.mode-interactive #page7 .three-panel {
         rows.forEach(rowItem => {
           const key = normalizeBuildingKey(rowItem && rowItem.building);
           if (!key) return;
-          map[key] = { 
-            label: key, 
-            electricity: Number(rowItem.electricity || 0), 
-            water: Number(rowItem.water || 0) 
+          map[key] = {
+            label: key,
+            electricity: Number(rowItem.electricity || 0),
+            water: Number(rowItem.water || 0)
           };
         });
         dataByYear[year] = map;
@@ -4124,9 +4145,9 @@ body.mode-interactive #page7 .three-panel {
           const options = baseChartOptions();
           const aspectRatio = window.innerWidth / Math.max(1, window.innerHeight);
           const isUltra = (window.innerWidth >= 4000) || (aspectRatio >= 3.0);
-          const tickSize = isUltra ? 18 : 12;
-          options.plugins.legend.labels.font = { size: isUltra ? 18 : 12 };
-          options.plugins.tooltip.titleFont = { size: isUltra ? 20 : 14 };
+          const tickSize = isUltra ? 14 : 10;
+          options.plugins.legend.labels.font = { size: isUltra ? 14 : 10 };
+          options.plugins.tooltip.titleFont = { size: isUltra ? 16 : 11 };
           options.plugins.tooltip.bodyFont = { size: tickSize };
           options.scales.x.ticks.font = { size: tickSize };
           options.scales.y.ticks.font = { size: tickSize };
@@ -4523,31 +4544,35 @@ body.mode-interactive #page7 .three-panel {
         }
       }
 
+      const anyGreenhouse = options.some(o => o.ghTotal > 0);
+
       const renderList = () => {
         if (!listElement) return;
         listElement.innerHTML = "";
         const ul = document.createElement("ul");
-        
+
         options.forEach((option, index) => {
           const li = document.createElement("li");
           li.className = "building-list-item";
           li.dataset.year = String(option.year);
-          
+
           const name = document.createElement("div");
           name.className = "fw-bold";
           name.textContent = "Solar — " + option.label;
-          
+
           const metaUrban = document.createElement("small");
           metaUrban.style.display = "block";
-          metaUrban.textContent = "Urban: " + formatNumber(option.urbanTotal) + " kWh";
-          
-          const metaGreenhouse = document.createElement("small");
-          metaGreenhouse.style.display = "block";
-          metaGreenhouse.textContent = "Green House: " + formatNumber(option.ghTotal) + " kWh";
-          
+          metaUrban.textContent = (anyGreenhouse ? "Urban: " : "Total: ") + formatNumber(option.urbanTotal) + " kWh";
+
           li.appendChild(name);
           li.appendChild(metaUrban);
-          li.appendChild(metaGreenhouse);
+
+          if (anyGreenhouse) {
+            const metaGreenhouse = document.createElement("small");
+            metaGreenhouse.style.display = "block";
+            metaGreenhouse.textContent = "Green House: " + formatNumber(option.ghTotal) + " kWh";
+            li.appendChild(metaGreenhouse);
+          }
           
           li.addEventListener("click", () => {
             clearSolarCycleTimer();
@@ -4576,22 +4601,24 @@ body.mode-interactive #page7 .three-panel {
         const ctx = document.getElementById("solarThreeChart");
         if (!ctx) return;
         if (solarThreeChart) { solarThreeChart.destroy(); solarThreeChart = null; }
+        const solarDatasets = [
+          chartModeDataset({ label: anyGreenhouse ? "Urban Renewables" : "Solar Generation", data: filtered.series[0], color: color_solar_urban, yAxisID: "y" })
+        ];
+        if (anyGreenhouse) {
+          solarDatasets.push(chartModeDataset({ label: "Green House", data: filtered.series[1], color: color_solar_gh, yAxisID: "y" }));
+        }
         solarThreeChart = new Chart(ctx, {
           type: chartDisplayMode,
-          data: {
-            labels: filtered.labels,
-            datasets: [
-              chartModeDataset({ label: "Urban Renewables", data: filtered.series[0], color: color_solar_urban, yAxisID: "y" }),
-              chartModeDataset({ label: "Green House", data: filtered.series[1], color: color_solar_gh, yAxisID: "y" })
-            ]
-          },
+          data: { labels: filtered.labels, datasets: solarDatasets },
           options: (function () { const options = baseChartOptions(); options.scales.y1.display = false; return options; })()
         });
-        
+
         // Update chart title with year
         const chartTitle = document.getElementById("solarChartTitle");
         if (chartTitle) {
-          chartTitle.textContent = `Solar (Urban Renewables & Green House) - ${selected.year}`;
+          chartTitle.textContent = anyGreenhouse
+            ? `Solar (Urban Renewables & Green House) - ${selected.year}`
+            : `Solar Generation - ${selected.year}`;
         }
         
         // Update active state in list
@@ -4754,31 +4781,35 @@ body.mode-interactive #page7 .three-panel {
         }
       }
 
+      const anyRecyclable = options.some(o => o.recyclableTotal > 0);
+
       const renderList = () => {
         if (!listElement) return;
         listElement.innerHTML = "";
         const ul = document.createElement("ul");
-        
+
         options.forEach((option, index) => {
           const li = document.createElement("li");
           li.className = "building-list-item";
           li.dataset.year = String(option.year);
-          
+
           const name = document.createElement("div");
           name.className = "fw-bold";
           name.textContent = option.label;
-          
+
           const metaGeneral = document.createElement("small");
           metaGeneral.style.display = "block";
-          metaGeneral.textContent = "General: " + formatNumber(option.generalTotal) + " kg";
-          
-          const metaRecyclable = document.createElement("small");
-          metaRecyclable.style.display = "block";
-          metaRecyclable.textContent = "Recyclable: " + formatNumber(option.recyclableTotal) + " kg";
-          
+          metaGeneral.textContent = (anyRecyclable ? "General: " : "Total: ") + formatNumber(option.generalTotal) + " kg";
+
           li.appendChild(name);
           li.appendChild(metaGeneral);
-          li.appendChild(metaRecyclable);
+
+          if (anyRecyclable) {
+            const metaRecyclable = document.createElement("small");
+            metaRecyclable.style.display = "block";
+            metaRecyclable.textContent = "Recyclable: " + formatNumber(option.recyclableTotal) + " kg";
+            li.appendChild(metaRecyclable);
+          }
           
           li.addEventListener("click", () => {
             clearWasteCycleTimer();
@@ -4809,22 +4840,24 @@ body.mode-interactive #page7 .three-panel {
         const ctx = document.getElementById("wasteThreeChart");
         if (!ctx) return;
         if (wasteThreeChart) { wasteThreeChart.destroy(); wasteThreeChart = null; }
+        const wasteDatasets = [
+          chartModeDataset({ label: anyRecyclable ? "General (kg)" : "General Waste (kg)", data: filtered.series[0], color: color_waste_gen, yAxisID: "y" })
+        ];
+        if (anyRecyclable) {
+          wasteDatasets.push(chartModeDataset({ label: "Recyclable (kg)", data: filtered.series[1], color: color_waste_rec, yAxisID: "y" }));
+        }
         wasteThreeChart = new Chart(ctx, {
           type: chartDisplayMode,
-          data: {
-            labels: filtered.labels,
-            datasets: [
-              chartModeDataset({ label: "General (kg)", data: filtered.series[0], color: color_waste_gen, yAxisID: "y" }),
-              chartModeDataset({ label: "Recyclable (kg)", data: filtered.series[1], color: color_waste_rec, yAxisID: "y" })
-            ]
-          },
+          data: { labels: filtered.labels, datasets: wasteDatasets },
           options: (function () { const options = baseChartOptions(); options.scales.y1.display = false; return options; })()
         });
-        
+
         // Update chart title with year
         const chartTitle = document.getElementById("wasteChartTitle");
         if (chartTitle) {
-          chartTitle.textContent = `Waste (General & Recyclable) - FY ${selected.year}`;
+          chartTitle.textContent = anyRecyclable
+            ? `Waste (General & Recyclable) - FY ${selected.year}`
+            : `General Waste - FY ${selected.year}`;
         }
         
         // Update active state in list

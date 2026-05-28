@@ -2079,6 +2079,98 @@ app.post("/uploads/image/carousel", uploadCarouselImages.single("imageFile"), as
 /* ==============================
    XLSX UPLOAD HANDLER
 ============================== */
+
+// Convert Excel serial date → { year, month }
+function xlsxSerialToYearMonth(serial) {
+  const d = new Date(Math.round((serial - 25569) * 86400 * 1000));
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 };
+}
+
+// Parse flat Elec/Solar/Water/Waste sheet rows
+function parseNewFormatSheet(sheet) {
+  const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+  let currentYear = null;
+  const rows = [];
+  for (let i = 1; i < raw.length; i++) {
+    const r = raw[i];
+    if (r[0] !== null && r[0] !== undefined) currentYear = Number(r[0]);
+    if (!currentYear || !r[1]) continue;
+    const { year, month } = xlsxSerialToYearMonth(Number(r[1]));
+    const billMonth = `${year}-${String(month).padStart(2, "0")}-01`;
+    rows.push({ year: currentYear, month, billMonth, row: r });
+  }
+  return rows;
+}
+
+async function handleNewFormatUpload(req, res, workbook, accountId) {
+  try {
+    const elecRows  = parseNewFormatSheet(workbook.Sheets["Elec"]);
+    const waterRows = parseNewFormatSheet(workbook.Sheets["Water"]);
+    const solarRows = parseNewFormatSheet(workbook.Sheets["Solar"]);
+    const wasteRows = parseNewFormatSheet(workbook.Sheets["Waste"]);
+
+    if (elecRows.length === 0) {
+      return res.status(400).send("Failed to upload, No electricity data found in Elec sheet");
+    }
+
+    const yearsSet = new Set(elecRows.map((r) => r.year));
+    const yearsArray = [...yearsSet].sort((a, b) => a - b);
+
+    await db.query("START TRANSACTION");
+
+    for (const t of ["total_ebills", "total_waterusage", "total_solardata", "total_wastedata", "year_range"]) {
+      await db.query(`DELETE FROM ${t} WHERE account_id = ?`, [accountId]);
+    }
+
+    for (const year of yearsArray) {
+      await db.query("INSERT INTO year_range (account_id, year) VALUES (?, ?)", [accountId, year]);
+    }
+
+    for (const { billMonth, row } of elecRows) {
+      await db.query(
+        "INSERT INTO total_ebills (account_id, bill_month, total_bill) VALUES (?, ?, ?)",
+        [accountId, billMonth, Number(row[4]) || 0]
+      );
+    }
+
+    for (const { billMonth, row } of waterRows) {
+      await db.query(
+        "INSERT INTO total_waterusage (account_id, bill_month, portable_water, recycled_water) VALUES (?, ?, ?, ?)",
+        [accountId, billMonth, Number(row[2]) || 0, Number(row[3]) || 0]
+      );
+    }
+
+    for (const { billMonth, row } of solarRows) {
+      await db.query(
+        "INSERT INTO total_solardata (account_id, bill_month, urban_renewables, green_house) VALUES (?, ?, ?, 0)",
+        [accountId, billMonth, Number(row[2]) || 0]
+      );
+    }
+
+    for (const { billMonth, row } of wasteRows) {
+      await db.query(
+        `INSERT INTO total_wastedata
+           (account_id, bill_month, general_kg, recyclable_kg, general_percent, recyclable_percent)
+         VALUES (?, ?, ?, 0, 0, 0)`,
+        [accountId, billMonth, Number(row[2]) || 0]
+      );
+    }
+
+    await db.query("COMMIT");
+
+    try { if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); } catch (_) {}
+
+    console.log(`New-format upload complete. Years: ${yearsArray.join(", ")}`);
+    res.send(`Data successfully uploaded! Years: ${yearsArray.join(", ")} | Electricity: ${elecRows.length} rows | Water: ${waterRows.length} rows | Solar: ${solarRows.length} rows | Waste: ${wasteRows.length} rows`);
+
+  } catch (err) {
+    try { await db.query("ROLLBACK"); } catch (_) {}
+    try { if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); } catch (_) {}
+    console.error("New-format upload error:", err);
+    res.status(500).send(`Failed to upload: ${err.message}`);
+  }
+}
+
 app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
   if (!req.file) return res.status(400).send("Failed to upload, No file provided");
   if (!req.session.user) return res.status(401).send("Failed to upload, Unauthorized");
@@ -2097,8 +2189,16 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
   try {
     const workbook = XLSX.readFile(req.file.path);
 
+    // Detect format: new 4-sheet format (Elec/Solar/Water/Waste) vs legacy 6-sheet format
+    const newFormatSheets = ["Elec", "Solar", "Water", "Waste"];
+    const isNewFormat = newFormatSheets.every((s) => workbook.Sheets[s]);
+
+    if (isNewFormat) {
+      return await handleNewFormatUpload(req, res, workbook, accountId);
+    }
+
     if (workbook.SheetNames.length < 6) {
-      return res.status(400).send("Failed to upload, Excel format not supported (needs 6 sheets)");
+      return res.status(400).send("Failed to upload, Excel format not supported (needs 6 sheets or Elec/Solar/Water/Waste sheets)");
     }
 
     const sheet1 = workbook.Sheets[workbook.SheetNames[0]];
