@@ -139,7 +139,43 @@
         .footer-text {
             color: rgba(255, 255, 255, 0.9) !important;
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+            font-weight: 400;
         }
+
+        /* Monochrome button */
+        .btn-mono {
+            color: rgba(255,255,255,0.92) !important;
+            background: rgba(255,255,255,0.10) !important;
+            border: 1px solid rgba(255,255,255,0.22) !important;
+            border-radius: 8px;
+            transition: background 0.18s, border-color 0.18s;
+        }
+        .btn-mono:hover, .btn-mono:focus-visible {
+            color: #fff !important;
+            background: rgba(255,255,255,0.16) !important;
+            border-color: rgba(255,255,255,0.40) !important;
+        }
+        .btn-mono:active {
+            background: rgba(255,255,255,0.22) !important;
+            border-color: rgba(255,255,255,0.60) !important;
+        }
+        .btn-mono:disabled {
+            opacity: 0.40;
+            cursor: not-allowed;
+        }
+
+        /* Monochrome alert */
+        .alert-mono {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.14);
+            color: rgba(255,255,255,0.80);
+            border-radius: 8px;
+        }
+        .alert-mono strong { color: rgba(255,255,255,0.95); }
+
+        /* Weight hierarchy */
+        .card-title { font-weight: 700; }
+        .form-label { font-weight: 500; color: rgba(255,255,255,0.88); }
     </style>
 </head>
 <body>
@@ -158,7 +194,7 @@
 
                 <!-- No Account Found Warning -->
                 <% if (!adminAccount) { %>
-                    <div class="alert alert-warning">
+                    <div class="alert alert-mono">
                         <strong>Warning:</strong> No admin account found in database. Please contact your system administrator.
                     </div>
                 <% } %>
@@ -207,7 +243,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100" <%= !adminAccount ? 'disabled' : '' %>>
+                        <button type="submit" class="btn btn-mono w-100" <%= !adminAccount ? 'disabled' : '' %>>
                             Login
                         </button>
                     </form>
@@ -237,7 +273,7 @@
                         </div>
                     <% } %>
 
-                    <div class="alert alert-info mb-3">
+                    <div class="alert alert-mono mb-3">
                         <small>
                             <strong>Note:</strong> You need the admin reset passcode to reset your password. Contact your system administrator if you don't have it.
                         </small>
@@ -314,7 +350,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-warning w-100" <%= !adminAccount ? 'disabled' : '' %>>
+                        <button type="submit" class="btn btn-mono w-100" <%= !adminAccount ? 'disabled' : '' %>>
                             Reset Password
                         </button>
                     </form>
