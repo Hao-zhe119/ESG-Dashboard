@@ -967,6 +967,33 @@
       background: rgba(15,19,24,0.56);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
     }
+
+    /* ---- Light mode ---- */
+    body.light-mode::before {
+      background: url("/images/rp-lightmode.jpeg") center / cover no-repeat;
+      filter: blur(7px) brightness(0.95);
+    }
+    body.light-mode::after {
+      background: rgba(255,255,255,0.28);
+    }
+    body.light-mode {
+      --text: #111827; --muted: #6b7280; --cardBg: rgba(255,255,255,0.75); --cardText: #111827;
+      --active: rgba(0,0,0,0.80);
+      --l2-bg: rgba(255,255,255,0.72); --l2-bd: rgba(0,0,0,0.10);
+      --l3-bg: rgba(255,255,255,0.80); --l3-bd: rgba(0,0,0,0.14);
+      --btnBg: rgba(0,0,0,0.07); --btnBd: rgba(0,0,0,0.20);
+      --btnBgHover: rgba(0,0,0,0.12); --btnBdHover: rgba(0,0,0,0.32);
+      --btnBgPressed: rgba(0,0,0,0.18); --btnBdPressed: rgba(0,0,0,0.50);
+      color: #111827;
+    }
+    body.light-mode .topbar { background: var(--l2-bg); border-color: var(--l2-bd); }
+    body.light-mode .ctrl-btn { color: #111827; }
+    body.light-mode .ctrl-chart-btn { color: rgba(0,0,0,0.60); }
+    body.light-mode .ctrl-chart-btn:hover { color: #000; }
+    body.light-mode .ctrl-chart-btn.active {
+      color: #111827; background: rgba(255,255,255,0.85);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18);
+    }
   </style>
 </head>
 
@@ -1689,6 +1716,10 @@
     }, 450);
 
     console.log("Building Controls initialized");
+
+    (function() {
+      try { if (localStorage.getItem("rpTheme") === "light") document.body.classList.add("light-mode"); } catch(e) {}
+    })();
   </script>
 </body>
 </html>

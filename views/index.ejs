@@ -1924,6 +1924,383 @@ body.mode-interactive #page7 .three-panel {
   background: rgba(255,255,255,0.12);
   color: #f8fafc;
 }
+
+/* ========================================
+   THEME TOGGLE BUTTON
+   ======================================== */
+.theme-toggle-btn {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.20);
+  backdrop-filter: blur(10px);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.theme-toggle-btn:hover,
+.theme-toggle-btn:focus-visible {
+  outline: none;
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.40);
+  transform: translateY(-1px);
+}
+.theme-toggle-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ========================================
+   LIGHT MODE
+   ======================================== */
+body.light-mode::before {
+  background-image: url("/images/rp-lightmode.jpeg");
+}
+body.light-mode::after {
+  background-color: rgba(255,255,255,0.28);
+}
+
+body.light-mode {
+  --bg: #f0f2f5;
+  --text: #111827;
+  --muted: #6b7280;
+  --panel: rgba(255,255,255,0.80);
+  --panelBorder: rgba(0,0,0,0.10);
+  --shadow: 0 10px 24px rgba(0,0,0,0.10);
+  --accent: rgba(0,0,0,0.80);
+  --listRow: rgba(0,0,0,0.03);
+  --listRowAlt: rgba(0,0,0,0.015);
+  --listRowHover: rgba(0,0,0,0.06);
+  --listRowActive: rgba(0,0,0,0.10);
+  --progressBg: rgba(0,0,0,0.10);
+  --progressFill: rgba(0,0,0,0.80);
+  --cardBg: rgba(255,255,255,0.75);
+  --cardText: #111827;
+  color: #111827;
+}
+
+/* Navbar pills — dark text/border on light */
+body.light-mode .navbar .btn {
+  color: #111827 !important;
+  background: rgba(255,255,255,0.65) !important;
+  border-color: rgba(0,0,0,0.18) !important;
+}
+body.light-mode .navbar .btn:hover,
+body.light-mode .navbar .btn:focus-visible {
+  color: #000 !important;
+  background: rgba(255,255,255,0.85) !important;
+  border-color: rgba(0,0,0,0.32) !important;
+}
+body.light-mode .navbar .btn.nav-status-danger {
+  background: rgba(239,68,68,0.14) !important;
+  border-color: rgba(220,38,38,0.36) !important;
+  color: #991b1b !important;
+}
+
+body.light-mode .page-nav-pill {
+  color: #111827;
+  background: rgba(255,255,255,0.65);
+  border-color: rgba(0,0,0,0.18);
+}
+body.light-mode .page-nav-button {
+  color: #111827;
+  background: rgba(0,0,0,0.08);
+}
+body.light-mode .page-nav-button:hover,
+body.light-mode .page-nav-button:focus-visible {
+  background: rgba(0,0,0,0.16);
+}
+body.light-mode .page-nav-label { color: #111827; }
+
+body.light-mode .progress-pill {
+  color: #111827;
+  background: rgba(255,255,255,0.65);
+  border-color: rgba(0,0,0,0.18);
+}
+body.light-mode .progress-pill:hover,
+body.light-mode .progress-pill:focus-visible {
+  background: rgba(255,255,255,0.85);
+  border-color: rgba(0,0,0,0.32);
+}
+body.light-mode .progress-ring-track { stroke: rgba(0,0,0,0.18); }
+body.light-mode .progress-ring-fill { stroke: #111827; }
+body.light-mode .progress-icon { color: #111827; }
+
+/* Chart mode toggle */
+body.light-mode .navbar .chart-mode-toggle {
+  background: rgba(255,255,255,0.65);
+  border-color: rgba(0,0,0,0.18);
+}
+body.light-mode .navbar .chart-mode-option { color: rgba(0,0,0,0.55); }
+body.light-mode .navbar .chart-mode-option:hover { color: #000; }
+body.light-mode .navbar .chart-mode-option.active {
+  color: #111827;
+  background: rgba(255,255,255,0.85);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18);
+}
+
+/* Theme toggle button — light variant */
+body.light-mode .theme-toggle-btn {
+  color: #111827;
+  background: rgba(255,255,255,0.65);
+  border-color: rgba(0,0,0,0.18);
+}
+body.light-mode .theme-toggle-btn:hover {
+  background: rgba(255,255,255,0.85);
+  border-color: rgba(0,0,0,0.32);
+}
+
+/* Account pill & menu */
+body.light-mode .account-pill-name { color: #111827; }
+body.light-mode .account-pill-avatar {
+  background: rgba(255,255,255,0.80);
+  border-color: rgba(0,0,0,0.16);
+}
+body.light-mode .account-menu {
+  background: rgba(250,251,252,0.95);
+  border-color: rgba(0,0,0,0.12);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+}
+body.light-mode .account-menu::before {
+  background: rgba(250,251,252,0.95);
+  border-color: rgba(0,0,0,0.12);
+}
+body.light-mode .account-profile { color: #111827; }
+body.light-mode .account-greeting { color: #111827; }
+body.light-mode .account-avatar { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.14); }
+body.light-mode .account-menu .account-menu-action {
+  color: #111827 !important;
+  background: rgba(0,0,0,0.06) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+}
+body.light-mode .account-menu .account-menu-action:hover { background: rgba(0,0,0,0.11) !important; }
+
+/* Welcome page */
+body.light-mode #page1 .welcome-eyebrow { color: rgba(0,0,0,0.50); }
+body.light-mode #page1 .welcome-dot { background: rgba(0,0,0,0.55); }
+body.light-mode #page1 .welcome-title {
+  color: rgba(10,15,20,0.92);
+  text-shadow: 0 2px 20px rgba(255,255,255,0.40);
+}
+body.light-mode #page1 .welcome-time-panel {
+  background: rgba(255,255,255,0.68) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.90), 0 24px 52px rgba(0,0,0,0.10) !important;
+  backdrop-filter: blur(20px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+}
+body.light-mode #page1 .welcome-time-label { color: rgba(0,0,0,0.40); }
+body.light-mode #page1 .welcome-time { color: rgba(0,0,0,0.86); }
+body.light-mode #page1 .welcome-time-divider { background: rgba(0,0,0,0.14); }
+body.light-mode #page1 .welcome-date { color: rgba(0,0,0,0.40); }
+
+/* Page titles */
+body.light-mode .multi-building-title { color: #111827; }
+body.light-mode .multi-building-subtitle { color: #6b7280; }
+
+/* Building cards */
+body.light-mode .building-card {
+  background: rgba(255,255,255,0.78);
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+}
+body.light-mode .building-name { color: #111827; }
+body.light-mode .building-metric { color: rgba(40,55,70,0.78); }
+
+/* Three-panel */
+body.light-mode .three-panel .panel {
+  background: rgba(255,255,255,0.74);
+  border-color: rgba(0,0,0,0.10);
+  color: #111827;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.07);
+}
+body.light-mode #page5 .three-panel .panel-mid,
+body.light-mode #page6 .three-panel .panel-mid,
+body.light-mode #page7 .three-panel .panel-mid {
+  background: rgba(255,255,255,0.62);
+  border-color: rgba(0,0,0,0.10);
+  color: #111827;
+}
+body.light-mode .three-building-title { color: #111827; }
+body.light-mode #page5 .panel-mid .three-building-title,
+body.light-mode #page6 .panel-mid .three-building-title,
+body.light-mode #page7 .panel-mid .three-building-title { color: #111827; }
+body.light-mode .three-info-body { color: rgba(30,40,60,0.72); }
+
+/* Metric boxes */
+body.light-mode .metric-box {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.09);
+}
+body.light-mode .metric-label { color: rgba(40,55,70,0.70); }
+body.light-mode .metric-value { color: #111827; }
+
+/* Chart canvas */
+body.light-mode .three-chart-wrap canvas { border-color: rgba(0,0,0,0.09); }
+
+/* Building list items */
+body.light-mode .building-list-item {
+  background: rgba(255,255,255,0.72);
+  border-color: rgba(0,0,0,0.07);
+  color: #111827;
+}
+body.light-mode .building-list-item:nth-child(even) { background: rgba(238,241,245,0.72); }
+body.light-mode .building-list-item:hover { background: rgba(0,0,0,0.06); }
+body.light-mode .building-list-item.active { background: rgba(0,0,0,0.10); }
+body.light-mode .building-list-item .fw-bold { color: #111827; }
+body.light-mode .building-list-item small { color: rgba(40,55,70,0.70); }
+
+/* Page 5 right panel list */
+body.light-mode #page5 #threeRightBody .building-list-item { background: rgba(255,255,255,0.72); border-color: rgba(0,0,0,0.07); }
+body.light-mode #page5 #threeRightBody .building-list-item:nth-child(even) { background: rgba(238,241,245,0.72); }
+body.light-mode #page5 #threeRightBody .building-list-item:hover { background: rgba(0,0,0,0.06); }
+body.light-mode #page5 #threeRightBody .building-list-item.active { background: rgba(0,0,0,0.10); }
+body.light-mode #page5 #threeRightBody .building-list-item .fw-bold { color: #111827; }
+body.light-mode #page5 #threeRightBody .building-list-item small { color: rgba(40,55,70,0.70); }
+
+/* Solar / waste year lists */
+body.light-mode #page6 #solar-year-list .building-list-item,
+body.light-mode #page7 #waste-year-list .building-list-item { background: rgba(255,255,255,0.72); border-color: rgba(0,0,0,0.07); }
+body.light-mode #page6 #solar-year-list .building-list-item:nth-child(even),
+body.light-mode #page7 #waste-year-list .building-list-item:nth-child(even) { background: rgba(238,241,245,0.72); }
+body.light-mode #page6 #solar-year-list .building-list-item:hover,
+body.light-mode #page7 #waste-year-list .building-list-item:hover { background: rgba(0,0,0,0.06); }
+body.light-mode #page6 #solar-year-list .building-list-item.active,
+body.light-mode #page7 #waste-year-list .building-list-item.active { background: rgba(0,0,0,0.10); }
+body.light-mode #page6 #solar-year-list .building-list-item .fw-bold,
+body.light-mode #page7 #waste-year-list .building-list-item .fw-bold { color: #111827; }
+body.light-mode #page6 #solar-year-list .building-list-item small,
+body.light-mode #page7 #waste-year-list .building-list-item small { color: rgba(40,55,70,0.70); }
+
+/* Scrollbar tracks/thumbs */
+body.light-mode #page5 #threeRightBody .building-list ul::-webkit-scrollbar-track,
+body.light-mode #page6 #solar-year-list ul::-webkit-scrollbar-track,
+body.light-mode #page7 #waste-year-list ul::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 2px; }
+body.light-mode #page5 #threeRightBody .building-list ul::-webkit-scrollbar-thumb,
+body.light-mode #page6 #solar-year-list ul::-webkit-scrollbar-thumb,
+body.light-mode #page7 #waste-year-list ul::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.22); border-radius: 2px; }
+body.light-mode #page5 #threeRightBody .building-list ul::-webkit-scrollbar-thumb:hover,
+body.light-mode #page6 #solar-year-list ul::-webkit-scrollbar-thumb:hover,
+body.light-mode #page7 #waste-year-list ul::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.36); }
+
+/* Infographic */
+body.light-mode .info-head { background: rgba(255,255,255,0.74); border-color: rgba(0,0,0,0.09); }
+body.light-mode .info-title { color: #111827; }
+body.light-mode .info-subtitle { color: rgba(40,55,70,0.70); }
+body.light-mode .info-ico { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.09); }
+body.light-mode .info-section { background: rgba(255,255,255,0.74); border-color: rgba(0,0,0,0.14); }
+body.light-mode .info-section-h { color: #111827; }
+body.light-mode .info-bullets { color: rgba(25,35,50,0.78); }
+
+/* Building info panel (slug content) */
+body.light-mode #threeInfoBody .building-info-panel .bip-head {
+  background: rgba(255,255,255,0.74) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+body.light-mode #threeInfoBody .building-info-panel .bip-title { color: #111827 !important; }
+body.light-mode #threeInfoBody .building-info-panel .bip-subtitle { color: rgba(40,55,70,0.68) !important; }
+body.light-mode #threeInfoBody .building-info-panel .bip-section {
+  background: rgba(255,255,255,0.74) !important;
+  border-color: rgba(0,0,0,0.14) !important;
+}
+body.light-mode #threeInfoBody .building-info-panel .bip-section-header {
+  color: rgba(15,20,30,0.86) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+body.light-mode #threeInfoBody .building-info-panel .bip-table th {
+  background: rgba(0,0,0,0.05) !important;
+  color: rgba(15,20,30,0.86) !important;
+}
+body.light-mode #threeInfoBody .building-info-panel .bip-table th,
+body.light-mode #threeInfoBody .building-info-panel .bip-table td { border-color: rgba(0,0,0,0.07) !important; }
+body.light-mode #threeInfoBody .building-info-panel .bip-desc { color: rgba(15,20,30,0.84) !important; }
+body.light-mode #threeInfoBody .building-info-panel .bip-desc-empty { color: rgba(40,55,70,0.58) !important; }
+
+/* Legend color picker */
+body.light-mode #legendColorPicker {
+  background: rgba(242,244,247,0.98);
+  border-color: rgba(0,0,0,0.12);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.16);
+}
+body.light-mode #legendColorPicker .lcp-header { color: rgba(15,20,30,0.82); border-color: rgba(0,0,0,0.09); }
+body.light-mode #legendColorPicker .lcp-reset-btn {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.11);
+  color: rgba(15,20,30,0.60);
+}
+body.light-mode #legendColorPicker .lcp-reset-btn:hover { background: rgba(0,0,0,0.10); color: #111827; }
+
+/* Buttons in panels */
+body.light-mode .btn-outline-secondary {
+  color: #111827 !important;
+  border-color: rgba(0,0,0,0.18) !important;
+  background: rgba(255,255,255,0.55) !important;
+}
+body.light-mode .btn-outline-secondary:hover {
+  background: rgba(255,255,255,0.80) !important;
+  border-color: rgba(0,0,0,0.30) !important;
+}
+body.light-mode #page5 .panel .btn,
+body.light-mode #page6 .panel .btn,
+body.light-mode #page7 .panel .btn {
+  color: #111827 !important;
+  border-color: rgba(0,0,0,0.16) !important;
+  background: rgba(255,255,255,0.55) !important;
+}
+body.light-mode #page5 .panel .btn:hover,
+body.light-mode #page6 .panel .btn:hover,
+body.light-mode #page7 .panel .btn:hover {
+  background: rgba(255,255,255,0.80) !important;
+  border-color: rgba(0,0,0,0.28) !important;
+  color: #000 !important;
+}
+
+/* Video & carousel */
+body.light-mode #page8 video {
+  border-color: rgba(0,0,0,0.09);
+  background: #e8eaed;
+}
+body.light-mode #page9 .carousel img {
+  border-color: rgba(0,0,0,0.09);
+  background: #e8eaed;
+}
+body.light-mode #page9 .carousel-indicators [data-bs-target] { background-color: rgba(0,0,0,0.28); }
+body.light-mode #page9 .carousel-indicators .active { background-color: rgba(0,0,0,0.82); }
+body.light-mode #page9 .carousel-control-prev-icon,
+body.light-mode #page9 .carousel-control-next-icon { filter: none !important; }
+
+/* Page 10 */
+body.light-mode #page10 h1 { color: #111827; }
+body.light-mode #page10 p { color: #6b7280; }
+
+/* Slug sandbox text */
+body.light-mode .slug-sandbox h1,
+body.light-mode .slug-sandbox h2,
+body.light-mode .slug-sandbox h3,
+body.light-mode .slug-sandbox h4,
+body.light-mode .slug-sandbox h5 { color: #111827; }
+body.light-mode .slug-sandbox .muted,
+body.light-mode .slug-sandbox .text-muted,
+body.light-mode .slug-sandbox small { color: rgba(40,55,70,0.72); }
+
+/* 3:1 ratio: welcome right zone tinting */
+@media (min-aspect-ratio: 3/1) {
+  body.light-mode #page1 .welcome-time-panel {
+    background: rgba(255,255,255,0.50) !important;
+    border-left-color: rgba(0,0,0,0.10) !important;
+  }
+  body.light-mode #page1 .welcome-content {
+    border-right-color: rgba(0,0,0,0.10);
+  }
+  body.light-mode #page1 .welcome-time-divider { background: rgba(0,0,0,0.14); }
+}
 </style>
 
 </head>
@@ -1964,6 +2341,26 @@ body.mode-interactive #page7 .three-panel {
       <div class="collapse navbar-collapse justify-content-end" id="navbarMenu">
         <ul class="navbar-nav">
           <li class="nav-item">
+            <button class="theme-toggle-btn" id="themeToggleBtn" type="button" onclick="toggleTheme()" aria-label="Switch to light mode">
+              <!-- Sun icon — shown in dark mode -->
+              <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <!-- Moon icon — shown in light mode -->
+              <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </button>
+          </li>
+          <li class="nav-item">
             <div class="chart-mode-toggle" id="chartModeToggle" role="group" aria-label="Chart display mode">
               <button class="chart-mode-option" id="chartModeBarBtn" type="button" onclick="setChartMode('bar')">Bar</button>
               <button class="chart-mode-option" id="chartModeLineBtn" type="button" onclick="setChartMode('line')">Line</button>
@@ -1973,7 +2370,7 @@ body.mode-interactive #page7 .three-panel {
             <% if (user) { %>
               <div class="account-menu-wrap">
                 <button class="btn btn-outline-secondary account-pill" id="accountMenuButton" type="button" aria-expanded="false" aria-controls="accountMenu">
-                  <img class="account-pill-avatar" src="<%= user.profile_picture || user.profilePicture || user.avatar || user.avatar_url || '/images/RPlogo.png' %>" alt="<%= user.account %> profile picture">
+                  <img class="account-pill-avatar" src="<%= user.profile_picture || user.profilePicture || user.avatar || user.avatar_url || '/images/pfp.jpg' %>" alt="<%= user.account %> profile picture">
                   <span class="account-pill-name"><%= user.account %></span>
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                     <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -1981,7 +2378,7 @@ body.mode-interactive #page7 .three-panel {
                 </button>
                 <div class="account-menu" id="accountMenu" role="menu" aria-labelledby="accountMenuButton">
                   <div class="account-profile">
-                    <img class="account-avatar" src="<%= user.profile_picture || user.profilePicture || user.avatar || user.avatar_url || '/images/RPlogo.png' %>" alt="<%= user.account %> profile picture">
+                    <img class="account-avatar" src="<%= user.profile_picture || user.profilePicture || user.avatar || user.avatar_url || '/images/pfp.jpg' %>" alt="<%= user.account %> profile picture">
                     <div class="account-greeting">Hello, <%= user.account %>!</div>
                   </div>
                   <div class="account-actions">
@@ -2527,9 +2924,52 @@ body.mode-interactive #page7 .three-panel {
     // ============================================================
     // CHART OPTIONS + HELPERS
     // ============================================================
-    const CHART_TEXT_COLOR = "rgba(255,255,255,0.50)";   // tick labels + bar value labels
-    const CHART_AXIS_COLOR = "rgba(255,255,255,0.15)";   // axis border lines
-    const CHART_GRID_COLOR = "rgba(255,255,255,0.07)";   // grid lines (minimal)
+    let CHART_TEXT_COLOR = "rgba(255,255,255,0.50)";
+    let CHART_AXIS_COLOR = "rgba(255,255,255,0.15)";
+    let CHART_GRID_COLOR = "rgba(255,255,255,0.07)";
+
+    // ============================================================
+    // THEME (LIGHT / DARK MODE)
+    // ============================================================
+    function updateThemeToggleUI() {
+      const isLight = document.body.classList.contains("light-mode");
+      const sunIcon = document.getElementById("themeIconSun");
+      const moonIcon = document.getElementById("themeIconMoon");
+      if (sunIcon) sunIcon.style.display = isLight ? "none" : "";
+      if (moonIcon) moonIcon.style.display = isLight ? "" : "none";
+      const btn = document.getElementById("themeToggleBtn");
+      if (btn) btn.setAttribute("aria-label", isLight ? "Switch to dark mode" : "Switch to light mode");
+    }
+
+    function applyTheme(theme) {
+      const isLight = theme === "light";
+      document.body.classList.toggle("light-mode", isLight);
+      CHART_TEXT_COLOR = isLight ? "rgba(0,0,0,0.55)"  : "rgba(255,255,255,0.50)";
+      CHART_AXIS_COLOR = isLight ? "rgba(0,0,0,0.15)"  : "rgba(255,255,255,0.15)";
+      CHART_GRID_COLOR = isLight ? "rgba(0,0,0,0.07)"  : "rgba(255,255,255,0.07)";
+      updateThemeToggleUI();
+      if (typeof refreshCurrentChart === "function") refreshCurrentChart();
+    }
+
+    function toggleTheme() {
+      const next = document.body.classList.contains("light-mode") ? "dark" : "light";
+      try { localStorage.setItem("rpTheme", next); } catch(e) {}
+      applyTheme(next);
+    }
+
+    // Apply saved theme immediately (before first chart draw)
+    (function() {
+      try {
+        if (localStorage.getItem("rpTheme") === "light") {
+          document.body.classList.add("light-mode");
+          CHART_TEXT_COLOR = "rgba(0,0,0,0.55)";
+          CHART_AXIS_COLOR = "rgba(0,0,0,0.15)";
+          CHART_GRID_COLOR = "rgba(0,0,0,0.07)";
+        }
+      } catch(e) {}
+      updateThemeToggleUI();
+    })();
+
     let chartDisplayMode = (function() {
       try {
         return localStorage.getItem("rpChartDisplayMode") === "line" ? "line" : "bar";
@@ -2650,13 +3090,20 @@ body.mode-interactive #page7 .three-panel {
       return {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 900, easing: "easeOutBack" },
+        // Entry: data scans in left-to-right with exponential deceleration (analytical lock-in)
+        // Update: flat 600 ms easeOutQuart for crisp year/building switches (no stagger)
+        animation: { duration: 600, easing: "easeOutQuart" },
         animations: {
           y: {
+            easing: "easeOutExpo",
+            duration: 900,
             from: 0,
             delay(context) {
-              if (context.type === "data" && context.mode === "default") return context.dataIndex * 70;
-              return 0;
+              if (context.type !== "data" || context.mode !== "default") return 0;
+              // Line: pure left-to-right signal draw — no dataset offset
+              if (chartDisplayMode === "line") return context.dataIndex * 36;
+              // Bar: scan across columns, each dataset starts slightly after the previous
+              return context.datasetIndex * 55 + context.dataIndex * 22;
             }
           }
         },

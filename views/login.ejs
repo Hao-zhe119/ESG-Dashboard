@@ -176,6 +176,48 @@
         /* Weight hierarchy */
         .card-title { font-weight: 700; }
         .form-label { font-weight: 500; color: rgba(255,255,255,0.88); }
+
+        /* ---- Light mode ---- */
+        body.light-mode::before { background-image: url("/images/rp-lightmode.jpeg"); }
+        body.light-mode::after  { background-color: rgba(255,255,255,0.28); }
+        body.light-mode .card {
+            background-color: rgba(255,255,255,0.82);
+            border-color: rgba(0,0,0,0.10);
+            color: #111827;
+        }
+        body.light-mode .card .form-control {
+            background-color: rgba(255,255,255,0.70);
+            border-color: rgba(0,0,0,0.16);
+            color: #111827;
+        }
+        body.light-mode .card .form-control::placeholder { color: rgba(0,0,0,0.38); }
+        body.light-mode .card .form-text,
+        body.light-mode .card .text-muted { color: rgba(0,0,0,0.55) !important; }
+        body.light-mode .card .btn-outline-secondary {
+            color: #111827; border-color: rgba(0,0,0,0.16); background: rgba(0,0,0,0.04);
+        }
+        body.light-mode .btn-mono {
+            color: #111827 !important; background: rgba(255,255,255,0.65) !important;
+            border-color: rgba(0,0,0,0.18) !important;
+        }
+        body.light-mode .btn-mono:hover { background: rgba(255,255,255,0.85) !important; }
+        body.light-mode .alert-mono {
+            background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.80);
+        }
+        body.light-mode .alert-mono strong { color: #111827; }
+        body.light-mode .back-link { color: rgba(0,0,0,0.55); }
+        body.light-mode .back-link:hover { color: #000; }
+        body.light-mode .footer-text { color: rgba(0,0,0,0.75) !important; text-shadow: none; }
+        body.light-mode .form-label { color: rgba(0,0,0,0.80); }
+        body.light-mode .card-title { color: #111827; }
+        body.light-mode .disabled-input {
+            background-color: rgba(0,0,0,0.05) !important;
+            color: rgba(0,0,0,0.45) !important;
+        }
+        body.light-mode .navbar .btn {
+            color: #111827 !important; background: rgba(255,255,255,0.65) !important;
+            border-color: rgba(0,0,0,0.18) !important;
+        }
     </style>
 </head>
 <body>
@@ -425,6 +467,12 @@
             }
         })();
 
+    </script>
+
+    <script>
+      (function() {
+        try { if (localStorage.getItem("rpTheme") === "light") document.body.classList.add("light-mode"); } catch(e) {}
+      })();
     </script>
 
 </body>

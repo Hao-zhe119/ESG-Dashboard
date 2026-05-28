@@ -544,6 +544,51 @@
     border: 1px solid rgba(255,255,255,0.16);
     color: #f8fafc;
   }
+
+  /* ---- Light mode ---- */
+  body.light-mode::before { background-image: url("/images/rp-lightmode.jpeg"); }
+  body.light-mode::after  { background-color: rgba(255,255,255,0.28); }
+  body.light-mode {
+    --bg: #f0f2f5; --sideBg: rgba(245,246,248,0.90); --txt: #111827;
+    --muted: rgba(0,0,0,0.55); --cardBg: rgba(255,255,255,0.80);
+    --bd: rgba(0,0,0,0.10); --pill: rgba(0,0,0,0.06); --pillActive: rgba(0,0,0,0.12);
+    color: #111827;
+  }
+  body.light-mode .admin-side { background: var(--sideBg); border-color: var(--bd); }
+  body.light-mode .admin-side .nav-link { color: rgba(0,0,0,0.70); }
+  body.light-mode .admin-side .nav-link:hover { color: #000; background: var(--pill); }
+  body.light-mode .admin-side .nav-link.active { color: #000; background: var(--pillActive); }
+  body.light-mode .section-card { background: var(--cardBg); border-color: var(--bd); color: #111827; }
+  body.light-mode .section-meta { color: rgba(0,0,0,0.55); }
+  body.light-mode .admin-navbar { background: transparent !important; }
+  body.light-mode .btn-mono {
+    color: #111827 !important; background: rgba(255,255,255,0.65) !important;
+    border-color: rgba(0,0,0,0.18) !important;
+  }
+  body.light-mode .btn-mono:hover { background: rgba(255,255,255,0.85) !important; border-color: rgba(0,0,0,0.30) !important; }
+  body.light-mode .media-row { border-color: rgba(0,0,0,0.14); background: rgba(255,255,255,0.50); }
+  body.light-mode .media-thumb { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.10); }
+  body.light-mode .upload-card { background: rgba(255,255,255,0.50); border-color: rgba(0,0,0,0.10); }
+  body.light-mode .building-year-row { background: rgba(255,255,255,0.50); border-color: rgba(0,0,0,0.10); }
+  body.light-mode .building-year-row .building-name { color: #111827; }
+  body.light-mode .data-type-label { color: #6b7280; border-color: rgba(0,0,0,0.08); }
+  body.light-mode .table-dark { color: #111827; }
+  body.light-mode .save-chip { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.70); }
+  body.light-mode .select2-container--default .select2-selection--single,
+  body.light-mode .select2-container--default .select2-selection--multiple {
+    background-color: rgba(255,255,255,0.70); border-color: rgba(0,0,0,0.16); color: #111827;
+  }
+  body.light-mode .select2-container--default .select2-selection__rendered { color: #111827; }
+  body.light-mode .select2-container--default .select2-dropdown {
+    background-color: rgba(245,246,248,0.98); border-color: rgba(0,0,0,0.14);
+  }
+  body.light-mode .select2-container--default .select2-results__option { color: #111827; }
+  body.light-mode .select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: rgba(0,0,0,0.08); color: #000;
+  }
+  body.light-mode .select2-search--dropdown .select2-search__field {
+    background-color: rgba(255,255,255,0.80); border-color: rgba(0,0,0,0.14); color: #111827;
+  }
   </style>
 </head>
 
@@ -2366,6 +2411,12 @@
     });
 
   });
+  </script>
+
+  <script>
+    (function() {
+      try { if (localStorage.getItem("rpTheme") === "light") document.body.classList.add("light-mode"); } catch(e) {}
+    })();
   </script>
 
 </body>
