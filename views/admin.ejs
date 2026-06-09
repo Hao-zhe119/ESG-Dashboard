@@ -1621,10 +1621,15 @@
     async function postJson(url, body) {
       const response = await fetch(url, {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body || {})
       });
       const json = await response.json().catch(function() { return {}; });
+      if (response.status === 401) {
+        location.href = "/login";
+        throw new Error(json.error || "Session expired. Please log in again.");
+      }
       if (!response.ok || json.ok === false) {
         throw new Error(json.error || response.statusText || "Request failed");
       }
@@ -1703,8 +1708,15 @@
       }
       if (!confirm("Delete this timer profile?")) return;
       try {
-        const response = await fetch("/admin/timer-profiles/" + encodeURIComponent(profileId), { method: "DELETE" });
-        const json = await response.json();
+        const response = await fetch("/admin/timer-profiles/" + encodeURIComponent(profileId), {
+          method: "DELETE",
+          credentials: "same-origin"
+        });
+        const json = await response.json().catch(function() { return {}; });
+        if (response.status === 401) {
+          location.href = "/login";
+          throw new Error(json.error || "Session expired. Please log in again.");
+        }
         if (!response.ok || json.ok === false) throw new Error(json.error || "Delete failed");
         refreshTimerProfileSelect(json.profiles || []);
         setTimerProfileStatus("Profile deleted.", "success");

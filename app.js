@@ -1711,7 +1711,15 @@ app.get("/", async (req, res) => {
    BUILDING CONTROLS
 ============================== */
 function requireAuth(req, res, next) {
-  if (!req.session || !req.session.user) return res.status(401).send("Unauthorized - Please login.");
+  if (!req.session || !req.session.user) {
+    const wantsJson =
+      req.accepts(["json", "html"]) === "json" ||
+      String(req.get("content-type") || "").includes("application/json");
+    if (wantsJson) {
+      return res.status(401).json({ ok: false, error: "Session expired. Please log in again." });
+    }
+    return res.status(401).send("Unauthorized - Please login.");
+  }
   next();
 }
 
