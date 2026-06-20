@@ -114,12 +114,14 @@
 
     /* Inner dot */
     .hotspot-dot {
-      width: 13px; height: 13px; border-radius: 50%;
+      width: 18px; height: 18px; border-radius: 50%;
       background: currentColor;
-      box-shadow: 0 0 10px currentColor, 0 0 24px currentColor;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 12px currentColor, 0 0 28px currentColor, 0 0 4px #000;
       transition: transform 0.25s, box-shadow 0.25s;
       position: relative; z-index: 2;
     }
+    
     .hotspot:hover .hotspot-dot, .hotspot.active .hotspot-dot {
       transform: scale(1.6);
       box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
@@ -349,7 +351,7 @@
     auto-rotate-delay="4000"
     rotation-per-second="5deg"
     min-camera-orbit="auto 20deg 60%"
-    max-camera-orbit="auto 82deg 130%"
+    max-camera-orbit="auto 82deg 90%"
     min-field-of-view="25deg"
     max-field-of-view="45deg"
     interpolation-decay="80"
@@ -526,6 +528,7 @@
     // Store the original orbit after model finishes loading — reset always returns here
     let originalOrbit  = HOME_ORBIT;
     let originalTarget = HOME_TARGET;
+    let maxZoomRadius  = null; 
 
     viewer.addEventListener('progress', e => {
       loadFill.style.width = (e.detail.totalProgress * 100).toFixed(0) + '%';
@@ -543,6 +546,7 @@
         setTimeout(() => {
           originalOrbit  = HOME_ORBIT;
           originalTarget = HOME_TARGET;
+          maxZoomRadius = viewer.getCameraOrbit().radius;
         }, 600);
       }, 120);
     });
@@ -563,7 +567,7 @@
     const dataCache = {};
     function loadBuildingData(slug, name) {
       panelTitle.textContent = name;
-      panelViewBtn.setAttribute('href', `/building-left/${slug}`);
+      panelViewBtn.setAttribute('href', `/?building=${slug}`);
       panelMetrics.innerHTML = '<div class="info-panel-loading">Loading data...</div>';
 
       if (dataCache[slug]) { renderMetrics(dataCache[slug]); return; }
@@ -745,7 +749,9 @@
 
     document.getElementById('zoomOut').addEventListener('click', () => {
       const o = getOrbit();
-      viewer.cameraOrbit = `${o.theta}rad ${o.phi}rad ${o.radius * 1.35}m`;
+      let newR = o.radius * 1.35;
+      if (maxZoomRadius !== null) newR = Math.min(newR, maxZoomRadius);
+      viewer.cameraOrbit = `${o.theta}rad ${o.phi}rad ${newR}m`;
     });
 
     let isResetting = false;
@@ -753,13 +759,27 @@
     function resetToHome() {
       isResetting = true;
       clearTimeout(viewer._resumeTimer);
-      viewer.autoRotate   = false;
-      viewer.cameraTarget = originalTarget;
-      viewer.cameraOrbit  = originalOrbit;
+      viewer.autoRotate = false;
+
+      const applyHome = () => {
+        viewer.cameraTarget = originalTarget;
+        viewer.cameraOrbit  = originalOrbit;
+      };
+
+      applyHome();                  // 0ms
+      setTimeout(applyHome, 50);    // 50ms
+      setTimeout(applyHome, 600);   // 600ms
+
+    
       setTimeout(() => {
         isResetting = false;
-        viewer.autoRotate = cycleRunning;
+        viewer.autoRotate = false;
       }, 800);
+
+
+      viewer._resumeTimer = setTimeout(() => {
+        if (cycleRunning) viewer.autoRotate = true;
+      }, 3000);
     }
 
     document.getElementById('resetView').addEventListener('click', resetToHome);
@@ -777,7 +797,6 @@
     });
 
 
-
     // ── START ──
     viewer.addEventListener('load', () => {
       setTimeout(() => { showCycleBuilding(); }, 800);
@@ -785,3 +804,5 @@
   </script>
 </body>
 </html>
+
+
