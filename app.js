@@ -1781,11 +1781,6 @@ app.get("/buildingControls", async (req, res) => {
 app.get('/interactivemap', (req, res) => {res.render('interactivemap');});
 
 /* ==============================
-   LOCAL LLM ASSISTANT (Ollama)
-   ------------------------------
-   Talks to a locally-running Ollama server. No data leaves the machine.
-   Configurable via databaseinfo.env if the model/host ever changes.
-============================== */
 const OLLAMA_HOST  = process.env.OLLAMA_HOST  || "http://127.0.0.1:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
 
@@ -1940,7 +1935,6 @@ app.post("/api/chat", async (req, res) => {
    ADMIN: EXPORT ALL DATA TO EXCEL
    ------------------------------
    One multi-sheet .xlsx with every ESG dataset for the account. No AI involved.
-============================== */
 app.get("/admin/export-excel", requireAuth, async (req, res) => {
   try {
     const accountId = getAccountId(req);
