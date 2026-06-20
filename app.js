@@ -1785,6 +1785,244 @@ app.get('/interactivemap', (req, res) => {res.render('interactivemap');});
    ------------------------------
    Talks to a locally-running Ollama server. No data leaves the machine.
    Configurable via databaseinfo.env if the model/host ever changes.
+============================== */
+const OLLAMA_HOST  = process.env.OLLAMA_HOST  || "http://127.0.0.1:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
+
+const ASSISTANT_SYSTEM_PROMPT =
+  "You are the assistant for the Republic Polytechnic (RP) ESG Sustainability Dashboard. " +
+  "ESG stands for Environmental, Social, and Governance. Help visitors understand " +
+  "sustainability topics such as electricity use, water use, solar energy, and waste. " +
+  "Keep answers short, clear, and friendly. " +
+  "A section titled 'REAL DASHBOARD DATA' is provided below with the actual figures. " +
+  "When asked about specific numbers, buildings, years, or trends, use ONLY the figures in that " +
+  "section. Do NOT invent or estimate numbers. If a requested figure is not in the data, say you " +
+  "don't have that figure rather than guessing.";
+
+// ---- Real ESG data context (the model phrases these; it never computes them) ----
+const fmtNum = n => Number(n || 0).toLocaleString("en-US");
+let _esgCtxCache = { ts: 0, accountId: null, text: "" };
+const ESG_CTX_TTL_MS = 5 * 60 * 1000; // refresh at most every 5 min
+
+async function buildEsgDataContext(accountId) {
+  // Serve from cache when fresh (data only changes on admin upload)
+  if (_esgCtxCache.text &&
+      _esgCtxCache.accountId === accountId &&
+      (Date.now() - _esgCtxCache.ts) < ESG_CTX_TTL_MS) {
+    return _esgCtxCache.text;
+  }
+
+  const [years, elecYear, elecTop, waterYear, solarYear, wasteYear, bldgCount] = await Promise.all([
+    db.query("SELECT year FROM year_range WHERE account_id=? ORDER BY year", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(total_bill) v FROM total_ebills WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT building_name, SUM(bill_amount) v FROM building_ebills WHERE account_id=? GROUP BY building_name ORDER BY v DESC LIMIT 6", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(portable_water) p, SUM(recycled_water) r FROM total_waterusage WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(urban_renewables) u, SUM(green_house) g FROM total_solardata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(general_kg) gen, SUM(recyclable_kg) rec FROM total_wastedata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT COUNT(*) n FROM building_info WHERE account_id=?", [accountId]),
+  ]);
+
+  const yearList = years[0].map(r => r.year);
+  const L = [];
+  L.push("===== REAL DASHBOARD DATA =====");
+  L.push("Units: electricity & solar in kWh, water in m³ (cubic metres), waste in kg.");
+  L.push("Reporting years available: " + (yearList.length ? yearList.join(", ") : "none") + ". " +
+         "Buildings tracked: " + fmtNum(bldgCount[0][0].n) + ".");
+
+  L.push("\nELECTRICITY USE — total campus (kWh):");
+  elecYear[0].forEach(r => L.push(`  ${r.y}: ${fmtNum(r.v)} kWh`));
+
+  L.push("Top buildings by electricity use (all available years combined):");
+  elecTop[0].forEach((r, i) => L.push(`  ${i + 1}. ${r.building_name}: ${fmtNum(r.v)} kWh`));
+
+  L.push("\nWATER USE — total campus (m³):");
+  waterYear[0].forEach(r => {
+    const tot = Number(r.p || 0) + Number(r.r || 0);
+    L.push(`  ${r.y}: ${fmtNum(tot)} m³ total (potable ${fmtNum(r.p)}, recycled ${fmtNum(r.r)})`);
+  });
+
+  L.push("\nSOLAR ENERGY GENERATED (kWh):");
+  solarYear[0].forEach(r => {
+    const tot = Number(r.u || 0) + Number(r.g || 0);
+    L.push(`  ${r.y}: ${fmtNum(tot)} kWh (urban renewables ${fmtNum(r.u)}, green house ${fmtNum(r.g)})`);
+  });
+
+  L.push("\nWASTE (kg):");
+  wasteYear[0].forEach(r => {
+    const gen = Number(r.gen || 0), rec = Number(r.rec || 0), tot = gen + rec;
+    if (tot === 0) return; // skip years with no waste data yet
+    const pct = ((rec / tot) * 100).toFixed(1);
+    L.push(`  ${r.y}: general ${fmtNum(gen)} kg, recyclable ${fmtNum(rec)} kg (recycled share ${pct}%)`);
+  });
+
+  L.push("===== END DATA =====");
+
+  const text = L.join("\n");
+  _esgCtxCache = { ts: Date.now(), accountId, text };
+  return text;
+}
+
+// Render the standalone chat page
+app.get("/assistant", (req, res) => {
+  res.render("assistant", { model: OLLAMA_MODEL });
+});
+
+// Streaming chat endpoint: browser -> here -> Ollama -> stream tokens back
+app.post("/api/chat", async (req, res) => {
+  try {
+    const incoming = Array.isArray(req.body && req.body.messages) ? req.body.messages : [];
+
+    // Keep only valid user/assistant turns, cap history + length to stay fast & safe
+    const history = incoming
+      .filter(m => m && typeof m.content === "string" &&
+                   (m.role === "user" || m.role === "assistant") &&
+                   m.content.trim().length > 0)
+      .slice(-10)
+      .map(m => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
+
+    if (history.length === 0) {
+      return res.status(400).json({ error: "No message provided." });
+    }
+
+    // Build the system prompt with the account's real ESG figures injected.
+    let systemContent = ASSISTANT_SYSTEM_PROMPT;
+    try {
+      const dataContext = await buildEsgDataContext(getAccountId(req));
+      systemContent += "\n\n" + dataContext;
+    } catch (e) {
+      console.error("[/api/chat] could not load ESG data context:", e.message);
+      // Fall back to the general assistant without live data rather than failing.
+    }
+
+    const messages = [{ role: "system", content: systemContent }, ...history];
+
+    const ollamaRes = await fetch(`${OLLAMA_HOST}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream: true })
+    });
+
+    if (!ollamaRes.ok || !ollamaRes.body) {
+      return res.status(502).json({ error: "The assistant model did not respond. Is Ollama running?" });
+    }
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    // Ollama streams newline-delimited JSON; forward only the text tokens.
+    let buffer = "";
+    for await (const chunk of ollamaRes.body) {
+      buffer += Buffer.from(chunk).toString("utf8");
+      const lines = buffer.split("\n");
+      buffer = lines.pop(); // keep any partial line for the next chunk
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+          const obj = JSON.parse(trimmed);
+          if (obj.message && obj.message.content) res.write(obj.message.content);
+        } catch (_) { /* ignore non-JSON keep-alive lines */ }
+      }
+    }
+    res.end();
+  } catch (err) {
+    console.error("[/api/chat] error:", err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Assistant unavailable. Make sure Ollama is running (ollama serve)." });
+    } else {
+      res.end();
+    }
+  }
+});
+
+/* ==============================
+   ADMIN: EXPORT ALL DATA TO EXCEL
+   ------------------------------
+   One multi-sheet .xlsx with every ESG dataset for the account. No AI involved.
+============================== */
+app.get("/admin/export-excel", requireAuth, async (req, res) => {
+  try {
+    const accountId = getAccountId(req);
+    const ym = d => (d instanceof Date ? d.toISOString().slice(0, 7) : String(d || "").slice(0, 7)); // YYYY-MM
+    const num = v => (v == null ? null : Number(v));
+
+    // Pull every dataset for this account
+    const [
+      [elecYear], [waterYear], [solarYear], [wasteYear],
+      [totElec], [bldgElec], [totWater], [bldgWater],
+      [solar], [waste], [buildings]
+    ] = await Promise.all([
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(total_bill)) `Electricity (kWh)` FROM total_ebills WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(portable_water)) `Potable Water (m3)`, ROUND(SUM(recycled_water)) `Recycled Water (m3)` FROM total_waterusage WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(urban_renewables)) `Urban Renewables (kWh)`, ROUND(SUM(green_house)) `Green House (kWh)` FROM total_solardata WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(general_kg)) `General (kg)`, ROUND(SUM(recyclable_kg)) `Recyclable (kg)` FROM total_wastedata WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT bill_month, total_bill FROM total_ebills WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT building_name, bill_month, bill_amount FROM building_ebills WHERE account_id=? ORDER BY building_name, bill_month", [accountId]),
+      db.query("SELECT bill_month, portable_water, recycled_water FROM total_waterusage WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT building_name, bill_month, water_used FROM building_waterusage WHERE account_id=? ORDER BY building_name, bill_month", [accountId]),
+      db.query("SELECT bill_month, urban_renewables, green_house FROM total_solardata WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT bill_month, general_kg, recyclable_kg, general_percent, recyclable_percent FROM total_wastedata WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT building_name, `desc`, display_label, card_label, elec_startyear, elec_endyear, water_startyear, water_endyear FROM building_info WHERE account_id=? ORDER BY building_name", [accountId]),
+    ]);
+
+    // Build a yearly Summary sheet (recycled share computed in code = exact)
+    const years = new Map();
+    const touch = y => { if (!years.has(y)) years.set(y, { Year: y }); return years.get(y); };
+    elecYear.forEach(r => { touch(r.Year)["Electricity (kWh)"] = num(r["Electricity (kWh)"]); });
+    waterYear.forEach(r => {
+      const row = touch(r.Year);
+      row["Potable Water (m3)"]  = num(r["Potable Water (m3)"]);
+      row["Recycled Water (m3)"] = num(r["Recycled Water (m3)"]);
+    });
+    solarYear.forEach(r => {
+      const row = touch(r.Year);
+      row["Solar Generated (kWh)"] = num(r["Urban Renewables (kWh)"]) + num(r["Green House (kWh)"]);
+    });
+    wasteYear.forEach(r => {
+      const row = touch(r.Year);
+      const g = num(r["General (kg)"]) || 0, rc = num(r["Recyclable (kg)"]) || 0;
+      row["Waste General (kg)"]   = g;
+      row["Waste Recyclable (kg)"] = rc;
+      row["Recycled Share (%)"]   = (g + rc) ? Number(((rc / (g + rc)) * 100).toFixed(1)) : 0;
+    });
+    const summaryCols = ["Electricity (kWh)", "Potable Water (m3)", "Recycled Water (m3)",
+                         "Solar Generated (kWh)", "Waste General (kg)", "Waste Recyclable (kg)"];
+    const summary = Array.from(years.values())
+      .filter(r => summaryCols.some(k => Number(r[k]) > 0)) // drop years with no data (e.g. empty 2026)
+      .sort((a, b) => a.Year - b.Year);
+
+    // Shape detail sheets with clean, formatted columns
+    const sElecTot  = totElec.map(r  => ({ Month: ym(r.bill_month), "Electricity (kWh)": num(r.total_bill) }));
+    const sElecBldg = bldgElec.map(r => ({ Building: r.building_name, Month: ym(r.bill_month), "Electricity (kWh)": num(r.bill_amount) }));
+    const sWaterTot = totWater.map(r => ({ Month: ym(r.bill_month), "Potable (m3)": num(r.portable_water), "Recycled (m3)": num(r.recycled_water) }));
+    const sWaterBl  = bldgWater.map(r => ({ Building: r.building_name, Month: ym(r.bill_month), "Water Used (m3)": num(r.water_used) }));
+    const sSolar    = solar.map(r    => ({ Month: ym(r.bill_month), "Urban Renewables (kWh)": num(r.urban_renewables), "Green House (kWh)": num(r.green_house) }));
+    const sWaste    = waste.map(r    => ({ Month: ym(r.bill_month), "General (kg)": num(r.general_kg), "Recyclable (kg)": num(r.recyclable_kg), "General %": num(r.general_percent), "Recyclable %": num(r.recyclable_percent) }));
+    const sBldg     = buildings.map(r => ({ Building: r.building_name, Description: r.desc, "Display Label": r.display_label, "Card Label": r.card_label, "Elec Start": r.elec_startyear, "Elec End": r.elec_endyear, "Water Start": r.water_startyear, "Water End": r.water_endyear }));
+
+    const wb = XLSX.utils.book_new();
+    const add = (rows, name) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{}]), name);
+    add(summary,   "Summary by Year");
+    add(sElecTot,  "Electricity Total");
+    add(sElecBldg, "Electricity by Building");
+    add(sWaterTot, "Water Total");
+    add(sWaterBl,  "Water by Building");
+    add(sSolar,    "Solar");
+    add(sWaste,    "Waste");
+    add(sBldg,     "Buildings");
+
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Disposition", `attachment; filename="RP_ESG_Data_${stamp}.xlsx"`);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buf);
+  } catch (err) {
+    console.error("[/admin/export-excel] error:", err.message);
+    res.status(500).send("Could not generate the Excel export. Please try again.");
+  }
+});
+
 /* ==============================
    LOGIN ROUTES
 ============================== */
