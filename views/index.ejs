@@ -477,6 +477,24 @@ body.mode-interactive #progressBarContainer { display: none; }
   background: #000;
 }
 
+#page9 .carousel-item {
+  position: relative;
+}
+
+#page9 .carousel-caption-overlay {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: clamp(5px, 0.8vh, 10px) clamp(10px, 1.5vw, 20px);
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-weight: 500;
+  text-align: center;
+  z-index: 5;
+  border-radius: 6px;
+  max-width: 90%;
+  pointer-events: none;
+}
+
 /* ========================================
    PAGES 5, 6, 7: THREE-PANEL LAYOUT
    ======================================== */
@@ -1329,7 +1347,14 @@ body.mode-interactive #page7 .three-panel {
   <!-- PAGE 8: VIDEO -->
   <div id="page8" class="page<%= (!mediaVideos || !mediaVideos.length) ? ' page-skipped' : '' %>">
     <h2>RP Sustainability Video</h2>
-    <video id="esgVideoElement" controls autoplay playsinline></video>
+    <div id="videoWrapper" style="position:relative; display:inline-block; width:100%; max-width:100%;">
+      <video id="esgVideoElement" controls autoplay playsinline style="width:100%; display:block;"></video>
+      <div id="videoCaptionOverlay"
+           style="display:none; position:absolute; transform:translate(-50%,-50%);
+                  background:rgba(0,0,0,0.62); color:#fff; font-weight:500;
+                  text-align:center; border-radius:6px; max-width:90%;
+                  padding:6px 16px; pointer-events:none; z-index:5;"></div>
+    </div>
     <% if (!mediaVideos || !mediaVideos.length) { %>
       <p class="text-muted mt-3">No videos uploaded</p>
     <% } %>
@@ -1346,6 +1371,14 @@ body.mode-interactive #page7 .three-panel {
           <% mediaImages.forEach(function(img, index){ %>
             <div class="carousel-item <%= index === 0 ? 'active' : '' %>">
               <img src="/uploads/images/carousel/<%= img.filename %>" class="d-block w-100" />
+              <% if (img.caption_text) { %>
+                <div class="carousel-caption-overlay"
+                     style="left:<%= img.caption_x != null ? img.caption_x : 50 %>%;
+                            top:<%= img.caption_y != null ? img.caption_y : 85 %>%;
+                            font-size:<%= img.caption_font_size || 24 %>px;">
+                  <%= img.caption_text %>
+                </div>
+              <% } %>
             </div>
           <% }) %>
         <% } else { %>
@@ -1396,6 +1429,8 @@ body.mode-interactive #page7 .three-panel {
     const mediaImages = <%- JSON.stringify(mediaImages || []) %>;
     const building_label_map = <%- JSON.stringify(buildingLabelMap || {}) %>;
     const building_card_label_map = <%- JSON.stringify(buildingCardLabelMap || {}) %>;
+    const runtime_config = <%- JSON.stringify(runtimeConfig || {}) %>;
+    const access_profile = <%- JSON.stringify(accessProfile || 'public') %>;
 
     // ============================================================
     // TIMERS DATA
@@ -1408,17 +1443,18 @@ body.mode-interactive #page7 .three-panel {
     // TIMER CONFIGURATION
     // Default durations in milliseconds
     // ============================================================
+    const configured_default_timers_seconds = (runtime_config && runtime_config.defaultTimersSeconds) ? runtime_config.defaultTimersSeconds : {};
     const DEFAULT_PAGE_DURATIONS = {
-      1: 15000,    // Welcome: 15 seconds
-      2: 60000,   // Building Overview: 1 minutes
-      3: 60000,   // Electricity Compare: 1 minutes
-      4: 60000,   // Water Compare: 1 minutes
-      5: 60000,   // Building 3-Panel (per building cycle): 1 minutes
-      6: 60000,    // Solar (per year cycle): 1 minute
-      7: 60000,    // Waste (per year cycle): 1 minute
-      8: 4000,    // Video end countdown: 4 seconds
-      9: 30000,    // Carousel: 30 seconds per image
-      10: 15000    // Thank You: 15 seconds
+      1: Number(configured_default_timers_seconds[1] || configured_default_timers_seconds["1"] || 15) * 1000,
+      2: Number(configured_default_timers_seconds[2] || configured_default_timers_seconds["2"] || 60) * 1000,
+      3: Number(configured_default_timers_seconds[3] || configured_default_timers_seconds["3"] || 60) * 1000,
+      4: Number(configured_default_timers_seconds[4] || configured_default_timers_seconds["4"] || 60) * 1000,
+      5: Number(configured_default_timers_seconds[5] || configured_default_timers_seconds["5"] || 60) * 1000,
+      6: Number(configured_default_timers_seconds[6] || configured_default_timers_seconds["6"] || 60) * 1000,
+      7: Number(configured_default_timers_seconds[7] || configured_default_timers_seconds["7"] || 60) * 1000,
+      8: Number(configured_default_timers_seconds[8] || configured_default_timers_seconds["8"] || 4) * 1000,
+      9: Number(configured_default_timers_seconds[9] || configured_default_timers_seconds["9"] || 30) * 1000,
+      10: Number(configured_default_timers_seconds[10] || configured_default_timers_seconds["10"] || 15) * 1000
     };
 
     /**
@@ -2021,15 +2057,75 @@ body.mode-interactive #page7 .three-panel {
     }
 
     // ============================================================
+    // INTERACTIVE MODE AUTO-REVERT
+    // ============================================================
+    const interactive_config = (runtime_config && runtime_config.interactiveMode) ? runtime_config.interactiveMode : {};
+    const interactive_auto_revert_enabled = !!interactive_config.autoRevertEnabled;
+    const interactive_idle_timeout_ms = Math.max(1, Number(interactive_config.idleTimeoutMinutes || 15)) * 60 * 1000;
+    let interactiveLastActivityAt = Date.now();
+    let interactiveActivityPingTimer = null;
+    let interactiveRevertTimer = null;
+
+    function pingInteractiveActivity() {
+      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+      try {
+        fetch("/dashboard/interactive-activity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activityAt: new Date().toISOString() })
+        }).catch(() => {});
+      } catch (error) {}
+    }
+
+    function markInteractiveActivityClient() {
+      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+      interactiveLastActivityAt = Date.now();
+      if (interactiveActivityPingTimer) return;
+      interactiveActivityPingTimer = setTimeout(() => {
+        interactiveActivityPingTimer = null;
+        pingInteractiveActivity();
+      }, 1000);
+    }
+
+    function startInteractiveAutoRevertWatcher() {
+      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+      pingInteractiveActivity();
+      if (interactiveRevertTimer) clearInterval(interactiveRevertTimer);
+      interactiveRevertTimer = setInterval(async () => {
+        if (Date.now() - interactiveLastActivityAt < interactive_idle_timeout_ms) return;
+        try {
+          await fetch("/dashboard/interactive-revert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({})
+          });
+        } catch (error) {}
+        window.location.href = "/?mode=auto";
+      }, 5000);
+    }
+
+    ["mousemove", "mousedown", "keydown", "touchstart", "scroll"].forEach((eventName) => {
+      window.addEventListener(eventName, markInteractiveActivityClient, { passive: true });
+    });
+
+    // ============================================================
     // ADMIN VIDEO SETTINGS
     // ============================================================
     const ADMIN_VIDEO_SETTINGS_KEY = "esg_video_settings";
+    const ADMIN_VIDEO_SETTINGS_BY_FILE_KEY = "esg_video_settings_by_file";
     const ADMIN_VIDEO_SETTINGS_CHANNEL = "esg_video_settings_channel";
 
     function clamp01(inputValue) {
       const number = Number(inputValue);
       if (!isFinite(number)) return null;
       return Math.max(0, Math.min(1, number));
+    }
+
+    function parseAdminVideoTime(inputValue) {
+      if (inputValue === null || inputValue === undefined || String(inputValue).trim() === "") return null;
+      const number = Number(inputValue);
+      if (!isFinite(number) || number < 0) return null;
+      return Math.max(0, Math.floor(number));
     }
 
     function readAdminVideoSettings() {
@@ -2040,7 +2136,9 @@ body.mode-interactive #page7 .three-panel {
         if (!settings || typeof settings !== "object") return null;
         const volume = (settings.volume != null) ? clamp01(settings.volume) : null;
         const muted = (typeof settings.muted === "boolean") ? settings.muted : null;
-        return { volume: volume, muted };
+        const startTime = (settings.startTime != null) ? parseAdminVideoTime(settings.startTime) : null;
+        const duration = (settings.duration != null) ? parseAdminVideoTime(settings.duration) : null;
+        return { volume: volume, muted, startTime, duration };
       } catch (error) { return null; }
     }
 
@@ -2049,11 +2147,34 @@ body.mode-interactive #page7 .three-panel {
         const current = readAdminVideoSettings() || {};
         const merged = {
           volume: (next && next.volume != null) ? clamp01(next.volume) : current.volume,
-          muted: (next && typeof next.muted === "boolean") ? !!next.muted : current.muted
+          muted: (next && typeof next.muted === "boolean") ? !!next.muted : current.muted,
+          startTime: (next && next.startTime != null) ? parseAdminVideoTime(next.startTime) : current.startTime,
+          duration: (next && next.duration != null) ? parseAdminVideoTime(next.duration) : current.duration
         };
         localStorage.setItem(ADMIN_VIDEO_SETTINGS_KEY, JSON.stringify(merged));
         return merged;
       } catch (error) { return null; }
+    }
+
+    function readAdminVideoSettingsByFile() {
+      try {
+        const raw = localStorage.getItem(ADMIN_VIDEO_SETTINGS_BY_FILE_KEY);
+        if (!raw) return {};
+        const payload = JSON.parse(raw);
+        return (payload && typeof payload === "object") ? payload : {};
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function readAdminVideoSettingsForFile(filename) {
+      if (!filename) return null;
+      const fileSettings = readAdminVideoSettingsByFile();
+      const entry = (fileSettings && typeof fileSettings === "object") ? fileSettings[filename] : null;
+      if (!entry || typeof entry !== "object") return null;
+      const startTime = (entry.startTime != null) ? parseAdminVideoTime(entry.startTime) : null;
+      const duration = (entry.duration != null) ? parseAdminVideoTime(entry.duration) : null;
+      return { startTime, duration };
     }
 
     function applyAdminVideoSettingsToPlayer(videoElement) {
@@ -2070,11 +2191,50 @@ body.mode-interactive #page7 .three-panel {
       try { video.muted = !!targetMuted; } catch (error) {}
     }
 
+    function applyAdminVideoSegmentToPlayer(videoElement, filename) {
+      const video = videoElement || document.getElementById("esgVideoElement");
+      if (!video) return;
+      const settings = readAdminVideoSettings();
+      const fileSettings = readAdminVideoSettingsForFile(filename || video._adminFilename);
+      const startTime = (fileSettings && fileSettings.startTime != null)
+        ? fileSettings.startTime
+        : ((settings && settings.startTime != null) ? settings.startTime : 0);
+      const duration = (fileSettings && fileSettings.duration != null)
+        ? fileSettings.duration
+        : ((settings && settings.duration != null && settings.duration > 0) ? settings.duration : null);
+      const clampedStart = Math.max(0, startTime);
+      const segmentEnd = (duration != null && duration > 0) ? clampedStart + duration : null;
+      video._adminSegmentStart = clampedStart;
+      video._adminSegmentDuration = (duration != null && duration > 0) ? duration : null;
+      video._adminSegmentEnd = segmentEnd;
+
+      const seekToStart = () => {
+        if (!video.duration || !isFinite(video.duration)) return;
+        const safeStart = Math.min(clampedStart, video.duration);
+        if (Math.abs(video.currentTime - safeStart) > 0.5) {
+          try { video.currentTime = safeStart; } catch (_error) {}
+        }
+      };
+
+      if (video.readyState >= 1) {
+        seekToStart();
+      } else {
+        video.addEventListener("loadedmetadata", function onVideoLoaded() {
+          seekToStart();
+        }, { once: true });
+      }
+    }
+
+    function applyAdminVideoSettingsToPlayerAndSegment(videoElement, filename) {
+      applyAdminVideoSettingsToPlayer(videoElement);
+      applyAdminVideoSegmentToPlayer(videoElement, filename);
+    }
+
     (function initAdminVideoSettingsListeners() {
-      window.addEventListener("load", () => { applyAdminVideoSettingsToPlayer(); });
+      window.addEventListener("load", () => { applyAdminVideoSettingsToPlayerAndSegment(); });
       window.addEventListener("storage", (event) => {
-        if (event.key === ADMIN_VIDEO_SETTINGS_KEY) {
-          applyAdminVideoSettingsToPlayer();
+        if (event.key === ADMIN_VIDEO_SETTINGS_KEY || event.key === ADMIN_VIDEO_SETTINGS_BY_FILE_KEY) {
+          applyAdminVideoSettingsToPlayerAndSegment();
           if (!is_auto_mode && currentPageNumber === 8) sendVideoStateToControls();
         }
       });
@@ -2082,10 +2242,21 @@ body.mode-interactive #page7 .three-panel {
         const broadcastChannel = new BroadcastChannel(ADMIN_VIDEO_SETTINGS_CHANNEL);
         broadcastChannel.onmessage = (event) => {
           const message = event && event.data;
-          if (!message || message.type !== "ADMIN_VIDEO_SETTINGS") return;
-          saveAdminVideoSettings({ volume: message.volume, muted: message.muted });
-          applyAdminVideoSettingsToPlayer();
-          if (!is_auto_mode && currentPageNumber === 8) sendVideoStateToControls();
+        if (!message) return;
+        if (message.type === "ADMIN_VIDEO_SETTINGS") {
+          saveAdminVideoSettings({
+            volume: message.volume,
+            muted: message.muted,
+            startTime: message.startTime,
+            duration: message.duration
+          });
+          applyAdminVideoSettingsToPlayerAndSegment();
+        } else if (message.type === "ADMIN_VIDEO_SETTINGS_PER_FILE") {
+          applyAdminVideoSettingsToPlayerAndSegment();
+        } else {
+          return;
+        }
+        if (!is_auto_mode && currentPageNumber === 8) sendVideoStateToControls();
         };
       } catch (error) {}
     })();
@@ -3942,11 +4113,30 @@ body.mode-interactive #page7 .three-panel {
         stopProgressBarAnimation(); 
       }
 
+      const updateVideoCaption = (item) => {
+        const overlay = document.getElementById("videoCaptionOverlay");
+        if (!overlay) return;
+        if (item && item.caption_text) {
+          overlay.textContent  = item.caption_text;
+          overlay.style.left   = (item.caption_x != null ? item.caption_x : 50) + "%";
+          overlay.style.top    = (item.caption_y != null ? item.caption_y : 85) + "%";
+          overlay.style.fontSize = (item.caption_font_size || 24) + "px";
+          overlay.style.display  = "block";
+        } else {
+          overlay.style.display = "none";
+        }
+      };
+
+      let _segmentEndTriggered = false;
+
       const playAtIndex = (index) => {
+        _segmentEndTriggered = false;
         videoIndex = (index + playlist.length) % playlist.length;
         const item = playlist[videoIndex];
         video.src = "/uploads/videos/" + item.filename;
-        applyAdminVideoSettingsToPlayer(video);
+        video._adminFilename = item.filename;
+        applyAdminVideoSettingsToPlayerAndSegment(video, item.filename);
+        updateVideoCaption(item);
         tryPlayWithAutoplayFallback();
         setTimeout(sendVideoStateToControls, 120);
       };
@@ -3954,15 +4144,17 @@ body.mode-interactive #page7 .three-panel {
       videoBridgeSet(playlist.length, playAtIndex);
 
       const startEndCountdownThenNextPage = () => {
-        if (!is_auto_mode) return;
         if (progressBarContainerElement) progressBarContainerElement.style.display = "";
         hardResetProgressBar();
         runProgressForPage(8, getPageDuration(8), true);
       };
 
       video.onended = () => {
-        if (videoIndex >= playlist.length - 1) startEndCountdownThenNextPage();
-        else playAtIndex(videoIndex + 1);
+        if (videoIndex >= playlist.length - 1) {
+          if (is_auto_mode) startEndCountdownThenNextPage();
+        } else {
+          playAtIndex(videoIndex + 1);
+        }
         setTimeout(sendVideoStateToControls, 80);
       };
 
@@ -3972,13 +4164,31 @@ body.mode-interactive #page7 .three-panel {
         saveAdminVideoSettings({ volume: video.volume, muted: video.muted }); 
         setTimeout(sendVideoStateToControls, 50); 
       };
-      video.ontimeupdate = () => { 
-        if (!is_auto_mode && currentPageNumber === 8) sendVideoStateToControls(); 
+      video.ontimeupdate = () => {
+        const segmentStart = (typeof video._adminSegmentStart === "number" && isFinite(video._adminSegmentStart)) ? video._adminSegmentStart : 0;
+        const segmentEnd = (typeof video._adminSegmentEnd === "number" && isFinite(video._adminSegmentEnd) && video._adminSegmentEnd > 0) ? video._adminSegmentEnd : null;
+        if (segmentEnd !== null && !_segmentEndTriggered && video.currentTime >= segmentStart) {
+          if (video.currentTime + 0.05 >= segmentEnd) {
+            _segmentEndTriggered = true;
+            if (videoIndex >= playlist.length - 1) {
+              if (is_auto_mode) {
+                try { video.pause(); } catch (_error) {}
+                startEndCountdownThenNextPage();
+              } else {
+                try { video.pause(); } catch (_error) {}
+              }
+            } else {
+              playAtIndex(videoIndex + 1);
+            }
+          }
+        }
+        if (!is_auto_mode && currentPageNumber === 8) sendVideoStateToControls();
       };
 
       playAtIndex(0);
     }
 
+    // ============================================================
     // ============================================================
     // CAROUSEL PAGE
     // ============================================================
@@ -4013,8 +4223,8 @@ body.mode-interactive #page7 .three-panel {
         wrap: true 
       });
       
-      carouselElement.addEventListener("slid.bs.carousel", () => { 
-        sendCarouselStateToControls(); 
+      carouselElement.addEventListener("slid.bs.carousel", () => {
+        sendCarouselStateToControls();
       });
 
       if (!is_auto_mode) { 
@@ -4082,6 +4292,7 @@ body.mode-interactive #page7 .three-panel {
     window.addEventListener("message", (event) => {
       if (event.origin !== window.location.origin) return;
       if (!event.data) return;
+      markInteractiveActivityClient();
 
       if (event.data.type === "SET_BUILDING") {
         const buildingCode = normalizeBuildingKey(event.data.building);
