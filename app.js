@@ -1940,6 +1940,7 @@ app.post("/api/chat", async (req, res) => {
    ADMIN: EXPORT ALL DATA TO EXCEL
    ------------------------------
    One multi-sheet .xlsx with every ESG dataset for the account. No AI involved.
+============================== */
 app.get("/admin/export-excel", requireAuth, async (req, res) => {
   try {
     const accountId = getAccountId(req);
