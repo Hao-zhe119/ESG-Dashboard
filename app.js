@@ -4,19 +4,32 @@ const multer = require("multer");
 const session = require("express-session");
 const fs = require("fs");
 const path = require("path");
+const { execFile } = require("child_process");
 const XLSX = require("xlsx");
 const bcrypt = require("bcrypt");
+const {
+  readRuntimeConfig,
+  updateRuntimeConfig,
+  getDefaultTimerRows
+} = require("./config/dashboardConfig");
 const app = express();
-const RESET_PASSCODE = process.env.RESET_PASSCODE || "Reset@ESGDashboard!";
 
 require('dotenv').config({ path: './databaseinfo.env' });
+const RESET_PASSCODE = process.env.RESET_PASSCODE || "Reset@ESGDashboard!";
+const SESSION_SECRET = process.env.SESSION_SECRET || "dev-key";
+const OFFLINE_ADMIN_PASSWORD = process.env.OFFLINE_ADMIN_PASSWORD || RESET_PASSCODE;
+const OFFLINE_ADMIN_USER = {
+  id: 1,
+  account: "No-XAMPP Test Admin",
+  isOffline: true
+};
 
 /* ==============================
    SESSION SETUP
 ============================== */
 app.use(
   session({
-    secret: "dev-key",
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
   })
@@ -94,12 +107,21 @@ const connection = mysql.createConnection({
   database: process.env.DB_NAME,
 });
 
+let databaseAvailable = false;
+
 connection.connect((err) => {
   if (err) {
+    databaseAvailable = false;
     console.error('MySQL connection error:', err);
   } else {
+    databaseAvailable = true;
     console.log('Connected to MySQL as', process.env.DB_USER);
   }
+});
+
+connection.on("error", (err) => {
+  databaseAvailable = false;
+  console.error("MySQL runtime error:", err.message);
 });
 
 /* ==============================
@@ -170,11 +192,9 @@ async function getYearsForAccount(accountId) {
     return { allYears: [], latestYear: null };
   }
 }
-const multi_building_groups_by_page = {
-  3: ["E1", "E2", "E3", "E4", "E5", "E6"],          
-  4: ["W1", "W2", "W3", "W4", "W5", "W6"],          
-  5: ["ECMC", "RPC", "TRCC", "Sports Complex", "The Arch", "Green House"],  
-  6: ["BLK 43", "RPIC", "XLC", "ALC"],              
+function getBuildingGroupsByPage() {
+  const config = readRuntimeConfig();
+  return config.buildingPageGroups || {};
 }
 
 /**
@@ -454,6 +474,261 @@ async function getNextMediaSortOrder(accountId, mediaType) {
   return maxOrder + 1;
 }
 
+let healthMonitorId = null;
+let interactiveRevertMonitorId = null;
+let latestHealthSnapshot = {
+  status: "unknown",
+  checkedAt: null,
+  checks: {}
+};
+
+function boolFromRequest(value) {
+  return value === true || value === "true" || value === "1" || value === 1 || value === "on";
+}
+
+async function canUseDatabase() {
+  try {
+    await db.query("SELECT 1 AS ok");
+    databaseAvailable = true;
+    return true;
+  } catch (error) {
+    databaseAvailable = false;
+    return false;
+  }
+}
+
+function getFallbackTimerRows() {
+  return getDefaultTimerRows().map((row) => ({
+    timer_id: row.page_number,
+    page_number: row.page_number,
+    page_name: `Page ${row.page_number}`,
+    duration_seconds: row.duration_seconds
+  }));
+}
+
+function buildTimerMap(rows) {
+  const timerMap = {};
+  (rows || []).forEach((timer) => {
+    const pageNumber = parseInt(timer.page_number || timer.timer_id, 10);
+    const durationSeconds = Number(timer.duration_seconds) || 30;
+    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= 10) {
+      timerMap[pageNumber] = {
+        timer_id: Number(timer.timer_id || pageNumber),
+        page_number: pageNumber,
+        page_name: timer.page_name || `Page ${pageNumber}`,
+        duration_seconds: durationSeconds,
+        duration_ms: durationSeconds * 1000
+      };
+    }
+  });
+  return timerMap;
+}
+
+function emptyDashboardData() {
+  return {
+    allYears: [],
+    latestYear: null,
+    oldestYear: null,
+    newestYear: null,
+    overviewByYear: {},
+    solarByYear: {},
+    wasteByYear: {},
+    overviewYear1Rows: [],
+    overviewYear2Rows: [],
+    solarYear1Months: [],
+    solarYear2Months: [],
+    wasteYear1Months: [],
+    wasteYear2Months: [],
+    buildingMonthly: {},
+    buildingMonthlyByYear: {},
+    buildingYearRanges: {}
+  };
+}
+
+function isValidTimeString(value) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || ""));
+}
+
+function normalizeHibernateProfile(input) {
+  const name = String(input.name || "").trim();
+  const startTime = String(input.startTime || input.start_time || "").trim();
+  const endTime = String(input.endTime || input.end_time || "").trim();
+  if (!name) throw new Error("Profile name is required");
+  if (!isValidTimeString(startTime) || !isValidTimeString(endTime)) {
+    throw new Error("Start and end time must use HH:MM format");
+  }
+  return { name, startTime, endTime };
+}
+
+function normalizeTimerRows(rows) {
+  return (rows || [])
+    .map((row) => ({
+      page_number: Number(row.page_number),
+      page_name: row.page_name || `Page ${row.page_number}`,
+      duration_seconds: Math.max(0, Number(row.duration_seconds) || 0)
+    }))
+    .filter((row) => Number.isFinite(row.page_number))
+    .sort((a, b) => a.page_number - b.page_number);
+}
+
+async function getTimerRowsForAccount(accountId) {
+  const [rows] = await db.query(
+    `SELECT timer_id, page_number, page_name, duration_seconds
+     FROM timers
+     WHERE account_id = ?
+     ORDER BY page_number ASC`,
+    [accountId]
+  );
+  return normalizeTimerRows(rows);
+}
+
+async function upsertTimerRowsForAccount(accountId, timerRows) {
+  const currentRows = await getTimerRowsForAccount(accountId);
+  const pageNames = new Map(currentRows.map((row) => [row.page_number, row.page_name]));
+
+  for (const row of normalizeTimerRows(timerRows)) {
+    const pageNumber = Number(row.page_number);
+    const seconds = Math.max(0, Number(row.duration_seconds) || 0);
+    const pageName = row.page_name || pageNames.get(pageNumber) || `Page ${pageNumber}`;
+
+    const [updateResult] = await db.query(
+      `UPDATE timers
+       SET duration_seconds = ?
+       WHERE account_id = ? AND page_number = ?`,
+      [seconds, accountId, pageNumber]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      await db.query(
+        `INSERT INTO timers (account_id, page_number, page_name, duration_seconds)
+         VALUES (?, ?, ?, ?)`,
+        [accountId, pageNumber, pageName, seconds]
+      );
+    }
+  }
+}
+
+async function runHealthCheck() {
+  const checks = {
+    backend: { ok: true, message: "Express process is running", uptimeSeconds: Math.round(process.uptime()) },
+    process: {
+      ok: true,
+      message: "Node process is responsive",
+      pid: process.pid,
+      memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024)
+    },
+    database: { ok: false, message: "Not checked" },
+    dashboard: { ok: false, message: "Not checked" },
+    noXamppTestMode: { ok: true, message: databaseAvailable ? "Database mode" : "No-XAMPP test fallback available" }
+  };
+
+  try {
+    await db.query("SELECT 1 AS ok");
+    checks.database = { ok: true, message: "Database connection is healthy" };
+  } catch (error) {
+    checks.database = { ok: false, message: error.message };
+  }
+
+  try {
+    if (typeof fetch !== "function") {
+      const [tables] = await db.query("SHOW TABLES LIKE 'timers'");
+      checks.dashboard = {
+        ok: Array.isArray(tables) && tables.length > 0,
+        message: Array.isArray(tables) && tables.length > 0
+          ? "Dashboard timer table is accessible"
+          : "Dashboard timer table is missing"
+      };
+    } else {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      const response = await fetch(`http://127.0.0.1:${port}/`, { signal: controller.signal });
+      clearTimeout(timeout);
+      checks.dashboard = {
+        ok: response.ok,
+        message: response.ok ? "Dashboard route is accessible" : `Dashboard returned HTTP ${response.status}`
+      };
+    }
+  } catch (error) {
+    checks.dashboard = { ok: false, message: error.message };
+  }
+
+  const ok = Object.values(checks).every((check) => check.ok);
+  latestHealthSnapshot = {
+    status: ok ? "ok" : "degraded",
+    checkedAt: new Date().toISOString(),
+    checks
+  };
+  return latestHealthSnapshot;
+}
+
+function syncHealthMonitor() {
+  const config = readRuntimeConfig();
+  const enabled = !!config.automation.healthCheckEnabled;
+  const intervalMs = Math.max(10, Number(config.automation.healthCheckIntervalSeconds || 30)) * 1000;
+
+  if (!enabled) {
+    if (healthMonitorId) clearInterval(healthMonitorId);
+    healthMonitorId = null;
+    latestHealthSnapshot = {
+      ...latestHealthSnapshot,
+      status: "disabled",
+      checkedAt: new Date().toISOString()
+    };
+    return;
+  }
+
+  if (healthMonitorId) clearInterval(healthMonitorId);
+  runHealthCheck().catch((error) => {
+    latestHealthSnapshot = { status: "degraded", checkedAt: new Date().toISOString(), checks: { monitor: { ok: false, message: error.message } } };
+  });
+  healthMonitorId = setInterval(() => {
+    runHealthCheck().catch((error) => {
+      latestHealthSnapshot = { status: "degraded", checkedAt: new Date().toISOString(), checks: { monitor: { ok: false, message: error.message } } };
+    });
+  }, intervalMs);
+}
+
+function markInteractiveActivity() {
+  updateRuntimeConfig((config) => {
+    config.interactiveMode.lastActivityAt = new Date().toISOString();
+    return config;
+  });
+}
+
+async function revertInteractiveModeIfIdle(force = false) {
+  const config = readRuntimeConfig();
+  const interactiveConfig = config.interactiveMode || {};
+  if (!interactiveConfig.autoRevertEnabled && !force) return false;
+
+  const timeoutMs = Math.max(1, Number(interactiveConfig.idleTimeoutMinutes || 15)) * 60 * 1000;
+  const lastActivityAt = interactiveConfig.lastActivityAt ? Date.parse(interactiveConfig.lastActivityAt) : Date.now();
+  const idleMs = Date.now() - lastActivityAt;
+  if (!force && idleMs < timeoutMs) return false;
+
+  const [result] = await db.query(
+    "UPDATE accounts SET dashboard_mode = 'auto' WHERE dashboard_mode = 'interactive'"
+  );
+
+  if (result.affectedRows > 0 || force) {
+    updateRuntimeConfig((nextConfig) => {
+      nextConfig.interactiveMode.lastActivityAt = null;
+      return nextConfig;
+    });
+    return true;
+  }
+
+  return false;
+}
+
+function syncInteractiveRevertMonitor() {
+  if (interactiveRevertMonitorId) clearInterval(interactiveRevertMonitorId);
+  interactiveRevertMonitorId = setInterval(() => {
+    revertInteractiveModeIfIdle(false).catch((error) => {
+      console.error("Interactive auto-revert check failed:", error.message);
+    });
+  }, 30000);
+}
+
 /* ==============================
    ADMIN ROUTES
 ============================== */
@@ -463,21 +738,72 @@ app.post("/admin/dashboard-mode", async (req, res) => {
 
   const accountId = req.session.user.id;
   const mode = String(req.body.dashboard_mode || "auto").toLowerCase();
+  const idleTimeoutMinutes = Number(req.body.idle_timeout_minutes || 15);
 
   try {
-    await db.query(
-      "UPDATE accounts SET dashboard_mode = ? WHERE id = ?",
-      [mode, accountId]
-    );
-    res.redirect("/admin#sec-dashboard-mode");
+    const safeMode = mode === "interactive" ? "interactive" : "auto";
+    if (req.session.user.isOffline || !(await canUseDatabase())) {
+      updateRuntimeConfig((config) => {
+        config.offlineDashboardMode = safeMode;
+        return config;
+      });
+    } else {
+      await db.query(
+        "UPDATE accounts SET dashboard_mode = ? WHERE id = ?",
+        [safeMode, accountId]
+      );
+    }
+    updateRuntimeConfig((config) => {
+      config.interactiveMode.idleTimeoutMinutes = Math.max(1, Math.min(240, idleTimeoutMinutes || 15));
+      config.interactiveMode.lastActivityAt = mode === "interactive" ? new Date().toISOString() : null;
+      return config;
+    });
+    res.redirect("/admin#sec-dashboard-settings");
   } catch (err) {
     console.error("Error saving dashboard mode:", err);
     res.status(500).send("Failed to save dashboard mode");
   }
 });
 
+app.post("/admin/config/interactive-auto-revert", requireAuth, async (req, res) => {
+  try {
+    const enabled = boolFromRequest(req.body.enabled);
+    const idleTimeoutMinutes = Number(req.body.idleTimeoutMinutes || req.body.idle_timeout_minutes || 15);
+    const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.interactiveMode.autoRevertEnabled = enabled;
+      nextConfig.interactiveMode.idleTimeoutMinutes = Math.max(1, Math.min(240, idleTimeoutMinutes || 15));
+      return nextConfig;
+    });
+    res.json({ ok: true, interactiveMode: config.interactiveMode });
+  } catch (error) {
+    console.error("Failed to update interactive auto-revert config:", error);
+    res.status(500).json({ ok: false, error: "Failed to update interactive settings" });
+  }
+});
+
+app.post("/dashboard/interactive-activity", async (req, res) => {
+  try {
+    const accountId = getAccountId(req);
+    const mode = await getDashboardModeForAccount(accountId);
+    if (mode === "interactive") markInteractiveActivity();
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false });
+  }
+});
+
+app.post("/dashboard/interactive-revert", async (req, res) => {
+  try {
+    const reverted = await revertInteractiveModeIfIdle(false);
+    res.json({ ok: true, reverted });
+  } catch (error) {
+    console.error("Failed to revert interactive mode:", error);
+    res.status(500).json({ ok: false, error: "Failed to revert mode" });
+  }
+});
+
 // POST /admin/timers/:timer_id - Update timer duration
-app.post('/admin/timers/:timer_id', requireAuth, async (req, res) => {
+app.post('/admin/timers/:timer_id(\\d+)', requireAuth, async (req, res) => {
   try {
     const { timer_id } = req.params;
     const { duration_seconds } = req.body;
@@ -502,6 +828,15 @@ app.post('/admin/timers/:timer_id', requireAuth, async (req, res) => {
       return res.status(401).send("Unauthorized - no account found");
     }
 
+    if (req.session.user.isOffline || !(await canUseDatabase())) {
+      const timerPage = Number(timer_id);
+      updateRuntimeConfig((config) => {
+        config.defaultTimersSeconds[String(timerPage)] = seconds;
+        return config;
+      });
+      return res.status(200).send("Offline timer updated successfully");
+    }
+
     // Update the timers table with account_id check
     const [result] = await db.query(
       `UPDATE timers 
@@ -521,6 +856,308 @@ app.post('/admin/timers/:timer_id', requireAuth, async (req, res) => {
     console.error("Error updating timer:", error);
     res.status(500).send("Failed to update timer");
   }
+});
+
+app.post("/admin/timers/apply-defaults", requireAuth, async (req, res) => {
+  try {
+    const config = readRuntimeConfig();
+    if (!config.automation.applyDefaultTimingEnabled) {
+      return res.status(403).json({ ok: false, error: "Apply Default Timing is disabled" });
+    }
+
+    let timers = getFallbackTimerRows();
+    if (!(req.session.user.isOffline || !(await canUseDatabase()))) {
+      const accountId = req.session.user.id;
+      await upsertTimerRowsForAccount(accountId, getDefaultTimerRows());
+      timers = await getTimerRowsForAccount(accountId);
+    }
+    res.json({ ok: true, timers });
+  } catch (error) {
+    console.error("Failed to apply default timers:", error);
+    res.status(500).json({ ok: false, error: "Failed to apply default timers" });
+  }
+});
+
+app.get("/admin/timer-profiles/json", requireAuth, async (req, res) => {
+  const config = readRuntimeConfig();
+  res.json({ ok: true, profiles: config.timerProfiles || [] });
+});
+
+app.post("/admin/timer-profiles", requireAuth, async (req, res) => {
+  try {
+    const name = String(req.body.name || "").trim();
+    if (!name) return res.status(400).json({ ok: false, error: "Profile name is required" });
+
+    const submittedTimers = Array.isArray(req.body.timers) ? normalizeTimerRows(req.body.timers) : [];
+    const timers = submittedTimers.length > 0
+      ? submittedTimers
+      : (req.session.user.isOffline || !(await canUseDatabase()) ? getFallbackTimerRows() : await getTimerRowsForAccount(req.session.user.id));
+    const profile = {
+      id: String(Date.now()),
+      name,
+      createdAt: new Date().toISOString(),
+      timers
+    };
+
+    const config = updateRuntimeConfig((nextConfig) => {
+      const profiles = Array.isArray(nextConfig.timerProfiles) ? nextConfig.timerProfiles : [];
+      nextConfig.timerProfiles = profiles.filter((item) => item.name.toLowerCase() !== name.toLowerCase());
+      nextConfig.timerProfiles.push(profile);
+      return nextConfig;
+    });
+
+    res.json({ ok: true, profile, profiles: config.timerProfiles });
+  } catch (error) {
+    console.error("Failed to save timer profile:", error);
+    res.status(500).json({ ok: false, error: "Failed to save timer profile" });
+  }
+});
+
+app.post("/admin/timer-profiles/:profile_id/load", requireAuth, async (req, res) => {
+  try {
+    const config = readRuntimeConfig();
+    const profile = (config.timerProfiles || []).find((item) => item.id === String(req.params.profile_id));
+    if (!profile) return res.status(404).json({ ok: false, error: "Timer profile not found" });
+
+    let timers = normalizeTimerRows(profile.timers || []);
+    if (req.session.user.isOffline || !(await canUseDatabase())) {
+      updateRuntimeConfig((nextConfig) => {
+        timers.forEach((timer) => {
+          nextConfig.defaultTimersSeconds[String(timer.page_number)] = Number(timer.duration_seconds) || 0;
+        });
+        return nextConfig;
+      });
+      timers = getFallbackTimerRows();
+    } else {
+      await upsertTimerRowsForAccount(req.session.user.id, profile.timers || []);
+      timers = await getTimerRowsForAccount(req.session.user.id);
+    }
+    res.json({ ok: true, profile, timers });
+  } catch (error) {
+    console.error("Failed to load timer profile:", error);
+    res.status(500).json({ ok: false, error: "Failed to load timer profile" });
+  }
+});
+
+app.delete("/admin/timer-profiles/:profile_id", requireAuth, async (req, res) => {
+  try {
+    const profileId = String(req.params.profile_id);
+    const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.timerProfiles = (nextConfig.timerProfiles || []).filter((item) => item.id !== profileId);
+      return nextConfig;
+    });
+    res.json({ ok: true, profiles: config.timerProfiles });
+  } catch (error) {
+    console.error("Failed to delete timer profile:", error);
+    res.status(500).json({ ok: false, error: "Failed to delete timer profile" });
+  }
+});
+
+app.post("/admin/automation/toggle", requireAuth, async (req, res) => {
+  try {
+    const key = String(req.body.key || "");
+    const allowedKeys = new Set(["applyDefaultTimingEnabled", "autoHibernateEnabled", "healthCheckEnabled"]);
+    if (!allowedKeys.has(key)) return res.status(400).json({ ok: false, error: "Invalid automation setting" });
+
+    const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.automation[key] = boolFromRequest(req.body.enabled);
+      return nextConfig;
+    });
+
+    if (key === "healthCheckEnabled") syncHealthMonitor();
+
+    res.json({
+      ok: true,
+      automation: config.automation,
+      health: latestHealthSnapshot,
+      hibernateScript: path.join(__dirname, "scripts", "hibernate.ps1")
+    });
+  } catch (error) {
+    console.error("Failed to update automation toggle:", error);
+    res.status(500).json({ ok: false, error: "Failed to update automation setting" });
+  }
+});
+
+app.post("/admin/automation/hibernate-settings", requireAuth, async (req, res) => {
+  try {
+    const startTime = String(req.body.startTime || req.body.start_time || "22:00");
+    const endTime = String(req.body.endTime || req.body.end_time || "07:00");
+    if (!isValidTimeString(startTime) || !isValidTimeString(endTime)) {
+      return res.status(400).json({ ok: false, error: "Start and end time must use HH:MM format" });
+    }
+    const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.automation.autoHibernateDryRun = true;
+      nextConfig.automation.autoHibernateSchedule = {
+        ...(nextConfig.automation.autoHibernateSchedule || {}),
+        startTime,
+        endTime
+      };
+      return nextConfig;
+    });
+    res.json({ ok: true, automation: config.automation });
+  } catch (error) {
+    console.error("Failed to update auto-hibernate settings:", error);
+    res.status(500).json({ ok: false, error: "Failed to update auto-hibernate settings" });
+  }
+});
+
+app.post("/admin/automation/hibernate-profiles", requireAuth, async (req, res) => {
+  try {
+    const normalized = normalizeHibernateProfile(req.body || {});
+    const profile = {
+      id: String(Date.now()),
+      name: normalized.name,
+      startTime: normalized.startTime,
+      endTime: normalized.endTime,
+      isDefault: false,
+      createdAt: new Date().toISOString()
+    };
+    const config = updateRuntimeConfig((nextConfig) => {
+      const profiles = Array.isArray(nextConfig.automation.autoHibernateProfiles)
+        ? nextConfig.automation.autoHibernateProfiles
+        : [];
+      nextConfig.automation.autoHibernateProfiles = profiles
+        .filter((item) => item.name.toLowerCase() !== profile.name.toLowerCase())
+        .concat(profile);
+      return nextConfig;
+    });
+    res.json({ ok: true, profile, profiles: config.automation.autoHibernateProfiles });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
+app.post("/admin/automation/hibernate-profiles/:profile_id/load", requireAuth, async (req, res) => {
+  try {
+    const profileId = String(req.params.profile_id);
+    const config = updateRuntimeConfig((nextConfig) => {
+      const profiles = nextConfig.automation.autoHibernateProfiles || [];
+      const profile = profiles.find((item) => item.id === profileId);
+      if (!profile) throw new Error("Hibernate profile not found");
+      nextConfig.automation.autoHibernateSchedule = {
+        startTime: profile.startTime,
+        endTime: profile.endTime,
+        activeProfileId: profile.id
+      };
+      return nextConfig;
+    });
+    res.json({ ok: true, automation: config.automation });
+  } catch (error) {
+    res.status(404).json({ ok: false, error: error.message });
+  }
+});
+
+app.post("/admin/automation/hibernate-profiles/:profile_id/default", requireAuth, async (req, res) => {
+  try {
+    const profileId = String(req.params.profile_id);
+    const config = updateRuntimeConfig((nextConfig) => {
+      const profiles = nextConfig.automation.autoHibernateProfiles || [];
+      const profile = profiles.find((item) => item.id === profileId);
+      if (!profile) throw new Error("Hibernate profile not found");
+      nextConfig.automation.autoHibernateProfiles = profiles.map((item) => ({
+        ...item,
+        isDefault: item.id === profileId
+      }));
+      nextConfig.automation.autoHibernateSchedule = {
+        startTime: profile.startTime,
+        endTime: profile.endTime,
+        activeProfileId: profile.id
+      };
+      return nextConfig;
+    });
+    res.json({ ok: true, automation: config.automation });
+  } catch (error) {
+    res.status(404).json({ ok: false, error: error.message });
+  }
+});
+
+app.delete("/admin/automation/hibernate-profiles/:profile_id", requireAuth, async (req, res) => {
+  try {
+    const profileId = String(req.params.profile_id);
+    if (profileId === "default") {
+      return res.status(400).json({ ok: false, error: "Default profile cannot be deleted" });
+    }
+    const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.automation.autoHibernateProfiles = (nextConfig.automation.autoHibernateProfiles || [])
+        .filter((item) => item.id !== profileId);
+      return nextConfig;
+    });
+    res.json({ ok: true, profiles: config.automation.autoHibernateProfiles });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: "Failed to delete hibernate profile" });
+  }
+});
+
+app.post("/admin/automation/hibernate-dry-run", requireAuth, async (req, res) => {
+  try {
+    const config = readRuntimeConfig();
+    if (!config.automation.autoHibernateEnabled) {
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Hibernate before running the dry run" });
+    }
+
+    const now = new Date().toISOString();
+    const scriptPath = path.join(__dirname, "scripts", "hibernate.ps1");
+    const schedule = config.automation.autoHibernateSchedule || {};
+    const startTime = isValidTimeString(schedule.startTime) ? schedule.startTime : "22:00";
+    const endTime = isValidTimeString(schedule.endTime) ? schedule.endTime : "07:00";
+    const scriptOutput = await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        ["-ExecutionPolicy", "Bypass", "-File", scriptPath, "-DryRun"],
+        { timeout: 10000 },
+        (error, stdout, stderr) => {
+          if (error) {
+            error.message = `${error.message}${stderr ? `: ${stderr}` : ""}`;
+            reject(error);
+            return;
+          }
+          resolve(String(stdout || stderr || "").trim());
+        }
+      );
+    });
+    const updated = updateRuntimeConfig((nextConfig) => {
+      nextConfig.automation.autoHibernateDryRun = true;
+      nextConfig.automation.lastHibernateDryRunAt = now;
+      return nextConfig;
+    });
+
+    console.log(`[AUTO-HIBERNATE DRY RUN] ${now} - window ${startTime}-${endTime} - ${scriptOutput}`);
+    res.json({
+      ok: true,
+      dryRun: true,
+      checkedAt: now,
+      startTime,
+      endTime,
+      message: `Dry run successful. Auto-hibernate window is ${startTime} to ${endTime}. No OS hibernate command was executed.`,
+      scriptOutput,
+      hibernateScript: scriptPath,
+      automation: updated.automation
+    });
+  } catch (error) {
+    console.error("Auto-hibernate dry run failed:", error);
+    res.status(500).json({ ok: false, error: "Auto-hibernate dry run failed" });
+  }
+});
+
+app.get("/admin/health/json", requireAuth, async (req, res) => {
+  const config = readRuntimeConfig();
+  if (config.automation.healthCheckEnabled) {
+    await runHealthCheck();
+  }
+  res.json({
+    ok: latestHealthSnapshot.status === "ok",
+    enabled: !!config.automation.healthCheckEnabled,
+    health: latestHealthSnapshot
+  });
+});
+
+app.get("/health", async (req, res) => {
+  const config = readRuntimeConfig();
+  const status = config.automation.healthCheckEnabled ? latestHealthSnapshot.status : "disabled";
+  res.status(status === "degraded" ? 503 : 200).json({
+    status,
+    checkedAt: latestHealthSnapshot.checkedAt
+  });
 });
 
 app.post("/admin/building-description",
@@ -810,15 +1447,37 @@ async function getDashboardModeForAccount(accountId) {
 
 app.get("/", async (req, res) => {
   const accountId = getAccountId(req);
+  const runtimeConfig = readRuntimeConfig();
+  const dbOnline = await canUseDatabase();
 
   const queryMode = req.query.mode ? String(req.query.mode).toLowerCase() : null;
-  const dbMode = await getDashboardModeForAccount(accountId);
+  const dbMode = dbOnline ? await getDashboardModeForAccount(accountId) : (runtimeConfig.offlineDashboardMode || "auto");
+  const canOverrideMode = !!(req.session && req.session.user);
   const effectiveMode =
-    queryMode === "interactive" ? "interactive" : (queryMode === "auto" ? "auto" : dbMode);
+    canOverrideMode && queryMode === "interactive" ? "interactive" :
+    (canOverrideMode && queryMode === "auto" ? "auto" : dbMode);
   const dashboardMode = effectiveMode;
+  const accessProfile = req.session.user ? "admin" : "public";
 
-  let timers = [];
-  let timersByTimerId = {};
+  let timers = dbOnline ? [] : getFallbackTimerRows();
+  let timersByTimerId = buildTimerMap(timers);
+
+  if (!dbOnline) {
+    return res.render("index", {
+      user: req.session.user || null,
+      dashboardData: emptyDashboardData(),
+      dashboardMode,
+      mediaImages: [],
+      mediaVideos: [],
+      buildingLabelMap: {},
+      buildingCardLabelMap: {},
+      timers,
+      timersByTimerId,
+      runtimeConfig,
+      accessProfile,
+      offlineMode: true
+    });
+  }
 
   try {
     const years = await getYearsForAccount(accountId);
@@ -886,7 +1545,7 @@ app.get("/", async (req, res) => {
 
     if (latestYear) {
       const buildingCodeSet = new Set();
-      Object.values(multi_building_groups_by_page).forEach((list) => {
+      Object.values(getBuildingGroupsByPage()).forEach((list) => {
         list.forEach((code) => buildingCodeSet.add(code));
       });
 
@@ -953,7 +1612,7 @@ app.get("/", async (req, res) => {
       
       if (tables && tables.length > 0) {
         const [timerRows] = await db.query(
-          `SELECT timer_id, page_name, duration_seconds 
+          `SELECT timer_id, page_number, page_name, duration_seconds 
            FROM timers 
            WHERE account_id = ? 
            ORDER BY timer_id ASC`,
@@ -963,20 +1622,7 @@ app.get("/", async (req, res) => {
         if (Array.isArray(timerRows)) {
           timers = timerRows;
           
-          // Build timersByTimerId map keyed by timer_id (1-10)
-          timers.forEach(t => {
-            const timerId = parseInt(t.timer_id, 10);
-            const durationSeconds = Number(t.duration_seconds) || 30;
-            
-            if (!isNaN(timerId) && timerId >= 1 && timerId <= 10) {
-              timersByTimerId[timerId] = {
-                timer_id: timerId,
-                page_name: t.page_name || `Page ${timerId}`,
-                duration_seconds: durationSeconds,
-                duration_ms: durationSeconds * 1000
-              };
-            }
-          });
+          timersByTimerId = buildTimerMap(timers);
         }
         
         console.log(`Loaded ${timers.length} timers for account ${accountId}:`, timersByTimerId);
@@ -1049,7 +1695,9 @@ app.get("/", async (req, res) => {
       buildingLabelMap,
       buildingCardLabelMap,
       timers: timers || [],
-      timersByTimerId: timersByTimerId || {}
+      timersByTimerId: timersByTimerId || {},
+      runtimeConfig,
+      accessProfile
     });
   } catch (err) {
     console.error("Error loading dashboard:", err);
@@ -1063,8 +1711,45 @@ app.get("/", async (req, res) => {
    BUILDING CONTROLS
 ============================== */
 function requireAuth(req, res, next) {
-  if (!req.session || !req.session.user) return res.status(401).send("Unauthorized - Please login.");
+  if (!req.session || !req.session.user) {
+    const wantsJson =
+      req.accepts(["json", "html"]) === "json" ||
+      String(req.get("content-type") || "").includes("application/json");
+    if (wantsJson) {
+      return res.status(401).json({ ok: false, error: "Session expired. Please log in again." });
+    }
+    return res.status(401).send("Unauthorized - Please login.");
+  }
   next();
+}
+
+function renderOfflineAdmin(req, res) {
+  const runtimeConfig = readRuntimeConfig();
+  const timers = getFallbackTimerRows();
+  res.render('admin', {
+    buildings: [],
+    buildingsMeta: [],
+    allYears: [],
+    electricityYears: [],
+    waterYears: [],
+    mediaImages: [],
+    mediaVideos: [],
+    dashboardMode: runtimeConfig.offlineDashboardMode || 'auto',
+    timers,
+    runtimeConfig,
+    automationConfig: runtimeConfig.automation,
+    interactiveConfig: runtimeConfig.interactiveMode,
+    timerProfiles: runtimeConfig.timerProfiles || [],
+    defaultTimersSeconds: runtimeConfig.defaultTimersSeconds || {},
+    healthSnapshot: {
+      ...latestHealthSnapshot,
+      status: "offline",
+      checks: {
+        database: { ok: false, message: "MySQL/XAMPP is not running. Admin config is using JSON test fallback." }
+      }
+    },
+    buildingsLoadError: true
+  });
 }
 
 app.get("/buildingControls", async (req, res) => {
@@ -1072,16 +1757,17 @@ app.get("/buildingControls", async (req, res) => {
 
   const queryMode = req.query.mode ? String(req.query.mode).toLowerCase() : null;
   const dbMode = await getDashboardModeForAccount(accountId);
+  const canOverrideMode = !!(req.session && req.session.user);
   const dashboardMode =
-    queryMode === "interactive" ? "interactive" :
-    (queryMode === "auto" ? "auto" : dbMode);
+    canOverrideMode && queryMode === "interactive" ? "interactive" :
+    (canOverrideMode && queryMode === "auto" ? "auto" : dbMode);
 
   if (String(dashboardMode).toLowerCase() !== "interactive") {
     return res.status(404).send("Not available in auto mode");
   }
 
   const buildings = Array.from(
-    new Set(Object.values(multi_building_groups_by_page || {}).flat().filter(Boolean))
+    new Set(Object.values(getBuildingGroupsByPage() || {}).flat().filter(Boolean))
   );
 
   res.render("buildingControls", {
@@ -1091,19 +1777,275 @@ app.get("/buildingControls", async (req, res) => {
   });
 });
 
+// Temporary route for interactive map page
+app.get('/interactivemap', (req, res) => {res.render('interactivemap');});
+
+/* ==============================
+   LOCAL LLM ASSISTANT (Ollama)
+   ------------------------------
+   Talks to a locally-running Ollama server. No data leaves the machine.
+   Configurable via databaseinfo.env if the model/host ever changes.
+============================== */
+const OLLAMA_HOST  = process.env.OLLAMA_HOST  || "http://127.0.0.1:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
+
+const ASSISTANT_SYSTEM_PROMPT =
+  "You are the assistant for the Republic Polytechnic (RP) ESG Sustainability Dashboard. " +
+  "ESG stands for Environmental, Social, and Governance. Help visitors understand " +
+  "sustainability topics such as electricity use, water use, solar energy, and waste. " +
+  "Keep answers short, clear, and friendly. " +
+  "A section titled 'REAL DASHBOARD DATA' is provided below with the actual figures. " +
+  "When asked about specific numbers, buildings, years, or trends, use ONLY the figures in that " +
+  "section. Do NOT invent or estimate numbers. If a requested figure is not in the data, say you " +
+  "don't have that figure rather than guessing.";
+
+// ---- Real ESG data context (the model phrases these; it never computes them) ----
+const fmtNum = n => Number(n || 0).toLocaleString("en-US");
+let _esgCtxCache = { ts: 0, accountId: null, text: "" };
+const ESG_CTX_TTL_MS = 5 * 60 * 1000; // refresh at most every 5 min
+
+async function buildEsgDataContext(accountId) {
+  // Serve from cache when fresh (data only changes on admin upload)
+  if (_esgCtxCache.text &&
+      _esgCtxCache.accountId === accountId &&
+      (Date.now() - _esgCtxCache.ts) < ESG_CTX_TTL_MS) {
+    return _esgCtxCache.text;
+  }
+
+  const [years, elecYear, elecTop, waterYear, solarYear, wasteYear, bldgCount] = await Promise.all([
+    db.query("SELECT year FROM year_range WHERE account_id=? ORDER BY year", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(total_bill) v FROM total_ebills WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT building_name, SUM(bill_amount) v FROM building_ebills WHERE account_id=? GROUP BY building_name ORDER BY v DESC LIMIT 6", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(portable_water) p, SUM(recycled_water) r FROM total_waterusage WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(urban_renewables) u, SUM(green_house) g FROM total_solardata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(general_kg) gen, SUM(recyclable_kg) rec FROM total_wastedata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT COUNT(*) n FROM building_info WHERE account_id=?", [accountId]),
+  ]);
+
+  const yearList = years[0].map(r => r.year);
+  const L = [];
+  L.push("===== REAL DASHBOARD DATA =====");
+  L.push("Units: electricity & solar in kWh, water in m³ (cubic metres), waste in kg.");
+  L.push("Reporting years available: " + (yearList.length ? yearList.join(", ") : "none") + ". " +
+         "Buildings tracked: " + fmtNum(bldgCount[0][0].n) + ".");
+
+  L.push("\nELECTRICITY USE — total campus (kWh):");
+  elecYear[0].forEach(r => L.push(`  ${r.y}: ${fmtNum(r.v)} kWh`));
+
+  L.push("Top buildings by electricity use (all available years combined):");
+  elecTop[0].forEach((r, i) => L.push(`  ${i + 1}. ${r.building_name}: ${fmtNum(r.v)} kWh`));
+
+  L.push("\nWATER USE — total campus (m³):");
+  waterYear[0].forEach(r => {
+    const tot = Number(r.p || 0) + Number(r.r || 0);
+    L.push(`  ${r.y}: ${fmtNum(tot)} m³ total (potable ${fmtNum(r.p)}, recycled ${fmtNum(r.r)})`);
+  });
+
+  L.push("\nSOLAR ENERGY GENERATED (kWh):");
+  solarYear[0].forEach(r => {
+    const tot = Number(r.u || 0) + Number(r.g || 0);
+    L.push(`  ${r.y}: ${fmtNum(tot)} kWh (urban renewables ${fmtNum(r.u)}, green house ${fmtNum(r.g)})`);
+  });
+
+  L.push("\nWASTE (kg):");
+  wasteYear[0].forEach(r => {
+    const gen = Number(r.gen || 0), rec = Number(r.rec || 0), tot = gen + rec;
+    if (tot === 0) return; // skip years with no waste data yet
+    const pct = ((rec / tot) * 100).toFixed(1);
+    L.push(`  ${r.y}: general ${fmtNum(gen)} kg, recyclable ${fmtNum(rec)} kg (recycled share ${pct}%)`);
+  });
+
+  L.push("===== END DATA =====");
+
+  const text = L.join("\n");
+  _esgCtxCache = { ts: Date.now(), accountId, text };
+  return text;
+}
+
+// Render the standalone chat page
+app.get("/assistant", (req, res) => {
+  res.render("assistant", { model: OLLAMA_MODEL });
+});
+
+// Streaming chat endpoint: browser -> here -> Ollama -> stream tokens back
+app.post("/api/chat", async (req, res) => {
+  try {
+    const incoming = Array.isArray(req.body && req.body.messages) ? req.body.messages : [];
+
+    // Keep only valid user/assistant turns, cap history + length to stay fast & safe
+    const history = incoming
+      .filter(m => m && typeof m.content === "string" &&
+                   (m.role === "user" || m.role === "assistant") &&
+                   m.content.trim().length > 0)
+      .slice(-10)
+      .map(m => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
+
+    if (history.length === 0) {
+      return res.status(400).json({ error: "No message provided." });
+    }
+
+    // Build the system prompt with the account's real ESG figures injected.
+    let systemContent = ASSISTANT_SYSTEM_PROMPT;
+    try {
+      const dataContext = await buildEsgDataContext(getAccountId(req));
+      systemContent += "\n\n" + dataContext;
+    } catch (e) {
+      console.error("[/api/chat] could not load ESG data context:", e.message);
+      // Fall back to the general assistant without live data rather than failing.
+    }
+
+    const messages = [{ role: "system", content: systemContent }, ...history];
+
+    const ollamaRes = await fetch(`${OLLAMA_HOST}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream: true })
+    });
+
+    if (!ollamaRes.ok || !ollamaRes.body) {
+      return res.status(502).json({ error: "The assistant model did not respond. Is Ollama running?" });
+    }
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    // Ollama streams newline-delimited JSON; forward only the text tokens.
+    let buffer = "";
+    for await (const chunk of ollamaRes.body) {
+      buffer += Buffer.from(chunk).toString("utf8");
+      const lines = buffer.split("\n");
+      buffer = lines.pop(); // keep any partial line for the next chunk
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+          const obj = JSON.parse(trimmed);
+          if (obj.message && obj.message.content) res.write(obj.message.content);
+        } catch (_) { /* ignore non-JSON keep-alive lines */ }
+      }
+    }
+    res.end();
+  } catch (err) {
+    console.error("[/api/chat] error:", err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Assistant unavailable. Make sure Ollama is running (ollama serve)." });
+    } else {
+      res.end();
+    }
+  }
+});
+
+/* ==============================
+   ADMIN: EXPORT ALL DATA TO EXCEL
+   ------------------------------
+   One multi-sheet .xlsx with every ESG dataset for the account. No AI involved.
+============================== */
+app.get("/admin/export-excel", requireAuth, async (req, res) => {
+  try {
+    const accountId = getAccountId(req);
+    const ym = d => (d instanceof Date ? d.toISOString().slice(0, 7) : String(d || "").slice(0, 7)); // YYYY-MM
+    const num = v => (v == null ? null : Number(v));
+
+    // Pull every dataset for this account
+    const [
+      [elecYear], [waterYear], [solarYear], [wasteYear],
+      [totElec], [bldgElec], [totWater], [bldgWater],
+      [solar], [waste], [buildings]
+    ] = await Promise.all([
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(total_bill)) `Electricity (kWh)` FROM total_ebills WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(portable_water)) `Potable Water (m3)`, ROUND(SUM(recycled_water)) `Recycled Water (m3)` FROM total_waterusage WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(urban_renewables)) `Urban Renewables (kWh)`, ROUND(SUM(green_house)) `Green House (kWh)` FROM total_solardata WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(general_kg)) `General (kg)`, ROUND(SUM(recyclable_kg)) `Recyclable (kg)` FROM total_wastedata WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT bill_month, total_bill FROM total_ebills WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT building_name, bill_month, bill_amount FROM building_ebills WHERE account_id=? ORDER BY building_name, bill_month", [accountId]),
+      db.query("SELECT bill_month, portable_water, recycled_water FROM total_waterusage WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT building_name, bill_month, water_used FROM building_waterusage WHERE account_id=? ORDER BY building_name, bill_month", [accountId]),
+      db.query("SELECT bill_month, urban_renewables, green_house FROM total_solardata WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT bill_month, general_kg, recyclable_kg, general_percent, recyclable_percent FROM total_wastedata WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT building_name, `desc`, display_label, card_label, elec_startyear, elec_endyear, water_startyear, water_endyear FROM building_info WHERE account_id=? ORDER BY building_name", [accountId]),
+    ]);
+
+    // Build a yearly Summary sheet (recycled share computed in code = exact)
+    const years = new Map();
+    const touch = y => { if (!years.has(y)) years.set(y, { Year: y }); return years.get(y); };
+    elecYear.forEach(r => { touch(r.Year)["Electricity (kWh)"] = num(r["Electricity (kWh)"]); });
+    waterYear.forEach(r => {
+      const row = touch(r.Year);
+      row["Potable Water (m3)"]  = num(r["Potable Water (m3)"]);
+      row["Recycled Water (m3)"] = num(r["Recycled Water (m3)"]);
+    });
+    solarYear.forEach(r => {
+      const row = touch(r.Year);
+      row["Solar Generated (kWh)"] = num(r["Urban Renewables (kWh)"]) + num(r["Green House (kWh)"]);
+    });
+    wasteYear.forEach(r => {
+      const row = touch(r.Year);
+      const g = num(r["General (kg)"]) || 0, rc = num(r["Recyclable (kg)"]) || 0;
+      row["Waste General (kg)"]   = g;
+      row["Waste Recyclable (kg)"] = rc;
+      row["Recycled Share (%)"]   = (g + rc) ? Number(((rc / (g + rc)) * 100).toFixed(1)) : 0;
+    });
+    const summaryCols = ["Electricity (kWh)", "Potable Water (m3)", "Recycled Water (m3)",
+                         "Solar Generated (kWh)", "Waste General (kg)", "Waste Recyclable (kg)"];
+    const summary = Array.from(years.values())
+      .filter(r => summaryCols.some(k => Number(r[k]) > 0)) // drop years with no data (e.g. empty 2026)
+      .sort((a, b) => a.Year - b.Year);
+
+    // Shape detail sheets with clean, formatted columns
+    const sElecTot  = totElec.map(r  => ({ Month: ym(r.bill_month), "Electricity (kWh)": num(r.total_bill) }));
+    const sElecBldg = bldgElec.map(r => ({ Building: r.building_name, Month: ym(r.bill_month), "Electricity (kWh)": num(r.bill_amount) }));
+    const sWaterTot = totWater.map(r => ({ Month: ym(r.bill_month), "Potable (m3)": num(r.portable_water), "Recycled (m3)": num(r.recycled_water) }));
+    const sWaterBl  = bldgWater.map(r => ({ Building: r.building_name, Month: ym(r.bill_month), "Water Used (m3)": num(r.water_used) }));
+    const sSolar    = solar.map(r    => ({ Month: ym(r.bill_month), "Urban Renewables (kWh)": num(r.urban_renewables), "Green House (kWh)": num(r.green_house) }));
+    const sWaste    = waste.map(r    => ({ Month: ym(r.bill_month), "General (kg)": num(r.general_kg), "Recyclable (kg)": num(r.recyclable_kg), "General %": num(r.general_percent), "Recyclable %": num(r.recyclable_percent) }));
+    const sBldg     = buildings.map(r => ({ Building: r.building_name, Description: r.desc, "Display Label": r.display_label, "Card Label": r.card_label, "Elec Start": r.elec_startyear, "Elec End": r.elec_endyear, "Water Start": r.water_startyear, "Water End": r.water_endyear }));
+
+    const wb = XLSX.utils.book_new();
+    const add = (rows, name) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{}]), name);
+    add(summary,   "Summary by Year");
+    add(sElecTot,  "Electricity Total");
+    add(sElecBldg, "Electricity by Building");
+    add(sWaterTot, "Water Total");
+    add(sWaterBl,  "Water by Building");
+    add(sSolar,    "Solar");
+    add(sWaste,    "Waste");
+    add(sBldg,     "Buildings");
+
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Disposition", `attachment; filename="RP_ESG_Data_${stamp}.xlsx"`);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buf);
+  } catch (err) {
+    console.error("[/admin/export-excel] error:", err.message);
+    res.status(500).send("Could not generate the Excel export. Please try again.");
+  }
+});
+
 /* ==============================
    LOGIN ROUTES
 ============================== */
 app.get("/login", (req, res) => {
+  if (!databaseAvailable) {
+    return res.render("login", {
+      adminAccount: OFFLINE_ADMIN_USER.account,
+      loginError: null,
+      resetError: null,
+      resetSuccess: "No-XAMPP test mode: MySQL is not running. Use the test/admin passcode to access configuration-only admin tools."
+    });
+  }
+
   const sql = "SELECT account FROM accounts LIMIT 1";
   connection.query(sql, (err, results) => {
     if (err) {
+      databaseAvailable = false;
       console.error("Database error:", err);
       return res.render("login", {
-        adminAccount: null,
-        loginError: "Database connection error",
+        adminAccount: OFFLINE_ADMIN_USER.account,
+        loginError: null,
         resetError: null,
-        resetSuccess: null
+        resetSuccess: "No-XAMPP test mode: MySQL is not running. Use the test/admin passcode to access configuration-only admin tools."
       });
     }
 
@@ -1121,11 +2063,34 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const { password } = req.body;
 
+  if (!databaseAvailable) {
+    if (password === OFFLINE_ADMIN_PASSWORD) {
+      req.session.user = OFFLINE_ADMIN_USER;
+      return res.redirect("/admin");
+    }
+    return res.render("login", {
+      adminAccount: OFFLINE_ADMIN_USER.account,
+      loginError: "Invalid test/admin passcode",
+      resetError: null,
+      resetSuccess: "No-XAMPP test mode: MySQL is not running. Use the configured test/admin passcode."
+    });
+  }
+
   const getAccountSql = "SELECT * FROM accounts LIMIT 1";
   connection.query(getAccountSql, async (err, results) => {
     if (err) {
+      databaseAvailable = false;
       console.error("Database error:", err);
-      return res.status(500).send("Internal Server Error");
+      if (password === OFFLINE_ADMIN_PASSWORD) {
+        req.session.user = OFFLINE_ADMIN_USER;
+        return res.redirect("/admin");
+      }
+      return res.render("login", {
+        adminAccount: OFFLINE_ADMIN_USER.account,
+        loginError: "Database unavailable. Invalid test/admin passcode.",
+        resetError: null,
+        resetSuccess: null
+      });
     }
 
     if (results.length === 0) {
@@ -1305,6 +2270,11 @@ app.get("/logout", (req, res) => {
 app.get('/admin', requireAuth, async (req, res) => {
   try {
     const accountId = req.session.user.id; 
+    const runtimeConfig = readRuntimeConfig();
+
+    if (req.session.user.isOffline || !(await canUseDatabase())) {
+      return renderOfflineAdmin(req, res);
+    }
 
     console.log('Admin route - Account ID:', accountId);
 
@@ -1427,11 +2397,18 @@ app.get('/admin', requireAuth, async (req, res) => {
       mediaVideos: mediaVideos || [],
       dashboardMode: dashboardMode,
       timers: timers,
+      runtimeConfig: runtimeConfig,
+      automationConfig: runtimeConfig.automation,
+      interactiveConfig: runtimeConfig.interactiveMode,
+      timerProfiles: runtimeConfig.timerProfiles || [],
+      defaultTimersSeconds: runtimeConfig.defaultTimersSeconds || {},
+      healthSnapshot: latestHealthSnapshot,
       buildingsLoadError: false
     });
 
   } catch (error) {
     console.error('Error loading admin page:', error);
+    const runtimeConfig = readRuntimeConfig();
     res.render('admin', {
       buildings: [],
       buildingsMeta: [],
@@ -1442,6 +2419,12 @@ app.get('/admin', requireAuth, async (req, res) => {
       mediaVideos: [],
       dashboardMode: 'auto',
       timers: [],
+      runtimeConfig: runtimeConfig,
+      automationConfig: runtimeConfig.automation,
+      interactiveConfig: runtimeConfig.interactiveMode,
+      timerProfiles: runtimeConfig.timerProfiles || [],
+      defaultTimersSeconds: runtimeConfig.defaultTimersSeconds || {},
+      healthSnapshot: latestHealthSnapshot,
       buildingsLoadError: true
     });
   }
@@ -2839,5 +3822,7 @@ app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 const port = process.env.PORT || 3000;
 app.listen(port, "127.0.0.1", () => {
   console.log(`Server running at http://localhost:${port}/`);
+  syncHealthMonitor();
+  syncInteractiveRevertMonitor();
 });
 
