@@ -14,10 +14,10 @@
   "interactiveMode": {
     "autoRevertEnabled": true,
     "idleTimeoutMinutes": 15,
-    "lastActivityAt": "2026-05-25T17:00:15.925Z"
+    "lastActivityAt": "2026-06-20T10:07:26.755Z"
   },
   "automation": {
-    "applyDefaultTimingEnabled": true,
+    "applyDefaultTimingEnabled": false,
     "autoHibernateEnabled": false,
     "autoHibernateDryRun": true,
     "autoHibernateSchedule": {
@@ -35,8 +35,8 @@
         "createdAt": null
       }
     ],
-    "lastHibernateDryRunAt": "2026-05-25T17:00:31.655Z",
-    "healthCheckEnabled": true,
+    "lastHibernateDryRunAt": null,
+    "healthCheckEnabled": false,
     "healthCheckIntervalSeconds": 30
   },
   "timerProfiles": [],

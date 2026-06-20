@@ -1781,6 +1781,11 @@ app.get("/buildingControls", async (req, res) => {
 app.get('/interactivemap', (req, res) => {res.render('interactivemap');});
 
 /* ==============================
+   LOCAL LLM ASSISTANT (Ollama)
+   ------------------------------
+   Talks to a locally-running Ollama server. No data leaves the machine.
+   Configurable via databaseinfo.env if the model/host ever changes.
+/* ==============================
    LOGIN ROUTES
 ============================== */
 app.get("/login", (req, res) => {
