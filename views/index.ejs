@@ -2312,25 +2312,37 @@ body.mode-interactive #page7 .three-panel {
     // INTERACTIVE MODE AUTO-REVERT
     // ============================================================
     const interactive_config = (runtime_config && runtime_config.interactiveMode) ? runtime_config.interactiveMode : {};
+    const interactive_auto_switch_enabled = interactive_config.autoSwitchOnActivity !== false;
     const interactive_auto_revert_enabled = !!interactive_config.autoRevertEnabled;
     const interactive_idle_timeout_ms = Math.max(1, Number(interactive_config.idleTimeoutMinutes || 15)) * 60 * 1000;
     let interactiveLastActivityAt = Date.now();
     let interactiveActivityPingTimer = null;
     let interactiveRevertTimer = null;
+    let interactiveSwitchPending = false;
 
-    function pingInteractiveActivity() {
-      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+    async function pingInteractiveActivity() {
+      if ((!is_auto_mode && !interactive_auto_revert_enabled) || interactiveSwitchPending) return;
       try {
-        fetch("/dashboard/interactive-activity", {
+        if (is_auto_mode) interactiveSwitchPending = true;
+        const response = await fetch("/dashboard/interactive-activity", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ activityAt: new Date().toISOString() })
-        }).catch(() => {});
-      } catch (error) {}
+        });
+        const json = await response.json().catch(() => ({}));
+        if (json.switched) {
+          window.location.href = "/";
+          return;
+        }
+      } catch (error) {
+      } finally {
+        interactiveSwitchPending = false;
+      }
     }
 
     function markInteractiveActivityClient() {
-      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+      if (is_auto_mode && !interactive_auto_switch_enabled) return;
+      if (!is_auto_mode && !interactive_auto_revert_enabled) return;
       interactiveLastActivityAt = Date.now();
       if (interactiveActivityPingTimer) return;
       interactiveActivityPingTimer = setTimeout(() => {
