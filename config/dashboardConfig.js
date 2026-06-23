@@ -4,6 +4,10 @@ const path = require("path");
 const CONFIG_FILE = path.join(__dirname, "dashboardRuntimeConfig.json");
 
 const DEFAULT_CONFIG = {
+  // Bumped every time ESG data is uploaded or cleared. Open dashboards poll
+  // this value and reload themselves when it changes, so the charts always
+  // reflect the latest upload without a manual refresh.
+  dataVersion: 0,
   defaultTimersSeconds: {
     1: 15,
     2: 60,

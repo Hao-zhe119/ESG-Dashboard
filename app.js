@@ -142,6 +142,25 @@ function getAccountId(req) {
   return 1;
 }
 
+/**
+ * Bump the dashboard data version. Open dashboard screens poll this number
+ * (via GET /dashboard/data-version) and reload when it changes, so a newly
+ * uploaded dataset shows up without anyone manually refreshing the display.
+ */
+function bumpDataVersion() {
+  try {
+    const updated = updateRuntimeConfig((config) => {
+      config.dataVersion = (Number(config.dataVersion) || 0) + 1;
+      return config;
+    });
+    console.log("Dashboard data version bumped to", updated.dataVersion);
+    return updated.dataVersion;
+  } catch (e) {
+    console.warn("Could not bump dashboard data version:", e.message);
+    return null;
+  }
+}
+
 /* ==============================
    DYNAMIC YEAR MANAGEMENT FUNCTIONS
 ============================== */
@@ -1703,6 +1722,13 @@ app.get("/", async (req, res) => {
     console.error("Error loading dashboard:", err);
     res.status(500).send("Internal Server Error");
   }
+});
+
+// Lightweight version probe so open dashboard screens can detect a fresh
+// upload and reload themselves. Returns the current data version number.
+app.get("/dashboard/data-version", (req, res) => {
+  const version = Number(readRuntimeConfig().dataVersion) || 0;
+  res.json({ version });
 });
 
 
@@ -3722,6 +3748,9 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
     console.log(`Years: ${yearsArray.join(", ")}`);
     console.log(`Buildings: ${buildingNameSet.size}`);
 
+    // Signal open dashboard screens to reload with the new data.
+    bumpDataVersion();
+
     res.send(
       `Data successfully uploaded! Years: ${yearsArray.join(", ")} | Buildings: ${buildingsList}`
     );
@@ -3799,6 +3828,10 @@ app.post("/clear/all", async (req, res) => {
     }
 
     await db.query("COMMIT");
+
+    // Signal open dashboard screens to reload now that data was cleared.
+    bumpDataVersion();
+
     res.send("All data cleared successfully");
 
   } catch (err) {
