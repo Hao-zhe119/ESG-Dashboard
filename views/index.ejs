@@ -112,50 +112,64 @@ html, body {
 
 /* ---- KPI card animations ---- */
 
-/* Entrance: fade + rise, staggered per card */
+/* Entrance: fade + rise, staggered */
 #page1 .kpi-card{
   opacity: 0;
-  animation: kpiRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-             kpiFloat 5s ease-in-out infinite;
+  animation: kpiRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-#page1 .kpi-card:nth-child(1){ animation-delay: 0.25s, 0.95s; }
-#page1 .kpi-card:nth-child(2){ animation-delay: 0.40s, 1.10s; }
-#page1 .kpi-card:nth-child(3){ animation-delay: 0.55s, 1.25s; }
-#page1 .kpi-card:nth-child(4){ animation-delay: 0.70s, 1.40s; }
+#page1 .kpi-card:nth-child(1){ animation-delay: 0.25s; }
+#page1 .kpi-card:nth-child(2){ animation-delay: 0.40s; }
+#page1 .kpi-card:nth-child(3){ animation-delay: 0.55s; }
+#page1 .kpi-card:nth-child(4){ animation-delay: 0.70s; }
 
 @keyframes kpiRise{
   from{ opacity:0; transform: translateY(30px) scale(0.96); }
   to  { opacity:1; transform: translateY(0)    scale(1); }
 }
 
-/* Idle: gentle float (each offset by the delays above so they don't move in sync) */
-@keyframes kpiFloat{
+/* Idle float: inner wrapper floats so it doesn't fight the entrance */
+#page1 .kpi-card .kpi-icon,
+#page1 .kpi-card .kpi-value,
+#page1 .kpi-card .kpi-label{
+  animation: kpiWave 2.8s ease-in-out infinite;
+}
+/* Stagger the wave so cards float ONE BY ONE */
+#page1 .kpi-card:nth-child(1) .kpi-icon,
+#page1 .kpi-card:nth-child(1) .kpi-value,
+#page1 .kpi-card:nth-child(1) .kpi-label{ animation-delay: 0s; }
+
+#page1 .kpi-card:nth-child(2) .kpi-icon,
+#page1 .kpi-card:nth-child(2) .kpi-value,
+#page1 .kpi-card:nth-child(2) .kpi-label{ animation-delay: 0.35s; }
+
+#page1 .kpi-card:nth-child(3) .kpi-icon,
+#page1 .kpi-card:nth-child(3) .kpi-value,
+#page1 .kpi-card:nth-child(3) .kpi-label{ animation-delay: 0.7s; }
+
+#page1 .kpi-card:nth-child(4) .kpi-icon,
+#page1 .kpi-card:nth-child(4) .kpi-value,
+#page1 .kpi-card:nth-child(4) .kpi-label{ animation-delay: 1.05s; }
+
+@keyframes kpiWave{
   0%, 100%{ transform: translateY(0); }
-  50%     { transform: translateY(-7px); }
+  50%     { transform: translateY(-14px); }
 }
 
-/* Hover: lift + green glow + brighten */
+/* Hover: glow (no transform, so it won't fight the wave) */
 #page1 .kpi-card{
   transition: box-shadow .25s ease, border-color .25s ease;
-  cursor: default;
 }
 #page1 .kpi-card:hover{
   box-shadow: 0 18px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(126,174,51,0.55), 0 0 26px rgba(126,174,51,0.30);
   border-color: rgba(126,174,51,0.55);
 }
 
-/* Icon: subtle pop on hover */
-#page1 .kpi-card:hover .kpi-icon{
-  transform: scale(1.12);
-  transition: transform .25s ease;
-}
-#page1 .kpi-icon{ transition: transform .25s ease; }
-
 #page1 .kpi-icon{
-  width:48px; height:48px; border-radius:14px;
+  width:48px; height:48px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
   font-size:24px; margin-bottom:2px;
 }
+
 #page1 .kpi-value{
   font-size:clamp(22px, 2vw, 34px);
   font-weight:800;
