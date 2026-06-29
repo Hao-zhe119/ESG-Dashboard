@@ -1,5 +1,5 @@
 {
-  "dataVersion": 1,
+  "dataVersion": 0,
   "defaultTimersSeconds": {
     "1": 15,
     "2": 60,
@@ -16,7 +16,7 @@
     "autoSwitchOnActivity": true,
     "autoRevertEnabled": true,
     "idleTimeoutMinutes": 15,
-    "lastActivityAt": "2026-06-29T06:25:42.008Z"
+    "lastActivityAt": "2026-06-29T06:28:03.258Z"
   },
   "automation": {
     "applyDefaultTimingEnabled": false,
@@ -76,10 +76,9 @@
     ],
     "lastHibernateDryRunAt": null,
     "lastHibernateRunKey": null,
-    "healthCheckEnabled": true,
+    "healthCheckEnabled": false,
     "healthCheckTime": "08:00",
-    "lastScheduledHealthCheckDate": null,
-    "healthCheckIntervalSeconds": 30
+    "lastScheduledHealthCheckDate": null
   },
   "timerProfiles": [],
   "buildingPageGroups": {
