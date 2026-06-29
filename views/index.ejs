@@ -139,28 +139,59 @@ html, body {
 }
 
 #page1 .welcome-logo {
-  height: clamp(110px, 16vh, 190px);
+  height: clamp(95px, 12vh, 150px);
   width: auto;
-  border-radius: 18px;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.45);
-  position: static;
-  transform: none;
-  z-index: 1;
+  position: absolute;
+  top: clamp(70px, 10vh, 110px);
+  left: clamp(24px, 3vw, 52px);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.55));
+  z-index: 3;
+  animation: logoFloat 4s ease-in-out infinite;
+}
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
 
 #page1 .welcome-title {
   position: static;
   transform: none;
-  font-size: clamp(1.8rem, 3.4vw, 3.6rem);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: clamp(2rem, 4vw, 4.4rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-align: center;
-  color: var(--text);
-  text-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  color: #ffffff;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.6);
   padding: 0 clamp(10px, 2vw, 24px);
   max-width: 92vw;
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.12;
+  animation: titleRise 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes titleRise {
+  from { opacity: 0; transform: translateY(28px); filter: blur(6px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+
+#page1 .welcome-rp-text {
+  display: inline-block;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  background: linear-gradient(100deg, #8fd14f 0%, #ffffff 45%, #7eae33 70%, #ffffff 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 14px rgba(126,174,51,0.45));
+  animation: rpShimmer 5s linear infinite;
+}
+@keyframes rpShimmer {
+  to { background-position: 250% center; }
 }
 
 #welcome-page .welcome-rp-text,
@@ -1394,7 +1425,7 @@ body.mode-interactive #page7 .three-panel {
     <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
     <h1 class="welcome-title">
       WELCOME TO<br>
-      <span class="welcome-rp-text animate__animated animate__heartBeat animate__infinite">REPUBLIC POLYTECHNIC'S</span><br>
+      <span class="welcome-rp-text">REPUBLIC POLYTECHNIC'S</span><br>
       ESG CENTRE!
     </h1>
     <div class="welcome-kpis" id="welcomeKpis">
