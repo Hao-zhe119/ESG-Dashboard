@@ -109,6 +109,48 @@ html, body {
   gap:6px;
   color:#fff;
 }
+
+/* ---- KPI card animations ---- */
+
+/* Entrance: fade + rise, staggered per card */
+#page1 .kpi-card{
+  opacity: 0;
+  animation: kpiRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+             kpiFloat 5s ease-in-out infinite;
+}
+#page1 .kpi-card:nth-child(1){ animation-delay: 0.25s, 0.95s; }
+#page1 .kpi-card:nth-child(2){ animation-delay: 0.40s, 1.10s; }
+#page1 .kpi-card:nth-child(3){ animation-delay: 0.55s, 1.25s; }
+#page1 .kpi-card:nth-child(4){ animation-delay: 0.70s, 1.40s; }
+
+@keyframes kpiRise{
+  from{ opacity:0; transform: translateY(30px) scale(0.96); }
+  to  { opacity:1; transform: translateY(0)    scale(1); }
+}
+
+/* Idle: gentle float (each offset by the delays above so they don't move in sync) */
+@keyframes kpiFloat{
+  0%, 100%{ transform: translateY(0); }
+  50%     { transform: translateY(-7px); }
+}
+
+/* Hover: lift + green glow + brighten */
+#page1 .kpi-card{
+  transition: box-shadow .25s ease, border-color .25s ease;
+  cursor: default;
+}
+#page1 .kpi-card:hover{
+  box-shadow: 0 18px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(126,174,51,0.55), 0 0 26px rgba(126,174,51,0.30);
+  border-color: rgba(126,174,51,0.55);
+}
+
+/* Icon: subtle pop on hover */
+#page1 .kpi-card:hover .kpi-icon{
+  transform: scale(1.12);
+  transition: transform .25s ease;
+}
+#page1 .kpi-icon{ transition: transform .25s ease; }
+
 #page1 .kpi-icon{
   width:48px; height:48px; border-radius:14px;
   display:flex; align-items:center; justify-content:center;
