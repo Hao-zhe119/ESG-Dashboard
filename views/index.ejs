@@ -170,6 +170,49 @@ html, body {
   .page { transition: none !important; }
 }
 
+/* Right-panel lists (Navigation / Solar / Waste) — solid white rows on glass */
+#page5 #threeRightBody .building-list-item,
+#page6 #solar-year-list .building-list-item,
+#page7 #waste-year-list .building-list-item {
+  background: #ffffff !important;
+  color: #111827;
+}
+#page5 #threeRightBody .building-list-item:nth-child(even),
+#page6 #solar-year-list .building-list-item:nth-child(even),
+#page7 #waste-year-list .building-list-item:nth-child(even) {
+  background: #f3f4f6 !important;
+}
+#page5 #threeRightBody .building-list-item .fw-bold,
+#page6 #solar-year-list .building-list-item .fw-bold,
+#page7 #waste-year-list .building-list-item .fw-bold {
+  color: #111827 !important;
+}
+#page5 #threeRightBody .building-list-item small,
+#page6 #solar-year-list .building-list-item small,
+#page7 #waste-year-list .building-list-item small {
+  color: rgba(17,24,39,0.70) !important;
+}
+/* keep the active row clearly highlighted */
+#page5 #threeRightBody .building-list-item.active,
+#page6 #solar-year-list .building-list-item.active,
+#page7 #waste-year-list .building-list-item.active {
+  background: rgba(22,163,74,0.16) !important;
+}
+
+#page5 #threeRightBody .building-list-item.active,
+#page6 #solar-year-list .building-list-item.active,
+#page7 #waste-year-list .building-list-item.active {
+  background: rgba(22,163,74,0.55) !important;
+}
+#page5 #threeRightBody .building-list-item.active .fw-bold,
+#page6 #solar-year-list .building-list-item.active .fw-bold,
+#page7 #waste-year-list .building-list-item.active .fw-bold,
+#page5 #threeRightBody .building-list-item.active small,
+#page6 #solar-year-list .building-list-item.active small,
+#page7 #waste-year-list .building-list-item.active small {
+  color: #ffffff !important;
+}
+
 /* ========================================
    PAGE BACKGROUNDS
    ======================================== */
