@@ -1286,7 +1286,15 @@
       let color, label;
       if (/^E[1-6]/.test(key))      { color = "#ef4444"; label = key.slice(0,2); }   // E-blocks: red
       else if (/^W[1-6]/.test(key)) { color = "#f59e0b"; label = key.slice(0,2); }   // W-blocks: amber
-      else                          { color = "#10b981"; label = key.slice(0,3); }   // facilities: green
+      else {
+        color = "#10b981";
+        const shortCodes = {
+          "SPORTS COMPLEX":"SC", "THE ARCH":"ARCH", "GREEN HOUSE":"GH",
+          "BLK 43":"SIT", "ECMC":"ECMC", "RPC":"RPC", "RPIC":"RPIC",
+          "TRCC":"TRCC", "XLC":"XLC", "ALC":"ALC"
+        };
+        label = shortCodes[key] || key.slice(0,3);
+      }                                                                              // facilities: green
       return '<div class="card-badge" style="background:' + color + '">' + label + '</div>';
     }
 
