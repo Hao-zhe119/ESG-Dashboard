@@ -32,7 +32,6 @@
       --btnBdHover: rgba(96,165,250,0.45);
 
       /* Panels */
-/* Panels */
       --panelBg: rgba(255,255,255,0.06);
       --panelBd: rgba(255,255,255,0.10);
 
@@ -412,7 +411,7 @@
     /* ============================================================
        BUILDING CARD
     ============================================================ */
-    .building-card{
+    /* .building-card{
       background:var(--cardBg);
       color:var(--cardText);
       border-radius:14px;
@@ -427,6 +426,49 @@
       user-select:none;
       min-width:0;
       transition: transform .12s ease, box-shadow .12s ease;
+    } */
+     .building-card{
+      background: linear-gradient(to bottom, #ffffff, #f1f5f9);
+      color:var(--cardText);
+      border-radius:16px;
+      padding:14px 16px;
+      min-height: 72px;
+      box-shadow:0 8px 20px rgba(0,0,0,.28);
+      border:1.5px solid rgba(255,255,255,0.6);
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      user-select:none;
+      min-width:0;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    
+    /* Card becomes a horizontal row: badge + text */
+    .building-card{
+      flex-direction: row !important;
+      align-items: center;
+      gap: 12px !important;
+    }
+    .card-badge{
+      flex: 0 0 auto;
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      color: #fff;
+      letter-spacing: 0.02em;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .card-text{
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .view#view-page5 .building-card{
@@ -441,7 +483,7 @@
       font-size:13px;
       margin-top:2px;
     }
-
+/* 
     .building-card.active{
       border-color:var(--active);
       box-shadow:0 0 0 2px rgba(96,165,250,.25), 0 10px 22px rgba(0,0,0,.18);
@@ -450,6 +492,16 @@
     .building-card:hover{
       transform:translateY(-1px);
       box-shadow:0 14px 28px rgba(0,0,0,.25);
+    } */
+     .building-card.active{
+      border-color: var(--accentGreen);
+      box-shadow:0 0 0 3px var(--accentGreenDim), 0 10px 26px rgba(52,211,153,.30);
+    }
+
+    .building-card:hover{
+      transform:translateY(-3px);
+      box-shadow:0 16px 32px rgba(0,0,0,.35), 0 0 0 1px var(--accentGreenBorder);
+      border-color: var(--accentGreenBorder);
     }
 
     .building-name{
@@ -559,7 +611,7 @@
       gap:12px;
     }
 
-    .year-card{
+    /* .year-card{
       background:var(--cardBg);
       color:var(--cardText);
       border-radius:14px;
@@ -574,8 +626,24 @@
       user-select:none;
       min-width:0;
       transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    } */
+    .year-card{
+      background: linear-gradient(to bottom, #ffffff, #f1f5f9);
+      color:var(--cardText);
+      border-radius:16px;
+      padding:16px 18px;
+      min-height: 70px;
+      box-shadow:0 8px 20px rgba(0,0,0,.28);
+      border:1.5px solid rgba(255,255,255,0.6);
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      user-select:none;
+      min-width:0;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
     }
-
+/*     
     .year-card.active{
       border-color:var(--active);
       box-shadow:0 0 0 2px rgba(96,165,250,.25), 0 10px 22px rgba(0,0,0,.18);
@@ -584,6 +652,17 @@
     .year-card:hover{
       transform:translateY(-1px);
       box-shadow:0 14px 28px rgba(0,0,0,.25);
+    } */
+
+    .year-card.active{
+      border-color: var(--accentGreen);
+      box-shadow:0 0 0 3px var(--accentGreenDim), 0 10px 26px rgba(52,211,153,.30);
+    }
+
+    .year-card:hover{
+      transform:translateY(-3px);
+      box-shadow:0 16px 32px rgba(0,0,0,.35), 0 0 0 1px var(--accentGreenBorder);
+      border-color: var(--accentGreenBorder);
     }
 
     .year-card .year-title{
@@ -1201,6 +1280,15 @@
     const groupBuildingsGrid = document.getElementById("groupBuildingsGrid");
     const backToGroupsBtn = document.getElementById("backToGroupsBtn");
     const buildingCards = {};
+    
+    function badgeForBuilding(code){
+      const key = String(code || "").toUpperCase();
+      let color, label;
+      if (/^E[1-6]/.test(key))      { color = "#ef4444"; label = key.slice(0,2); }   // E-blocks: red
+      else if (/^W[1-6]/.test(key)) { color = "#f59e0b"; label = key.slice(0,2); }   // W-blocks: amber
+      else                          { color = "#10b981"; label = key.slice(0,3); }   // facilities: green
+      return '<div class="card-badge" style="background:' + color + '">' + label + '</div>';
+    }
 
     function createCard(buildingCode){
       const card = document.createElement("div");
@@ -1210,8 +1298,13 @@
       const title = uiTitleFor(buildingCode);
       const desc = uiDescFor(buildingCode);
 
-      card.innerHTML = '<div class="building-name">' + title + '</div>' +
-        (desc ? '<p class="building-metric">' + desc + '</p>' : '');
+      // card.innerHTML = '<div class="building-name">' + title + '</div>' +
+      //   (desc ? '<p class="building-metric">' + desc + '</p>' : '');
+      card.innerHTML = badgeForBuilding(buildingCode) +
+        '<div class="card-text">' +
+          '<div class="building-name">' + title + '</div>' +
+          (desc ? '<p class="building-metric">' + desc + '</p>' : '') +
+        '</div>';
 
       card.addEventListener("click", () => {
         postToMain({ type: "NAV_PAGE", page: 5 });
@@ -1235,8 +1328,14 @@
         ? "Select from the East buildings"
         : "Select from the West buildings";
 
-      card.innerHTML = '<div class="building-name">' + label + '</div>' +
-        '<p class="building-metric">' + description + '</p>';
+      // card.innerHTML = '<div class="building-name">' + label + '</div>' +
+      //   '<p class="building-metric">' + description + '</p>';
+      const groupColor = groupKey === "E" ? "#ef4444" : "#f59e0b";
+      card.innerHTML = '<div class="card-badge" style="background:' + groupColor + '">' + groupKey + '</div>' +
+        '<div class="card-text">' +
+          '<div class="building-name">' + label + '</div>' +
+          '<p class="building-metric">' + description + '</p>' +
+        '</div>';
 
       card.addEventListener("click", () => showDetailStage(groupKey));
       card.addEventListener("keydown", (evt) => { if (evt.key === "Enter") showDetailStage(groupKey); });
