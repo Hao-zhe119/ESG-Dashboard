@@ -84,40 +84,83 @@ html, body {
 /* ========================================
    PAGE 1: WELCOME
    ======================================== */
-#page1 { position: relative; }
+/* Welcome KPI summary cards */
+#page1 .welcome-kpis{
+  position:static;
+  transform:none;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:18px;
+  width:min(1100px, 88vw);
+  z-index:2;
+  margin-top: clamp(8px, 2vh, 20px);
+}
+#page1 .kpi-card{
+  background: var(--glassBgStrong);
+  -webkit-backdrop-filter: var(--glassBlur);
+  backdrop-filter: var(--glassBlur);
+  border: var(--glassBorder);
+  border-radius: var(--glassRadius);
+  box-shadow: var(--glassShadow);
+  padding:18px 16px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  color:#fff;
+}
+#page1 .kpi-icon{
+  width:48px; height:48px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; margin-bottom:2px;
+}
+#page1 .kpi-value{
+  font-size:clamp(22px, 2vw, 34px);
+  font-weight:800;
+  text-shadow:0 2px 8px rgba(0,0,0,0.5);
+  line-height:1.1;
+}
+#page1 .kpi-label{
+  font-size:clamp(11px, 0.9vw, 13px);
+  color:rgba(255,255,255,0.8);
+  text-align:center;
+}
+@media (max-width:900px){
+  #page1 .welcome-kpis{ grid-template-columns:repeat(2,1fr); }
+}
+
+#page1 {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3vh, 36px);
+}
 
 #page1 .welcome-logo {
-  height: 350px;
+  height: clamp(110px, 16vh, 190px);
   width: auto;
   border-radius: 18px;
   box-shadow: 0 10px 24px rgba(0,0,0,0.45);
-  position: absolute;
-  top: 50%;
-  left: 100px;
-  transform: translateY(-50%);
+  position: static;
+  transform: none;
   z-index: 1;
 }
 
 #page1 .welcome-title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(2.2rem, 4.2vw, 4.5rem);
+  position: static;
+  transform: none;
+  font-size: clamp(1.8rem, 3.4vw, 3.6rem);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-align: center;
   color: var(--text);
+  text-shadow: 0 4px 16px rgba(0,0,0,0.5);
   padding: 0 clamp(10px, 2vw, 24px);
   max-width: 92vw;
-}
-
-#page1 .welcome-subtitle {
-  position: absolute;
-  right: clamp(12px, 2vw, 28px);
-  bottom: calc(var(--progH) + clamp(12px, 2.6vh, 28px));
-  font-size: clamp(12px, 1.4vw, 16px);
-  color: var(--muted);
+  margin: 0;
+  line-height: 1.15;
 }
 
 #welcome-page .welcome-rp-text,
@@ -1337,6 +1380,16 @@ body.mode-interactive #page7 .three-panel {
   </nav>
 
   <!-- PAGE 1: WELCOME -->
+  <!-- <div id="page1" class="page active-page">
+    <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
+    <h1 class="welcome-title">
+      WELCOME TO<br>
+      <span class="welcome-rp-text animate__animated animate__heartBeat animate__infinite">REPUBLIC POLYTECHNIC'S</span><br>
+      ESG CENTRE!
+    </h1>
+  </div> -->
+
+  <!-- PAGE 1: WELCOME -->
   <div id="page1" class="page active-page">
     <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
     <h1 class="welcome-title">
@@ -1344,6 +1397,28 @@ body.mode-interactive #page7 .three-panel {
       <span class="welcome-rp-text animate__animated animate__heartBeat animate__infinite">REPUBLIC POLYTECHNIC'S</span><br>
       ESG CENTRE!
     </h1>
+    <div class="welcome-kpis" id="welcomeKpis">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(250,204,21,0.18);">⚡</div>
+        <div class="kpi-value" id="kpiElec">—</div>
+        <div class="kpi-label">Avg Monthly Electricity (kWh)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(59,130,246,0.18);">💧</div>
+        <div class="kpi-value" id="kpiWater">—</div>
+        <div class="kpi-label">Avg Monthly Water (m³)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(34,197,94,0.18);">☀️</div>
+        <div class="kpi-value" id="kpiSolar">—</div>
+        <div class="kpi-label">Avg Monthly Solar (kWh)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(239,68,68,0.18);">♻️</div>
+        <div class="kpi-value" id="kpiWaste">—</div>
+        <div class="kpi-label">Avg Monthly Waste (kg)</div>
+      </div>
+    </div>
   </div>
 
   <!-- PAGE 2: ALL BUILDINGS SUMMARY -->
@@ -5133,6 +5208,51 @@ body.mode-interactive #page7 .three-panel {
 
     // Build the year legend / colour controls once on load (containers already exist).
     buildInlineColorControls();
+
+
+    // ============================================================
+    // WELCOME PAGE KPI SUMMARY (average monthly, latest year)
+    // ============================================================
+    (function setupWelcomeKpis(){
+      const year = latestDataYear || newestYear;
+      if (!year) return;
+
+      // Electricity + Water totals (sum all buildings for the year)
+      let elecTotal = 0, waterTotal = 0;
+      const overview = overviewByYear[year] || [];
+      overview.forEach(b => {
+        elecTotal  += Number(b.electricity || 0);
+        waterTotal += Number(b.water || 0);
+      });
+
+      // Solar total (sum monthly urban + greenhouse)
+      let solarTotal = 0;
+      (solarByYear[year] || []).forEach(m => {
+        solarTotal += Number(m.urban || 0) + Number(m.greenhouse || 0);
+      });
+
+      // Waste total (sum monthly general + recyclable)
+      let wasteTotal = 0;
+      (wasteByYear[year] || []).forEach(m => {
+        wasteTotal += Number(m.generalKg || 0) + Number(m.recyclableKg || 0);
+      });
+
+      // Count months that actually have data, for a fair monthly average
+      const elecMonths  = 12; // building totals are annual; divide by 12
+      const solarMonths = (solarByYear[year] || []).filter(m => (Number(m.urban||0)+Number(m.greenhouse||0)) > 0).length || 12;
+      const wasteMonths = (wasteByYear[year] || []).filter(m => (Number(m.generalKg||0)+Number(m.recyclableKg||0)) > 0).length || 12;
+
+      const avgElec  = elecTotal  / elecMonths;
+      const avgWater = waterTotal / elecMonths;
+      const avgSolar = solarTotal / solarMonths;
+      const avgWaste = wasteTotal / wasteMonths;
+
+      // Animate using the existing count-up helper
+      animateCountUp(document.getElementById("kpiElec"),  Math.round(avgElec),  1200);
+      animateCountUp(document.getElementById("kpiWater"), Math.round(avgWater), 1200);
+      animateCountUp(document.getElementById("kpiSolar"), Math.round(avgSolar), 1200);
+      animateCountUp(document.getElementById("kpiWaste"), Math.round(avgWaste), 1200);
+    })();
   </script>
 </body>
 </html>
