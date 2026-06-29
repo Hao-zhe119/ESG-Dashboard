@@ -32,8 +32,20 @@
       --btnBdHover: rgba(96,165,250,0.45);
 
       /* Panels */
+/* Panels */
       --panelBg: rgba(255,255,255,0.06);
       --panelBd: rgba(255,255,255,0.10);
+
+      /* Glass tokens */
+      --glassBg: linear-gradient(to bottom, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+      --glassBorder: 1px solid rgba(255,255,255,0.18);
+      --glassBlur: blur(16px) saturate(140%);
+      --glassShadow: 0 14px 40px rgba(0,0,0,0.45), inset 0 0 14px rgba(255,255,255,0.04);
+      --glassRadius: 20px;
+      /* Accent (RP green) */
+      --accentGreen: #34d399;
+      --accentGreenDim: rgba(52,211,153,0.18);
+      --accentGreenBorder: rgba(52,211,153,0.55);
     }
 
     html,body{
@@ -76,7 +88,7 @@
       color:var(--muted);
       margin-top:2px;
     }
-
+/* 
     .nav-btn{
       background:var(--btnBg);
       border:1px solid var(--btnBd);
@@ -87,7 +99,21 @@
       cursor:pointer;
       user-select:none;
       transition: background .12s ease, border-color .12s ease, transform .12s ease;
+    } */
+
+     .nav-btn{
+      background: linear-gradient(to bottom, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+      border:1px solid var(--btnBd);
+      color:#fff;
+      padding:10px 18px;
+      border-radius:999px;
+      font-size:16px;
+      cursor:pointer;
+      user-select:none;
+      transition: background .12s ease, border-color .12s ease, transform .12s ease, box-shadow .12s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
+
     .nav-btn:hover{
       background: var(--btnBgHover);
       border-color: var(--btnBdHover);
@@ -116,12 +142,15 @@
       gap:12px;
     }
 
-    .top-panel{
+.top-panel{
       flex: 0 0 var(--topPanelH);
       min-height:0;
-      background: var(--panelBg);
-      border: 1px solid var(--panelBd);
-      border-radius: 16px;
+      background: var(--glassBg);
+      -webkit-backdrop-filter: var(--glassBlur);
+      backdrop-filter: var(--glassBlur);
+      border: var(--glassBorder);
+      border-radius: var(--glassRadius);
+      box-shadow: var(--glassShadow);
       padding: 12px;
       box-sizing:border-box;
 
@@ -131,12 +160,15 @@
       overflow:hidden;
     }
 
-    .bottom-panel{
+.bottom-panel{
       flex: 1;
       min-height:0;
-      background: var(--panelBg);
-      border: 1px solid var(--panelBd);
-      border-radius: 16px;
+      background: var(--glassBg);
+      -webkit-backdrop-filter: var(--glassBlur);
+      backdrop-filter: var(--glassBlur);
+      border: var(--glassBorder);
+      border-radius: var(--glassRadius);
+      box-shadow: var(--glassShadow);
       padding: 12px;
       box-sizing:border-box;
 
@@ -180,7 +212,7 @@
       flex-wrap:wrap;
       align-items:center;
     }
-
+/* 
     .pill{
       padding:8px 12px;
       border-radius:999px;
@@ -192,17 +224,46 @@
       user-select:none;
       transition: background .12s ease, border-color .12s ease, transform .12s ease, opacity .12s ease;
       outline:none;
+    } */
+     .pill{
+      padding:9px 14px;
+      border-radius:999px;
+      font-size:14px;
+      border:1px solid rgba(255,255,255,0.16);
+      background: linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      color:#fff;
+      cursor:pointer;
+      user-select:none;
+      transition: background .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease, opacity .12s ease;
+      outline:none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
-    .pill:hover{
+    
+    /* .pill:hover{
       background: rgba(96,165,250,0.18);
       border-color: rgba(96,165,250,0.45);
       transform: translateY(-1px);
+    } */
+
+     .pill:hover{
+      background: linear-gradient(to bottom, rgba(52,211,153,0.20), rgba(52,211,153,0.08));
+      border-color: var(--accentGreenBorder);
+      transform: translateY(-1px);
     }
-    .pill.active{
+
+    /* .pill.active{
       background: rgba(96,165,250,0.25);
       border-color: rgba(96,165,250,0.70);
       box-shadow: 0 0 0 2px rgba(96,165,250,0.18);
+    } */
+
+    .pill.active{
+      background: linear-gradient(to bottom, rgba(52,211,153,0.35), rgba(52,211,153,0.18));
+      border-color: var(--accentGreenBorder);
+      box-shadow: 0 0 0 2px var(--accentGreenDim), 0 4px 12px rgba(52,211,153,0.25);
+      color:#ffffff;
     }
+
     .pill.disabled{
       opacity: 0.35;
       cursor: not-allowed;
@@ -424,17 +485,35 @@
     }
 
     .control-card{
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 14px;
+      background: var(--glassBg);
+      -webkit-backdrop-filter: var(--glassBlur);
+      backdrop-filter: var(--glassBlur);
+      border: var(--glassBorder);
+      border-radius: 16px;
       padding: 12px;
       box-sizing:border-box;
     }
 
-    .control-title{
+    /* .control-title{
       font-weight:800;
       font-size:16px;
       margin:0 0 8px 0;
+    } */
+     .control-title{
+      font-weight:800;
+      font-size:16px;
+      margin:0 0 8px 0;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .control-title::before{
+      content:"";
+      width:3px;
+      height:16px;
+      border-radius:3px;
+      background: linear-gradient(to bottom, #34d399, #2563eb);
     }
 
     .control-row{
@@ -629,10 +708,27 @@
   <!-- ============================================================
        HEADER
   ============================================================ -->
-  <div class="header">
+  <!-- <div class="header">
     <div>
       <h2>Controls</h2>
       <div class="subtitle" id="headerSubtitle">Control the main dashboard (Pages 1-10)</div>
+    </div>
+    <button id="askAiBtn" class="ask-ai-btn" type="button" aria-label="Ask the AI assistant">
+      <span aria-hidden="true">&#128172;</span> Ask AI
+    </button>
+  </div> -->
+  <div class="header">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:4px; height:42px; border-radius:4px; background:linear-gradient(to bottom, #34d399, #2563eb); flex:0 0 auto;"></div>
+      <div>
+        <h2 style="display:flex; align-items:center; gap:10px; margin:0;">
+          Controls
+          <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#34d399; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.35); padding:3px 10px; border-radius:999px;">
+            <span style="width:7px; height:7px; border-radius:50%; background:#34d399; box-shadow:0 0 8px #34d399;"></span>Live
+          </span>
+        </h2>
+        <div class="subtitle" id="headerSubtitle">Control the main dashboard (Pages 1-10)</div>
+      </div>
     </div>
     <button id="askAiBtn" class="ask-ai-btn" type="button" aria-label="Ask the AI assistant">
       <span aria-hidden="true">&#128172;</span> Ask AI
