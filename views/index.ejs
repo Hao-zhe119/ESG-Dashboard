@@ -170,6 +170,49 @@ html, body {
   .page { transition: none !important; }
 }
 
+/* Right-panel lists (Navigation / Solar / Waste) — solid white rows on glass */
+#page5 #threeRightBody .building-list-item,
+#page6 #solar-year-list .building-list-item,
+#page7 #waste-year-list .building-list-item {
+  background: #ffffff !important;
+  color: #111827;
+}
+#page5 #threeRightBody .building-list-item:nth-child(even),
+#page6 #solar-year-list .building-list-item:nth-child(even),
+#page7 #waste-year-list .building-list-item:nth-child(even) {
+  background: #f3f4f6 !important;
+}
+#page5 #threeRightBody .building-list-item .fw-bold,
+#page6 #solar-year-list .building-list-item .fw-bold,
+#page7 #waste-year-list .building-list-item .fw-bold {
+  color: #111827 !important;
+}
+#page5 #threeRightBody .building-list-item small,
+#page6 #solar-year-list .building-list-item small,
+#page7 #waste-year-list .building-list-item small {
+  color: rgba(17,24,39,0.70) !important;
+}
+/* keep the active row clearly highlighted */
+#page5 #threeRightBody .building-list-item.active,
+#page6 #solar-year-list .building-list-item.active,
+#page7 #waste-year-list .building-list-item.active {
+  background: rgba(22,163,74,0.16) !important;
+}
+
+#page5 #threeRightBody .building-list-item.active,
+#page6 #solar-year-list .building-list-item.active,
+#page7 #waste-year-list .building-list-item.active {
+  background: rgba(22,163,74,0.55) !important;
+}
+#page5 #threeRightBody .building-list-item.active .fw-bold,
+#page6 #solar-year-list .building-list-item.active .fw-bold,
+#page7 #waste-year-list .building-list-item.active .fw-bold,
+#page5 #threeRightBody .building-list-item.active small,
+#page6 #solar-year-list .building-list-item.active small,
+#page7 #waste-year-list .building-list-item.active small {
+  color: #ffffff !important;
+}
+
 /* ========================================
    PAGE BACKGROUNDS
    ======================================== */
@@ -182,7 +225,7 @@ html, body {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(38, 45, 53, 0.72);
+  background: rgba(20, 28, 38, 0.45);;
   z-index: 0;
 }
 
@@ -204,9 +247,10 @@ html, body {
 }
 
 .navbar.bg-light {
-  background: rgba(22,27,34,0.92) !important;
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0.32)) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid rgba(255,255,255,0.18) !important;
 }
 
 .navbar .navbar-brand { color: var(--text) !important; }
@@ -519,7 +563,7 @@ body.mode-interactive #progressBarContainer { display: none; }
   padding: 0 !important;
   justify-content: flex-start;
   align-items: stretch;
-  background: var(--bg);
+  background: url("/images/rp-main.jpg") no-repeat center center / cover;
 }
 
 .three-panel {
@@ -549,17 +593,19 @@ body.mode-interactive #page7 .three-panel {
 /* Default: Equal thirds */
 .three-panel .panel {
   flex: 0 0 calc((100% - (2 * var(--gap))) / 3);
-  background: #ffffff;
-  border: 1px solid rgba(17,24,39,0.10);
-  border-radius: 16px;
+  background: var(--glassBgStrong);
+  -webkit-backdrop-filter: var(--glassBlur);
+  backdrop-filter: var(--glassBlur);
+  border: var(--glassBorder);
+  border-radius: var(--glassRadius);
   padding: 12px;
   overflow: hidden;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 22px rgba(0,0,0,0.18);
-  color: #111827;
+  box-shadow: var(--glassShadow);
+  color: #ffffff;
 }
 
 /* Default: Responsive stacking */
@@ -2311,25 +2357,37 @@ body.mode-interactive #page7 .three-panel {
     // INTERACTIVE MODE AUTO-REVERT
     // ============================================================
     const interactive_config = (runtime_config && runtime_config.interactiveMode) ? runtime_config.interactiveMode : {};
+    const interactive_auto_switch_enabled = interactive_config.autoSwitchOnActivity !== false;
     const interactive_auto_revert_enabled = !!interactive_config.autoRevertEnabled;
     const interactive_idle_timeout_ms = Math.max(1, Number(interactive_config.idleTimeoutMinutes || 15)) * 60 * 1000;
     let interactiveLastActivityAt = Date.now();
     let interactiveActivityPingTimer = null;
     let interactiveRevertTimer = null;
+    let interactiveSwitchPending = false;
 
-    function pingInteractiveActivity() {
-      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+    async function pingInteractiveActivity() {
+      if ((!is_auto_mode && !interactive_auto_revert_enabled) || interactiveSwitchPending) return;
       try {
-        fetch("/dashboard/interactive-activity", {
+        if (is_auto_mode) interactiveSwitchPending = true;
+        const response = await fetch("/dashboard/interactive-activity", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ activityAt: new Date().toISOString() })
-        }).catch(() => {});
-      } catch (error) {}
+        });
+        const json = await response.json().catch(() => ({}));
+        if (json.switched) {
+          window.location.href = "/";
+          return;
+        }
+      } catch (error) {
+      } finally {
+        interactiveSwitchPending = false;
+      }
     }
 
     function markInteractiveActivityClient() {
-      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+      if (is_auto_mode && !interactive_auto_switch_enabled) return;
+      if (!is_auto_mode && !interactive_auto_revert_enabled) return;
       interactiveLastActivityAt = Date.now();
       if (interactiveActivityPingTimer) return;
       interactiveActivityPingTimer = setTimeout(() => {

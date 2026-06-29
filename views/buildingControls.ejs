@@ -34,6 +34,17 @@
       /* Panels */
       --panelBg: rgba(255,255,255,0.06);
       --panelBd: rgba(255,255,255,0.10);
+
+      /* Glass tokens */
+      --glassBg: linear-gradient(to bottom, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+      --glassBorder: 1px solid rgba(255,255,255,0.18);
+      --glassBlur: blur(16px) saturate(140%);
+      --glassShadow: 0 14px 40px rgba(0,0,0,0.45), inset 0 0 14px rgba(255,255,255,0.04);
+      --glassRadius: 20px;
+      /* Accent (RP green) */
+      --accentGreen: #34d399;
+      --accentGreenDim: rgba(52,211,153,0.18);
+      --accentGreenBorder: rgba(52,211,153,0.55);
     }
 
     html,body{
@@ -76,7 +87,7 @@
       color:var(--muted);
       margin-top:2px;
     }
-
+/* 
     .nav-btn{
       background:var(--btnBg);
       border:1px solid var(--btnBd);
@@ -87,7 +98,21 @@
       cursor:pointer;
       user-select:none;
       transition: background .12s ease, border-color .12s ease, transform .12s ease;
+    } */
+
+     .nav-btn{
+      background: linear-gradient(to bottom, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+      border:1px solid var(--btnBd);
+      color:#fff;
+      padding:10px 18px;
+      border-radius:999px;
+      font-size:16px;
+      cursor:pointer;
+      user-select:none;
+      transition: background .12s ease, border-color .12s ease, transform .12s ease, box-shadow .12s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
+
     .nav-btn:hover{
       background: var(--btnBgHover);
       border-color: var(--btnBdHover);
@@ -116,12 +141,15 @@
       gap:12px;
     }
 
-    .top-panel{
+.top-panel{
       flex: 0 0 var(--topPanelH);
       min-height:0;
-      background: var(--panelBg);
-      border: 1px solid var(--panelBd);
-      border-radius: 16px;
+      background: var(--glassBg);
+      -webkit-backdrop-filter: var(--glassBlur);
+      backdrop-filter: var(--glassBlur);
+      border: var(--glassBorder);
+      border-radius: var(--glassRadius);
+      box-shadow: var(--glassShadow);
       padding: 12px;
       box-sizing:border-box;
 
@@ -131,12 +159,15 @@
       overflow:hidden;
     }
 
-    .bottom-panel{
+.bottom-panel{
       flex: 1;
       min-height:0;
-      background: var(--panelBg);
-      border: 1px solid var(--panelBd);
-      border-radius: 16px;
+      background: var(--glassBg);
+      -webkit-backdrop-filter: var(--glassBlur);
+      backdrop-filter: var(--glassBlur);
+      border: var(--glassBorder);
+      border-radius: var(--glassRadius);
+      box-shadow: var(--glassShadow);
       padding: 12px;
       box-sizing:border-box;
 
@@ -180,7 +211,7 @@
       flex-wrap:wrap;
       align-items:center;
     }
-
+/* 
     .pill{
       padding:8px 12px;
       border-radius:999px;
@@ -192,17 +223,46 @@
       user-select:none;
       transition: background .12s ease, border-color .12s ease, transform .12s ease, opacity .12s ease;
       outline:none;
+    } */
+     .pill{
+      padding:9px 14px;
+      border-radius:999px;
+      font-size:14px;
+      border:1px solid rgba(255,255,255,0.16);
+      background: linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      color:#fff;
+      cursor:pointer;
+      user-select:none;
+      transition: background .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease, opacity .12s ease;
+      outline:none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
-    .pill:hover{
+    
+    /* .pill:hover{
       background: rgba(96,165,250,0.18);
       border-color: rgba(96,165,250,0.45);
       transform: translateY(-1px);
+    } */
+
+     .pill:hover{
+      background: linear-gradient(to bottom, rgba(52,211,153,0.20), rgba(52,211,153,0.08));
+      border-color: var(--accentGreenBorder);
+      transform: translateY(-1px);
     }
-    .pill.active{
+
+    /* .pill.active{
       background: rgba(96,165,250,0.25);
       border-color: rgba(96,165,250,0.70);
       box-shadow: 0 0 0 2px rgba(96,165,250,0.18);
+    } */
+
+    .pill.active{
+      background: linear-gradient(to bottom, rgba(52,211,153,0.35), rgba(52,211,153,0.18));
+      border-color: var(--accentGreenBorder);
+      box-shadow: 0 0 0 2px var(--accentGreenDim), 0 4px 12px rgba(52,211,153,0.25);
+      color:#ffffff;
     }
+
     .pill.disabled{
       opacity: 0.35;
       cursor: not-allowed;
@@ -351,7 +411,7 @@
     /* ============================================================
        BUILDING CARD
     ============================================================ */
-    .building-card{
+    /* .building-card{
       background:var(--cardBg);
       color:var(--cardText);
       border-radius:14px;
@@ -366,6 +426,49 @@
       user-select:none;
       min-width:0;
       transition: transform .12s ease, box-shadow .12s ease;
+    } */
+     .building-card{
+      background: linear-gradient(to bottom, #ffffff, #f1f5f9);
+      color:var(--cardText);
+      border-radius:16px;
+      padding:14px 16px;
+      min-height: 72px;
+      box-shadow:0 8px 20px rgba(0,0,0,.28);
+      border:1.5px solid rgba(255,255,255,0.6);
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      user-select:none;
+      min-width:0;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    
+    /* Card becomes a horizontal row: badge + text */
+    .building-card{
+      flex-direction: row !important;
+      align-items: center;
+      gap: 12px !important;
+    }
+    .card-badge{
+      flex: 0 0 auto;
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      color: #fff;
+      letter-spacing: 0.02em;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .card-text{
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .view#view-page5 .building-card{
@@ -380,7 +483,7 @@
       font-size:13px;
       margin-top:2px;
     }
-
+/* 
     .building-card.active{
       border-color:var(--active);
       box-shadow:0 0 0 2px rgba(96,165,250,.25), 0 10px 22px rgba(0,0,0,.18);
@@ -389,6 +492,16 @@
     .building-card:hover{
       transform:translateY(-1px);
       box-shadow:0 14px 28px rgba(0,0,0,.25);
+    } */
+     .building-card.active{
+      border-color: var(--accentGreen);
+      box-shadow:0 0 0 3px var(--accentGreenDim), 0 10px 26px rgba(52,211,153,.30);
+    }
+
+    .building-card:hover{
+      transform:translateY(-3px);
+      box-shadow:0 16px 32px rgba(0,0,0,.35), 0 0 0 1px var(--accentGreenBorder);
+      border-color: var(--accentGreenBorder);
     }
 
     .building-name{
@@ -424,17 +537,35 @@
     }
 
     .control-card{
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 14px;
+      background: var(--glassBg);
+      -webkit-backdrop-filter: var(--glassBlur);
+      backdrop-filter: var(--glassBlur);
+      border: var(--glassBorder);
+      border-radius: 16px;
       padding: 12px;
       box-sizing:border-box;
     }
 
-    .control-title{
+    /* .control-title{
       font-weight:800;
       font-size:16px;
       margin:0 0 8px 0;
+    } */
+     .control-title{
+      font-weight:800;
+      font-size:16px;
+      margin:0 0 8px 0;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .control-title::before{
+      content:"";
+      width:3px;
+      height:16px;
+      border-radius:3px;
+      background: linear-gradient(to bottom, #34d399, #2563eb);
     }
 
     .control-row{
@@ -480,7 +611,7 @@
       gap:12px;
     }
 
-    .year-card{
+    /* .year-card{
       background:var(--cardBg);
       color:var(--cardText);
       border-radius:14px;
@@ -495,8 +626,24 @@
       user-select:none;
       min-width:0;
       transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    } */
+    .year-card{
+      background: linear-gradient(to bottom, #ffffff, #f1f5f9);
+      color:var(--cardText);
+      border-radius:16px;
+      padding:16px 18px;
+      min-height: 70px;
+      box-shadow:0 8px 20px rgba(0,0,0,.28);
+      border:1.5px solid rgba(255,255,255,0.6);
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      user-select:none;
+      min-width:0;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
     }
-
+/*     
     .year-card.active{
       border-color:var(--active);
       box-shadow:0 0 0 2px rgba(96,165,250,.25), 0 10px 22px rgba(0,0,0,.18);
@@ -505,6 +652,17 @@
     .year-card:hover{
       transform:translateY(-1px);
       box-shadow:0 14px 28px rgba(0,0,0,.25);
+    } */
+
+    .year-card.active{
+      border-color: var(--accentGreen);
+      box-shadow:0 0 0 3px var(--accentGreenDim), 0 10px 26px rgba(52,211,153,.30);
+    }
+
+    .year-card:hover{
+      transform:translateY(-3px);
+      box-shadow:0 16px 32px rgba(0,0,0,.35), 0 0 0 1px var(--accentGreenBorder);
+      border-color: var(--accentGreenBorder);
     }
 
     .year-card .year-title{
@@ -629,10 +787,27 @@
   <!-- ============================================================
        HEADER
   ============================================================ -->
-  <div class="header">
+  <!-- <div class="header">
     <div>
       <h2>Controls</h2>
       <div class="subtitle" id="headerSubtitle">Control the main dashboard (Pages 1-10)</div>
+    </div>
+    <button id="askAiBtn" class="ask-ai-btn" type="button" aria-label="Ask the AI assistant">
+      <span aria-hidden="true">&#128172;</span> Ask AI
+    </button>
+  </div> -->
+  <div class="header">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:4px; height:42px; border-radius:4px; background:linear-gradient(to bottom, #34d399, #2563eb); flex:0 0 auto;"></div>
+      <div>
+        <h2 style="display:flex; align-items:center; gap:10px; margin:0;">
+          Controls
+          <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#34d399; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.35); padding:3px 10px; border-radius:999px;">
+            <span style="width:7px; height:7px; border-radius:50%; background:#34d399; box-shadow:0 0 8px #34d399;"></span>Live
+          </span>
+        </h2>
+        <div class="subtitle" id="headerSubtitle">Control the main dashboard (Pages 1-10)</div>
+      </div>
     </div>
     <button id="askAiBtn" class="ask-ai-btn" type="button" aria-label="Ask the AI assistant">
       <span aria-hidden="true">&#128172;</span> Ask AI
@@ -1105,6 +1280,23 @@
     const groupBuildingsGrid = document.getElementById("groupBuildingsGrid");
     const backToGroupsBtn = document.getElementById("backToGroupsBtn");
     const buildingCards = {};
+    
+    function badgeForBuilding(code){
+      const key = String(code || "").toUpperCase();
+      let color, label;
+      if (/^E[1-6]/.test(key))      { color = "#ef4444"; label = key.slice(0,2); }   // E-blocks: red
+      else if (/^W[1-6]/.test(key)) { color = "#f59e0b"; label = key.slice(0,2); }   // W-blocks: amber
+      else {
+        color = "#10b981";
+        const shortCodes = {
+          "SPORTS COMPLEX":"SC", "THE ARCH":"ARCH", "GREEN HOUSE":"GH",
+          "BLK 43":"SIT", "ECMC":"ECMC", "RPC":"RPC", "RPIC":"RPIC",
+          "TRCC":"TRCC", "XLC":"XLC", "ALC":"ALC"
+        };
+        label = shortCodes[key] || key.slice(0,3);
+      }                                                                              // facilities: green
+      return '<div class="card-badge" style="background:' + color + '">' + label + '</div>';
+    }
 
     function createCard(buildingCode){
       const card = document.createElement("div");
@@ -1114,8 +1306,13 @@
       const title = uiTitleFor(buildingCode);
       const desc = uiDescFor(buildingCode);
 
-      card.innerHTML = '<div class="building-name">' + title + '</div>' +
-        (desc ? '<p class="building-metric">' + desc + '</p>' : '');
+      // card.innerHTML = '<div class="building-name">' + title + '</div>' +
+      //   (desc ? '<p class="building-metric">' + desc + '</p>' : '');
+      card.innerHTML = badgeForBuilding(buildingCode) +
+        '<div class="card-text">' +
+          '<div class="building-name">' + title + '</div>' +
+          (desc ? '<p class="building-metric">' + desc + '</p>' : '') +
+        '</div>';
 
       card.addEventListener("click", () => {
         postToMain({ type: "NAV_PAGE", page: 5 });
@@ -1139,8 +1336,14 @@
         ? "Select from the East buildings"
         : "Select from the West buildings";
 
-      card.innerHTML = '<div class="building-name">' + label + '</div>' +
-        '<p class="building-metric">' + description + '</p>';
+      // card.innerHTML = '<div class="building-name">' + label + '</div>' +
+      //   '<p class="building-metric">' + description + '</p>';
+      const groupColor = groupKey === "E" ? "#ef4444" : "#f59e0b";
+      card.innerHTML = '<div class="card-badge" style="background:' + groupColor + '">' + groupKey + '</div>' +
+        '<div class="card-text">' +
+          '<div class="building-name">' + label + '</div>' +
+          '<p class="building-metric">' + description + '</p>' +
+        '</div>';
 
       card.addEventListener("click", () => showDetailStage(groupKey));
       card.addEventListener("keydown", (evt) => { if (evt.key === "Enter") showDetailStage(groupKey); });
