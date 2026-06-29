@@ -1,5 +1,5 @@
 {
-  "dataVersion": 0,
+  "dataVersion": 8,
   "defaultTimersSeconds": {
     "1": 15,
     "2": 60,
@@ -13,9 +13,10 @@
     "10": 15
   },
   "interactiveMode": {
+    "autoSwitchOnActivity": true,
     "autoRevertEnabled": true,
     "idleTimeoutMinutes": 15,
-    "lastActivityAt": "2026-06-23T08:35:11.336Z"
+    "lastActivityAt": "2026-06-29T05:54:40.328Z"
   },
   "automation": {
     "applyDefaultTimingEnabled": false,
@@ -24,7 +25,44 @@
     "autoHibernateSchedule": {
       "startTime": "22:00",
       "endTime": "07:00",
-      "activeProfileId": "default"
+      "activeProfileId": "default",
+      "days": {
+        "monday": {
+          "enabled": true,
+          "startTime": "22:00",
+          "endTime": "07:00"
+        },
+        "tuesday": {
+          "enabled": true,
+          "startTime": "22:00",
+          "endTime": "07:00"
+        },
+        "wednesday": {
+          "enabled": true,
+          "startTime": "22:00",
+          "endTime": "07:00"
+        },
+        "thursday": {
+          "enabled": true,
+          "startTime": "22:00",
+          "endTime": "07:00"
+        },
+        "friday": {
+          "enabled": true,
+          "startTime": "22:00",
+          "endTime": "07:00"
+        },
+        "saturday": {
+          "enabled": false,
+          "startTime": "22:00",
+          "endTime": "07:00"
+        },
+        "sunday": {
+          "enabled": false,
+          "startTime": "22:00",
+          "endTime": "07:00"
+        }
+      }
     },
     "autoHibernateProfiles": [
       {
@@ -37,7 +75,10 @@
       }
     ],
     "lastHibernateDryRunAt": null,
+    "lastHibernateRunKey": null,
     "healthCheckEnabled": true,
+    "healthCheckTime": "08:00",
+    "lastScheduledHealthCheckDate": null,
     "healthCheckIntervalSeconds": 30
   },
   "timerProfiles": [],

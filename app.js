@@ -3432,6 +3432,37 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
     const insertBuildingElectricSQL =
       "INSERT INTO building_ebills (account_id, building_name, bill_month, bill_amount) VALUES (?, ?, ?, ?)";
 
+    // Detect year blocks from the building-electric tab's OWN "CYxxxx" labels in
+    // column B, rather than reusing the electricity-total year list (yearsArray):
+    // the building tab can cover more years than the totals tab (e.g. it has 2026
+    // while the totals do not). For each block we locate the "January" row
+    // explicitly, so an extra blank row inside a block (the file is not always
+    // uniformly 15 rows apart) cannot push the month data out of alignment.
+    const elecYearBlocks = [];
+    for (let r = 1; r <= 300; r++) {
+      const cell = sheet2[`B${r}`];
+      if (!cell || cell.v === undefined || cell.v === null) continue;
+      const m = String(cell.v).match(/CY\s*(\d{4})/i);
+      if (!m) continue;
+      const blockYear = parseInt(m[1], 10);
+      if (!(blockYear >= 2000 && blockYear <= 2100)) continue;
+      let janRow = null;
+      for (let rr = r + 1; rr <= r + 6; rr++) {
+        const c = sheet2[`B${rr}`];
+        if (c && String(c.v).trim().toLowerCase() === "january") { janRow = rr; break; }
+      }
+      if (janRow) elecYearBlocks.push({ year: blockYear, startRow: janRow });
+    }
+    // Fallback to the legacy fixed layout (rows 5, 20, 35 ...) for older files
+    // that do not carry "CYxxxx" labels in this tab.
+    if (elecYearBlocks.length === 0) {
+      for (let yearIndex = 0; yearIndex < yearsArray.length; yearIndex++) {
+        elecYearBlocks.push({ year: yearsArray[yearIndex], startRow: 5 + yearIndex * 15 });
+      }
+    }
+    console.log(`Tab 2: Detected ${elecYearBlocks.length} electric year blocks:`,
+      elecYearBlocks.map(b => `${b.year}@row${b.startRow}`).join(", "));
+
     for (let colIndex = 2; colIndex <= 23; colIndex++) {
       const col = XLSX.utils.encode_col(colIndex);
       const buildingNameRaw = sheet2[`${col}4`]?.v;
@@ -3444,9 +3475,9 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
         buildingElecYears.set(buildingName, new Set());
       }
 
-      for (let yearIndex = 0; yearIndex < yearsArray.length; yearIndex++) {
-        const year = yearsArray[yearIndex];
-        const startRow = 5 + yearIndex * 15;
+      for (const block of elecYearBlocks) {
+        const year = block.year;
+        const startRow = block.startRow;
         let monthsWithData = 0;
         let hasAnyData = false;
 
@@ -3482,8 +3513,29 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
     const insertTotalWaterSQL =
       "INSERT INTO total_waterusage (account_id, bill_month, portable_water, recycled_water) VALUES (?, ?, ?, ?)";
 
-    for (let yearIndex = 0; yearIndex < yearsArray.length; yearIndex++) {
-      const year = yearsArray[yearIndex];
+    // Detect years from the Water tab itself (col B, rows 3, 15, 27, ...).
+    // Do NOT reuse the electricity year list (yearsArray): water can cover
+    // different years than electricity (e.g. water has 2026 but electricity does not).
+    const waterYearsArray = [];
+    {
+      let waterRow = 3;
+      while (waterYearsArray.length < 20) {
+        const cell = sheet3[`B${waterRow}`];
+        if (!cell || cell.v === undefined || cell.v === null || String(cell.v).trim() === "") break;
+        const y = Number(cell.v);
+        if (Number.isFinite(y) && y >= 2000 && y <= 2100) {
+          waterYearsArray.push(y);
+          waterRow += 12;
+        } else {
+          console.warn(`Tab 3 cell B${waterRow} contains "${cell.v}" - not a valid year`);
+          break;
+        }
+      }
+    }
+    console.log(`Tab 3: Detected ${waterYearsArray.length} water years:`, waterYearsArray);
+
+    for (let yearIndex = 0; yearIndex < waterYearsArray.length; yearIndex++) {
+      const year = waterYearsArray[yearIndex];
       const startRow = 3 + yearIndex * 12;
       let monthsWithData = 0;
 
@@ -3508,7 +3560,7 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
       }
     }
 
-    console.log(`Tab 3: Inserted ${yearsArray.length * 12} total water records`);
+    console.log(`Tab 3: Inserted ${waterYearsArray.length * 12} total water records`);
 
     // ===================== TAB 4: BUILDING WATER USAGE =====================
     console.log("Processing Tab 4: Building Water Usage...");
