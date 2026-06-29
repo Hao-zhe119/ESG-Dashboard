@@ -38,8 +38,15 @@
   --listRowActive: rgba(52,211,153,0.18);
   --progressBg: rgba(255,255,255,0.10);
   --progressFill: #34d399;
-  --cardBg: #ffffff;
-  --cardText: #111827;
+/* ── Glassmorphism tokens ── */
+  --glassBg: linear-gradient(to bottom, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+  --glassBgStrong: linear-gradient(to bottom, rgba(8,12,16,0.62), rgba(20,28,38,0.45));
+  --glassBorder: 1px solid rgba(255,255,255,0.45);
+  --glassBlur: blur(22px) saturate(170%) brightness(0.9);
+  --glassShadow: 0 18px 45px rgba(0,0,0,0.40), inset 0 0 18px rgba(0,0,0,0.16);
+  --glassRadius: 22px;
+  --cardBg: rgba(255,255,255,0.10);
+  --cardText: #ffffff;
   --pageBreathTB: 4px;
   --threeBreathTB: 4px;
 
@@ -52,6 +59,13 @@
   --panel-ratio-right: 0.75;
   --panel-ratio-total: 3; 
 }
+
+
+.three-building-title,
+.three-info-body,
+.metric-label,
+.metric-value { color: #fff !important; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
 
 @media (min-aspect-ratio: 48/10) {
   :root { --stageMaxW: calc(100vw / 3); }
@@ -70,40 +84,170 @@ html, body {
 /* ========================================
    PAGE 1: WELCOME
    ======================================== */
-#page1 { position: relative; }
+/* Welcome KPI summary cards */
+#page1 .welcome-kpis{
+  position:static;
+  transform:none;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:18px;
+  width:min(1100px, 88vw);
+  z-index:2;
+  margin-top: clamp(8px, 2vh, 20px);
+}
+#page1 .kpi-card{
+  background: var(--glassBgStrong);
+  -webkit-backdrop-filter: var(--glassBlur);
+  backdrop-filter: var(--glassBlur);
+  border: var(--glassBorder);
+  border-radius: var(--glassRadius);
+  box-shadow: var(--glassShadow);
+  padding:18px 16px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  color:#fff;
+}
+
+/* ---- KPI card animations ---- */
+
+/* Entrance: fade + rise, staggered */
+#page1 .kpi-card{
+  opacity: 0;
+  animation: kpiRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+#page1 .kpi-card:nth-child(1){ animation-delay: 0.25s; }
+#page1 .kpi-card:nth-child(2){ animation-delay: 0.40s; }
+#page1 .kpi-card:nth-child(3){ animation-delay: 0.55s; }
+#page1 .kpi-card:nth-child(4){ animation-delay: 0.70s; }
+
+@keyframes kpiRise{
+  from{ opacity:0; transform: translateY(30px) scale(0.96); }
+  to  { opacity:1; transform: translateY(0)    scale(1); }
+}
+
+/* Idle float: inner wrapper floats so it doesn't fight the entrance */
+#page1 .kpi-card .kpi-icon,
+#page1 .kpi-card .kpi-value,
+#page1 .kpi-card .kpi-label{
+  animation: kpiWave 2.8s ease-in-out infinite;
+}
+/* Stagger the wave so cards float ONE BY ONE */
+#page1 .kpi-card:nth-child(1) .kpi-icon,
+#page1 .kpi-card:nth-child(1) .kpi-value,
+#page1 .kpi-card:nth-child(1) .kpi-label{ animation-delay: 0s; }
+
+#page1 .kpi-card:nth-child(2) .kpi-icon,
+#page1 .kpi-card:nth-child(2) .kpi-value,
+#page1 .kpi-card:nth-child(2) .kpi-label{ animation-delay: 0.35s; }
+
+#page1 .kpi-card:nth-child(3) .kpi-icon,
+#page1 .kpi-card:nth-child(3) .kpi-value,
+#page1 .kpi-card:nth-child(3) .kpi-label{ animation-delay: 0.7s; }
+
+#page1 .kpi-card:nth-child(4) .kpi-icon,
+#page1 .kpi-card:nth-child(4) .kpi-value,
+#page1 .kpi-card:nth-child(4) .kpi-label{ animation-delay: 1.05s; }
+
+@keyframes kpiWave{
+  0%, 100%{ transform: translateY(0); }
+  50%     { transform: translateY(-14px); }
+}
+
+/* Hover: glow (no transform, so it won't fight the wave) */
+#page1 .kpi-card{
+  transition: box-shadow .25s ease, border-color .25s ease;
+}
+#page1 .kpi-card:hover{
+  box-shadow: 0 18px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(126,174,51,0.55), 0 0 26px rgba(126,174,51,0.30);
+  border-color: rgba(126,174,51,0.55);
+}
+
+#page1 .kpi-icon{
+  width:48px; height:48px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; margin-bottom:2px;
+}
+
+#page1 .kpi-value{
+  font-size:clamp(22px, 2vw, 34px);
+  font-weight:800;
+  text-shadow:0 2px 8px rgba(0,0,0,0.5);
+  line-height:1.1;
+}
+#page1 .kpi-label{
+  font-size:clamp(11px, 0.9vw, 13px);
+  color:rgba(255,255,255,0.8);
+  text-align:center;
+}
+@media (max-width:900px){
+  #page1 .welcome-kpis{ grid-template-columns:repeat(2,1fr); }
+}
+
+#page1 {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3vh, 36px);
+}
 
 #page1 .welcome-logo {
-  height: 350px;
+  height: clamp(95px, 12vh, 150px);
   width: auto;
-  border-radius: 18px;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.45);
   position: absolute;
-  top: 50%;
-  left: 100px;
-  transform: translateY(-50%);
-  z-index: 1;
+  top: clamp(70px, 10vh, 110px);
+  left: clamp(24px, 3vw, 52px);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.55));
+  z-index: 3;
+  animation: logoFloat 4s ease-in-out infinite;
+}
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
 
 #page1 .welcome-title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(2.2rem, 4.2vw, 4.5rem);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  position: static;
+  transform: none;
+  font-size: clamp(2rem, 4vw, 4.4rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-align: center;
-  color: var(--text);
+  color: #ffffff;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.6);
   padding: 0 clamp(10px, 2vw, 24px);
   max-width: 92vw;
+  margin: 0;
+  line-height: 1.12;
+  animation: titleRise 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes titleRise {
+  from { opacity: 0; transform: translateY(28px); filter: blur(6px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
 }
 
-#page1 .welcome-subtitle {
-  position: absolute;
-  right: clamp(12px, 2vw, 28px);
-  bottom: calc(var(--progH) + clamp(12px, 2.6vh, 28px));
-  font-size: clamp(12px, 1.4vw, 16px);
-  color: var(--muted);
+#page1 .welcome-rp-text {
+  display: inline-block;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  background: linear-gradient(100deg, #8fd14f 0%, #ffffff 45%, #7eae33 70%, #ffffff 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 14px rgba(126,174,51,0.45));
+  animation: rpShimmer 5s linear infinite;
+}
+@keyframes rpShimmer {
+  to { background-position: 250% center; }
 }
 
 #welcome-page .welcome-rp-text,
@@ -156,6 +300,49 @@ html, body {
   .page { transition: none !important; }
 }
 
+/* Right-panel lists (Navigation / Solar / Waste) — solid white rows on glass */
+#page5 #threeRightBody .building-list-item,
+#page6 #solar-year-list .building-list-item,
+#page7 #waste-year-list .building-list-item {
+  background: #ffffff !important;
+  color: #111827;
+}
+#page5 #threeRightBody .building-list-item:nth-child(even),
+#page6 #solar-year-list .building-list-item:nth-child(even),
+#page7 #waste-year-list .building-list-item:nth-child(even) {
+  background: #f3f4f6 !important;
+}
+#page5 #threeRightBody .building-list-item .fw-bold,
+#page6 #solar-year-list .building-list-item .fw-bold,
+#page7 #waste-year-list .building-list-item .fw-bold {
+  color: #111827 !important;
+}
+#page5 #threeRightBody .building-list-item small,
+#page6 #solar-year-list .building-list-item small,
+#page7 #waste-year-list .building-list-item small {
+  color: rgba(17,24,39,0.70) !important;
+}
+/* keep the active row clearly highlighted */
+#page5 #threeRightBody .building-list-item.active,
+#page6 #solar-year-list .building-list-item.active,
+#page7 #waste-year-list .building-list-item.active {
+  background: rgba(22,163,74,0.16) !important;
+}
+
+#page5 #threeRightBody .building-list-item.active,
+#page6 #solar-year-list .building-list-item.active,
+#page7 #waste-year-list .building-list-item.active {
+  background: rgba(22,163,74,0.55) !important;
+}
+#page5 #threeRightBody .building-list-item.active .fw-bold,
+#page6 #solar-year-list .building-list-item.active .fw-bold,
+#page7 #waste-year-list .building-list-item.active .fw-bold,
+#page5 #threeRightBody .building-list-item.active small,
+#page6 #solar-year-list .building-list-item.active small,
+#page7 #waste-year-list .building-list-item.active small {
+  color: #ffffff !important;
+}
+
 /* ========================================
    PAGE BACKGROUNDS
    ======================================== */
@@ -168,7 +355,7 @@ html, body {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(38, 45, 53, 0.72);
+  background: rgba(20, 28, 38, 0.45);;
   z-index: 0;
 }
 
@@ -190,9 +377,10 @@ html, body {
 }
 
 .navbar.bg-light {
-  background: rgba(22,27,34,0.92) !important;
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0.32)) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid rgba(255,255,255,0.18) !important;
 }
 
 .navbar .navbar-brand { color: var(--text) !important; }
@@ -388,13 +576,16 @@ body.mode-interactive #progressBarContainer { display: none; }
    BUILDING CARDS
    ======================================== */
 .building-card {
-  border-radius: 12px;
-  background: var(--cardBg);
+  border-radius: var(--glassRadius);
+  background: var(--glassBg);
+  -webkit-backdrop-filter: var(--glassBlur);
+  backdrop-filter: var(--glassBlur);
   color: var(--cardText);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
   padding: 10px 12px;
   min-width: 0;
-  box-shadow: 0 10px 22px rgba(0,0,0,0.18);
-  border: 1px solid rgba(17,24,39,0.10);
+  box-shadow: var(--glassShadow);
+  border: var(--glassBorder);
   pointer-events: none;
   overflow: hidden;
   display: flex;
@@ -419,7 +610,7 @@ body.mode-interactive #progressBarContainer { display: none; }
   white-space: nowrap;
   overflow: visible;
   text-overflow: unset;
-  color: rgba(17,24,39,0.78);
+  color: rgba(255,255,255,0.92);
 }
 
 /* ========================================
@@ -502,7 +693,7 @@ body.mode-interactive #progressBarContainer { display: none; }
   padding: 0 !important;
   justify-content: flex-start;
   align-items: stretch;
-  background: var(--bg);
+  background: url("/images/rp-main.jpg") no-repeat center center / cover;
 }
 
 .three-panel {
@@ -532,17 +723,19 @@ body.mode-interactive #page7 .three-panel {
 /* Default: Equal thirds */
 .three-panel .panel {
   flex: 0 0 calc((100% - (2 * var(--gap))) / 3);
-  background: #ffffff;
-  border: 1px solid rgba(17,24,39,0.10);
-  border-radius: 16px;
+  background: var(--glassBgStrong);
+  -webkit-backdrop-filter: var(--glassBlur);
+  backdrop-filter: var(--glassBlur);
+  border: var(--glassBorder);
+  border-radius: var(--glassRadius);
   padding: 12px;
   overflow: hidden;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 22px rgba(0,0,0,0.18);
-  color: #111827;
+  box-shadow: var(--glassShadow);
+  color: #ffffff;
 }
 
 /* Default: Responsive stacking */
@@ -666,6 +859,23 @@ body.mode-interactive #page7 .three-panel {
   background: #ffffff;
   border-radius: 12px;
   border: 1px solid rgba(17,24,39,0.10);
+}
+
+/* Compare pages (Electricity / Water by building): bars on top, trend line below */
+.three-chart-wrap.compare-split {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.three-chart-wrap.compare-split .compare-bars {
+  flex: 1 1 62%;
+  min-height: 0;
+  position: relative;
+}
+.three-chart-wrap.compare-split .compare-line {
+  flex: 1 1 38%;
+  min-height: 0;
+  position: relative;
 }
 
 /* ========================================
@@ -1185,6 +1395,41 @@ body.mode-interactive #page7 .three-panel {
 
 </head>
 <body class="<%= (String(dashboardMode||'auto').toLowerCase()==='auto') ? 'mode-auto' : 'mode-interactive' %>">
+  <!-- ===== INLINE CHART COLOUR PICKERS (on the Electricity / Water by-building pages) ===== -->
+  <style>
+    .compare-color-controls{
+      display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:16px;
+      margin:6px auto 8px; padding:6px 14px; width:fit-content; max-width:92vw;
+      background:rgba(255,255,255,0.94); border-radius:999px;
+      box-shadow:0 2px 10px rgba(0,0,0,.18);
+    }
+    .compare-color-controls:empty{ display:none; }
+    .ccc-chip{ display:flex; align-items:center; gap:7px; }
+    .ccc-year{ display:inline-flex; align-items:center; gap:5px; font-weight:700; font-size:13px;
+      color:#374151; background:none; border:none; cursor:pointer; padding:2px 5px; border-radius:6px; }
+    .ccc-year:hover{ background:rgba(0,0,0,.07); }
+    .ccc-year.off{ opacity:.4; text-decoration:line-through; }
+    .ccc-color{ width:18px; height:18px; border-radius:5px; border:2px solid #fff; outline:1px solid #cbd5e1;
+      cursor:pointer; padding:0; transition:transform .1s ease; }
+    .ccc-color:hover{ transform:scale(1.18); }
+
+    /* Pop-up colour grid picker */
+    .color-popup{ position:fixed; z-index:1200; width:204px; background:#1f2733;
+      border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:12px;
+      box-shadow:0 16px 44px rgba(0,0,0,.45); color:#e5e7eb; font-family:inherit; }
+    .color-popup[hidden]{ display:none; }
+    .cpop-header{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin-bottom:10px; }
+    .cpop-dot{ width:14px; height:14px; border-radius:50%; display:inline-block; border:2px solid rgba(255,255,255,.5); }
+    .cpop-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    .cpop-cell{ width:36px; height:36px; border-radius:9px; border:2px solid transparent; cursor:pointer; padding:0;
+      transition:transform .1s ease; }
+    .cpop-cell:hover{ transform:scale(1.08); }
+    .cpop-cell.active{ border-color:#fff; box-shadow:0 0 0 2px #1f2733, 0 0 0 4px #fff; }
+    .cpop-reset{ width:100%; margin-top:12px; background:#374151; color:#e5e7eb; border:none;
+      border-radius:9px; padding:8px; cursor:pointer; font-size:13px; }
+    .cpop-reset:hover{ background:#4b5563; }
+  </style>
+
   <!-- NAVBAR -->
   <nav class="navbar navbar-expand-sm bg-light navbar-light border-bottom">
     <div class="container-fluid">
@@ -1222,13 +1467,45 @@ body.mode-interactive #page7 .three-panel {
   </nav>
 
   <!-- PAGE 1: WELCOME -->
-  <div id="page1" class="page active-page">
+  <!-- <div id="page1" class="page active-page">
     <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
     <h1 class="welcome-title">
       WELCOME TO<br>
       <span class="welcome-rp-text animate__animated animate__heartBeat animate__infinite">REPUBLIC POLYTECHNIC'S</span><br>
       ESG CENTRE!
     </h1>
+  </div> -->
+
+  <!-- PAGE 1: WELCOME -->
+  <div id="page1" class="page active-page">
+    <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
+    <h1 class="welcome-title">
+      WELCOME TO<br>
+      <span class="welcome-rp-text">REPUBLIC POLYTECHNIC'S</span><br>
+      ESG CENTRE!
+    </h1>
+    <div class="welcome-kpis" id="welcomeKpis">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(250,204,21,0.18);">⚡</div>
+        <div class="kpi-value" id="kpiElec">—</div>
+        <div class="kpi-label">Avg Monthly Electricity (kWh)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(59,130,246,0.18);">💧</div>
+        <div class="kpi-value" id="kpiWater">—</div>
+        <div class="kpi-label">Avg Monthly Water (m³)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(34,197,94,0.18);">☀️</div>
+        <div class="kpi-value" id="kpiSolar">—</div>
+        <div class="kpi-label">Avg Monthly Solar (kWh)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(239,68,68,0.18);">♻️</div>
+        <div class="kpi-value" id="kpiWaste">—</div>
+        <div class="kpi-label">Avg Monthly Waste (kg)</div>
+      </div>
+    </div>
   </div>
 
   <!-- PAGE 2: ALL BUILDINGS SUMMARY -->
@@ -1257,8 +1534,10 @@ body.mode-interactive #page7 .three-panel {
        <span style="color: #fbbf24;">Electricity</span> Use by Building
     </h2>
     <p class="multi-building-subtitle">Electricity (kWh) usage — <span id="elecCompareSubtitleYears"></span></p>
-    <div class="three-chart-wrap" style="width:100%;height:100%;max-width: 92vw;">
-      <canvas id="electricityCompareChart"></canvas>
+    <div id="elecColorControls" class="compare-color-controls"></div>
+    <div class="three-chart-wrap compare-split" style="width:100%;height:100%;max-width: 92vw;">
+      <div class="compare-bars"><canvas id="electricityCompareChart"></canvas></div>
+      <div class="compare-line"><canvas id="electricityCompareLineChart"></canvas></div>
     </div>
   </div>
 
@@ -1268,8 +1547,10 @@ body.mode-interactive #page7 .three-panel {
       <span style="color: #60a5fa;">Water</span> Use by Building
     </h2>
     <p class="multi-building-subtitle">Water (m³) usage — <span id="waterCompareSubtitleYears"></span></p>
-    <div class="three-chart-wrap" style="width:100%;height:100%;max-width: 92vw;">
-      <canvas id="waterCompareChart"></canvas>
+    <div id="waterColorControls" class="compare-color-controls"></div>
+    <div class="three-chart-wrap compare-split" style="width:100%;height:100%;max-width: 92vw;">
+      <div class="compare-bars"><canvas id="waterCompareChart"></canvas></div>
+      <div class="compare-line"><canvas id="waterCompareLineChart"></canvas></div>
     </div>
   </div>
 
@@ -1431,6 +1712,35 @@ body.mode-interactive #page7 .three-panel {
     const building_card_label_map = <%- JSON.stringify(buildingCardLabelMap || {}) %>;
     const runtime_config = <%- JSON.stringify(runtimeConfig || {}) %>;
     const access_profile = <%- JSON.stringify(accessProfile || 'public') %>;
+
+    // ============================================================
+    // AUTO-REFRESH ON NEW UPLOAD
+    // The dashboard renders its charts once, from the data baked in at page
+    // load. It does not re-query on its own. So we poll a tiny version probe;
+    // when an admin uploads (or clears) data the server bumps that number, and
+    // any open screen reloads itself to pick up the new figures.
+    // ============================================================
+    (function watchForDataUpdates() {
+      const loadedDataVersion = Number((runtime_config && runtime_config.dataVersion) || 0);
+      const POLL_INTERVAL_MS = 30000; // check every 30s
+
+      async function checkVersion() {
+        try {
+          const res = await fetch("/dashboard/data-version", { cache: "no-store" });
+          if (!res.ok) return;
+          const data = await res.json();
+          const current = Number(data && data.version);
+          if (Number.isFinite(current) && current !== loadedDataVersion) {
+            console.log("New dashboard data detected (v" + loadedDataVersion + " -> v" + current + "). Reloading...");
+            window.location.reload();
+          }
+        } catch (e) {
+          // Network blip or server restarting; ignore and try again next tick.
+        }
+      }
+
+      setInterval(checkVersion, POLL_INTERVAL_MS);
+    })();
 
     // ============================================================
     // TIMERS DATA
@@ -1913,6 +2223,155 @@ body.mode-interactive #page7 .three-panel {
     }
 
     // ============================================================
+    // CHART COLOUR CUSTOMISATION (Electricity & Water "by building" charts)
+    // ------------------------------------------------------------
+    // Pick a basic colour for each year; that one colour is used for BOTH the
+    // year's bars and its trend line. Different years stay different colours.
+    // Saved per-browser in localStorage; UI lives in the floating "🎨" panel.
+    // ============================================================
+    const CHART_COLOR_STORAGE_KEY = "esgChartColorPrefs";
+    // Colour choices shown in the pop-up grid picker (4 per row).
+    const COLOR_GRID = [
+      "#ef4444", "#f97316", "#f59e0b", "#eab308",
+      "#84cc16", "#22c55e", "#14b8a6", "#06b6d4",
+      "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6",
+      "#a855f7", "#d946ef", "#ec4899", "#f43f5e",
+      "#0f172a", "#64748b", "#ffffff"
+    ];
+
+    // Colours are stored PER CHART ("electricity" / "water") so each one keeps
+    // its own per-year colours and changing one never affects the other.
+    function defaultColorPrefs() {
+      return { electricity: {}, water: {} };
+    }
+
+    let chartColorPrefs = (function loadColorPrefs() {
+      try {
+        const raw = localStorage.getItem(CHART_COLOR_STORAGE_KEY);
+        const parsed = raw ? (JSON.parse(raw) || {}) : {};
+        return {
+          electricity: (parsed && parsed.electricity) || {},
+          water: (parsed && parsed.water) || {}
+        };
+      } catch (e) { return defaultColorPrefs(); }
+    })();
+
+    function saveColorPrefs() {
+      try { localStorage.setItem(CHART_COLOR_STORAGE_KEY, JSON.stringify(chartColorPrefs)); } catch (e) {}
+    }
+
+    // ---- small colour helpers (work on #rrggbb) ----
+    function normalizeHex(hex) {
+      let h = String(hex || "").trim();
+      if (h[0] !== "#") h = "#" + h;
+      return h.toLowerCase();
+    }
+    function isHex6(hex) { return /^#?[0-9a-fA-F]{6}$/.test(String(hex || "")); }
+    function hexToRgb(hex) {
+      const h = normalizeHex(hex).replace("#", "");
+      return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+    }
+    function hexToRgba(hex, alpha) {
+      if (!isHex6(hex)) return hex; // fall back gracefully for any non-hex value
+      const { r, g, b } = hexToRgb(hex);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    function darkenHex(hex, amount) {
+      if (!isHex6(hex)) return hex;
+      const { r, g, b } = hexToRgb(hex);
+      const f = 1 - Math.max(0, Math.min(1, amount));
+      const to2 = (n) => Math.round(n * f).toString(16).padStart(2, "0");
+      return `#${to2(r)}${to2(g)}${to2(b)}`;
+    }
+
+    // Resolve a year's colour for a SPECIFIC chart ("electricity" or "water").
+    // Bars and the trend line of that year share this one colour.
+    function getYearColor(chartKey, year, yearIndex, totalYears) {
+      const map = chartColorPrefs[chartKey] || {};
+      const override = map[String(year)];
+      if (isHex6(override)) return normalizeHex(override);
+      return getColorForYear(yearIndex, totalYears);
+    }
+
+    // Set one year's colour for one chart, persist, re-skin the chart, refresh swatches.
+    function setYearColor(chartKey, year, hex) {
+      if (!isHex6(hex)) return;
+      if (!chartColorPrefs[chartKey]) chartColorPrefs[chartKey] = {};
+      chartColorPrefs[chartKey][String(year)] = normalizeHex(hex);
+      saveColorPrefs();
+      applyChartColors();
+      buildInlineColorControls();
+    }
+
+    // Recolour an already-built compare chart in place (no rebuild, keeps timers running).
+    function recolorCompareChart(chart, chartKey) {
+      if (!chart || !chart.data || !Array.isArray(chart.data.datasets)) return;
+      const sortedYears = [...allYears].sort((a, b) => a - b);
+      const total = sortedYears.length;
+      chart.data.datasets.forEach((ds) => {
+        const label = String(ds.label || "");
+        let year, isLine = false;
+        if (label.indexOf("_Line") === 0) { year = label.slice(5); isLine = true; }
+        else { year = label; }
+        const idx = sortedYears.findIndex((y) => String(y) === String(year));
+        const yearIndex = idx < 0 ? 0 : idx;
+        const color = getYearColor(chartKey, year, yearIndex, total);
+        if (isLine) {
+          ds.borderColor = color;
+          ds.pointBackgroundColor = color;
+          ds.pointBorderColor = "#ffffff";
+        } else {
+          ds.backgroundColor = color;
+          ds.borderColor = color;
+        }
+      });
+      chart.update();
+    }
+    function applyChartColors() {
+      recolorCompareChart(electricityCompareChart, "electricity");
+      recolorCompareChart(electricityCompareLineChart, "electricity");
+      recolorCompareChart(waterCompareChart, "water");
+      recolorCompareChart(waterCompareLineChart, "water");
+    }
+
+    // ---- Year FILTER (show/hide) — clicking the year NUMBER toggles it. ----
+    // Transient (not saved). Hides/shows that year's bars + line for one chart.
+    const hiddenYears = { electricity: {}, water: {} };
+    function isYearHidden(chartKey, year) {
+      return !!(hiddenYears[chartKey] && hiddenYears[chartKey][String(year)]);
+    }
+    function compareChartsFor(chartKey) {
+      return chartKey === "electricity"
+        ? [electricityCompareChart, electricityCompareLineChart]
+        : [waterCompareChart, waterCompareLineChart];
+    }
+    function applyYearVisibility(chartKey, year, hide) {
+      compareChartsFor(chartKey).forEach(function (chart) {
+        if (!chart || !chart.data) return;
+        chart.data.datasets.forEach(function (ds, i) {
+          const lbl = String(ds.label || "");
+          const dsYear = lbl.indexOf("_Line") === 0 ? lbl.slice(5) : lbl;
+          if (String(dsYear) === String(year)) chart.setDatasetVisibility(i, !hide);
+        });
+        chart.update();
+      });
+    }
+    function toggleYearVisibility(chartKey, year) {
+      const hide = !isYearHidden(chartKey, year);
+      if (!hiddenYears[chartKey]) hiddenYears[chartKey] = {};
+      hiddenYears[chartKey][String(year)] = hide;
+      applyYearVisibility(chartKey, year, hide);
+      buildInlineColorControls();
+    }
+    // Re-apply hidden-year state after a chart is rebuilt (e.g. on page rotation).
+    function reapplyYearVisibility(chartKey) {
+      const map = hiddenYears[chartKey] || {};
+      Object.keys(map).forEach(function (year) {
+        if (map[year]) applyYearVisibility(chartKey, year, true);
+      });
+    }
+
+    // ============================================================
     // SUBTITLE DISPLAY
     // ============================================================
     (function setCompareSubtitles() {
@@ -2060,25 +2519,37 @@ body.mode-interactive #page7 .three-panel {
     // INTERACTIVE MODE AUTO-REVERT
     // ============================================================
     const interactive_config = (runtime_config && runtime_config.interactiveMode) ? runtime_config.interactiveMode : {};
+    const interactive_auto_switch_enabled = interactive_config.autoSwitchOnActivity !== false;
     const interactive_auto_revert_enabled = !!interactive_config.autoRevertEnabled;
     const interactive_idle_timeout_ms = Math.max(1, Number(interactive_config.idleTimeoutMinutes || 15)) * 60 * 1000;
     let interactiveLastActivityAt = Date.now();
     let interactiveActivityPingTimer = null;
     let interactiveRevertTimer = null;
+    let interactiveSwitchPending = false;
 
-    function pingInteractiveActivity() {
-      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+    async function pingInteractiveActivity() {
+      if ((!is_auto_mode && !interactive_auto_revert_enabled) || interactiveSwitchPending) return;
       try {
-        fetch("/dashboard/interactive-activity", {
+        if (is_auto_mode) interactiveSwitchPending = true;
+        const response = await fetch("/dashboard/interactive-activity", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ activityAt: new Date().toISOString() })
-        }).catch(() => {});
-      } catch (error) {}
+        });
+        const json = await response.json().catch(() => ({}));
+        if (json.switched) {
+          window.location.href = "/";
+          return;
+        }
+      } catch (error) {
+      } finally {
+        interactiveSwitchPending = false;
+      }
     }
 
     function markInteractiveActivityClient() {
-      if (is_auto_mode || !interactive_auto_revert_enabled) return;
+      if (is_auto_mode && !interactive_auto_switch_enabled) return;
+      if (!is_auto_mode && !interactive_auto_revert_enabled) return;
       interactiveLastActivityAt = Date.now();
       if (interactiveActivityPingTimer) return;
       interactiveActivityPingTimer = setTimeout(() => {
@@ -2497,6 +2968,8 @@ body.mode-interactive #page7 .three-panel {
     let threeCycleMs = getPageDuration(5);
     let electricityCompareChart = null;
     let waterCompareChart = null;
+    let electricityCompareLineChart = null;   // bottom "trend line" panel for the electricity page
+    let waterCompareLineChart = null;          // bottom "trend line" panel for the water page
 
     function clearThreeCycleTimer() {
       if (threeCycleTimeoutId) clearTimeout(threeCycleTimeoutId);
@@ -3117,6 +3590,54 @@ body.mode-interactive #page7 .three-panel {
       runProgressForPage(2, getPageDuration(2), true);
     }
 
+    // Build the two stacked panels for a compare page: BARS on top, TREND LINE
+    // below. Both share the same X categories and an identical Y scale (same
+    // data -> same auto max) so the columns line up vertically between panels.
+    function makeComparePanels(cfg) {
+      const barCtx = document.getElementById(cfg.barCanvasId);
+      const lineCtx = document.getElementById(cfg.lineCanvasId);
+      const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
+      const tickSize = isUltra ? 20 : 12;
+
+      function compareOptions(showXLabels, showLegend) {
+        const options = baseChartOptions();
+        options.plugins.legend.display = showLegend;
+        options.plugins.legend.labels.font = { size: isUltra ? 20 : 12 };
+        options.plugins.tooltip.titleFont = { size: isUltra ? 22 : 14 };
+        options.plugins.tooltip.bodyFont = { size: tickSize };
+        options.scales.x.ticks.font = { size: tickSize };
+        options.scales.x.ticks.display = showXLabels;
+        options.scales.y.ticks.font = { size: tickSize };
+        options.scales.y1.display = true;
+        options.scales.y1.grid.drawOnChartArea = false;
+        options.scales.y1.ticks.font = { size: tickSize };
+        options.scales.y1.afterBuildTicks = (scale) => {
+          try {
+            const yScale = scale?.chart?.scales?.y;
+            if (yScale) { scale.ticks = yScale.ticks; scale.min = yScale.min; scale.max = yScale.max; }
+          } catch (error) {}
+        };
+        return options;
+      }
+
+      // Top panel: bars. Hide X labels (shown under the line panel) AND the
+      // built-in legend — the on-page swatch row is the year legend/control now.
+      const barChart = barCtx ? new Chart(barCtx, {
+        type: "bar",
+        data: { labels: cfg.labels, datasets: cfg.barDatasets },
+        options: compareOptions(false, false)
+      }) : null;
+
+      // Bottom panel: trend line. Show the X labels here; hide the (empty) legend.
+      const lineChart = lineCtx ? new Chart(lineCtx, {
+        type: "line",
+        data: { labels: cfg.labels, datasets: cfg.lineDatasets },
+        options: compareOptions(true, false)
+      }) : null;
+
+      return { barChart, lineChart };
+    }
+
     function setupElectricityComparePage() {
       const ctx = document.getElementById("electricityCompareChart");
       if (!ctx) return;
@@ -3149,74 +3670,56 @@ body.mode-interactive #page7 .three-panel {
 
       const labels = buildingKeys.map(keyItem => keyItem);
 
-      if (electricityCompareChart) { 
-        electricityCompareChart.destroy(); 
-        electricityCompareChart = null; 
-      }
+      if (electricityCompareChart) { electricityCompareChart.destroy(); electricityCompareChart = null; }
+      if (electricityCompareLineChart) { electricityCompareLineChart.destroy(); electricityCompareLineChart = null; }
 
-      const datasets = [];
+      const barDatasets = [];
+      const lineDatasets = [];
       
       sortedYears.forEach((year, yearIndex) => {
         const yearMap = dataByYear[year] || {};
         const data = buildingKeys.map(keyItem => Number((yearMap[keyItem] && yearMap[keyItem].electricity) || 0));
-        const color = getColorForYear(yearIndex, sortedYears.length);
-        
-        const barDatasetIndex = datasets.length;
-        
-        datasets.push({ 
-          label: String(year), 
-          data: data, 
-          backgroundColor: color, 
-          order: 2 
+        const barColor = getYearColor("electricity", year, yearIndex, sortedYears.length);
+        const lineColor = barColor;
+
+        // Bars go in the TOP panel (solid year colour).
+        barDatasets.push({
+          label: String(year),
+          data: data,
+          backgroundColor: barColor,
+          borderColor: barColor,
+          borderWidth: 1
         });
-        
-        datasets.push({ 
-          label: `_Line${year}`, 
-          type: "line", 
-          data: data, 
-          borderColor: color, 
+
+        // Trend line goes in the SEPARATE BOTTOM panel (no longer drawn over the bars).
+        lineDatasets.push({
+          label: `_Line${year}`,
+          data: data,
+          borderColor: lineColor,
           backgroundColor: "transparent",
-          pointBackgroundColor: color, 
-          pointBorderColor: color, 
-          pointRadius: 3, 
-          pointHoverRadius: 5,
-          borderWidth: 2, 
-          tension: 0, 
-          fill: false, 
-          order: 1, 
-          snapToBarIndex: barDatasetIndex 
+          pointBackgroundColor: lineColor,
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 1.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 3,
+          tension: 0,
+          fill: false
         });
       });
 
-      electricityCompareChart = new Chart(ctx, {
-        type: "bar",
-        data: { labels, datasets },
-        options: (function () {
-          const options = baseChartOptions();
-          const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
-          const tickSize = isUltra ? 20 : 12;
-          options.plugins.legend.labels.font = { size: isUltra ? 20 : 12 };
-          options.plugins.tooltip.titleFont = { size: isUltra ? 22 : 14 };
-          options.plugins.tooltip.bodyFont = { size: tickSize };
-          options.scales.x.ticks.font = { size: tickSize };
-          options.scales.y.ticks.font = { size: tickSize };
-          options.scales.y1.display = true;
-          options.scales.y1.grid.drawOnChartArea = false;
-          options.scales.y1.ticks.font = { size: tickSize };
-          options.scales.y1.afterBuildTicks = (scale) => {
-            try { 
-              const yScale = scale?.chart?.scales?.y; 
-              if (yScale) { 
-                scale.ticks = yScale.ticks; 
-                scale.min = yScale.min; 
-                scale.max = yScale.max; 
-              } 
-            } catch (error) {}
-          };
-          return options;
-        })()
+      const built = makeComparePanels({
+        barCanvasId: "electricityCompareChart",
+        lineCanvasId: "electricityCompareLineChart",
+        labels: labels,
+        barDatasets: barDatasets,
+        lineDatasets: lineDatasets
       });
-      
+      electricityCompareChart = built.barChart;
+      electricityCompareLineChart = built.lineChart;
+      reapplyYearVisibility("electricity");
+      buildInlineColorControls();
+
       if (!is_auto_mode) { stopProgressBarAnimation(); return; }
       runProgressForPage(3, getPageDuration(3), true);
     }
@@ -3253,74 +3756,56 @@ body.mode-interactive #page7 .three-panel {
 
       const labels = buildingKeys.map(keyItem => keyItem);
 
-      if (waterCompareChart) { 
-        waterCompareChart.destroy(); 
-        waterCompareChart = null; 
-      }
+      if (waterCompareChart) { waterCompareChart.destroy(); waterCompareChart = null; }
+      if (waterCompareLineChart) { waterCompareLineChart.destroy(); waterCompareLineChart = null; }
 
-      const datasets = [];
+      const barDatasets = [];
+      const lineDatasets = [];
       
       sortedYears.forEach((year, yearIndex) => {
         const yearMap = dataByYear[year] || {};
         const data = buildingKeys.map(keyItem => Number((yearMap[keyItem] && yearMap[keyItem].water) || 0));
-        const color = getColorForYear(yearIndex, sortedYears.length);
-        
-        const barDatasetIndex = datasets.length;
-        
-        datasets.push({ 
-          label: String(year), 
-          data: data, 
-          backgroundColor: color, 
-          order: 2 
+        const barColor = getYearColor("water", year, yearIndex, sortedYears.length);
+        const lineColor = barColor;
+
+        // Bars go in the TOP panel (solid year colour).
+        barDatasets.push({
+          label: String(year),
+          data: data,
+          backgroundColor: barColor,
+          borderColor: barColor,
+          borderWidth: 1
         });
-        
-        datasets.push({ 
-          label: `_Line${year}`, 
-          type: "line", 
-          data: data, 
-          borderColor: color, 
+
+        // Trend line goes in the SEPARATE BOTTOM panel (no longer drawn over the bars).
+        lineDatasets.push({
+          label: `_Line${year}`,
+          data: data,
+          borderColor: lineColor,
           backgroundColor: "transparent",
-          pointBackgroundColor: color, 
-          pointBorderColor: color, 
-          pointRadius: 3, 
-          pointHoverRadius: 5,
-          borderWidth: 2, 
-          tension: 0, 
-          fill: false, 
-          order: 1, 
-          snapToBarIndex: barDatasetIndex 
+          pointBackgroundColor: lineColor,
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 1.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 3,
+          tension: 0,
+          fill: false
         });
       });
 
-      waterCompareChart = new Chart(ctx, {
-        type: "bar",
-        data: { labels, datasets },
-        options: (function () {
-          const options = baseChartOptions();
-          const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
-          const tickSize = isUltra ? 20 : 12;
-          options.plugins.legend.labels.font = { size: isUltra ? 20 : 12 };
-          options.plugins.tooltip.titleFont = { size: isUltra ? 22 : 14 };
-          options.plugins.tooltip.bodyFont = { size: tickSize };
-          options.scales.x.ticks.font = { size: tickSize };
-          options.scales.y.ticks.font = { size: tickSize };
-          options.scales.y1.display = true;
-          options.scales.y1.grid.drawOnChartArea = false;
-          options.scales.y1.ticks.font = { size: tickSize };
-          options.scales.y1.afterBuildTicks = (scale) => {
-            try { 
-              const yScale = scale?.chart?.scales?.y; 
-              if (yScale) { 
-                scale.ticks = yScale.ticks; 
-                scale.min = yScale.min; 
-                scale.max = yScale.max; 
-              } 
-            } catch (error) {}
-          };
-          return options;
-        })()
+      const built = makeComparePanels({
+        barCanvasId: "waterCompareChart",
+        lineCanvasId: "waterCompareLineChart",
+        labels: labels,
+        barDatasets: barDatasets,
+        lineDatasets: lineDatasets
       });
-      
+      waterCompareChart = built.barChart;
+      waterCompareLineChart = built.lineChart;
+      reapplyYearVisibility("water");
+      buildInlineColorControls();
+
       if (!is_auto_mode) { stopProgressBarAnimation(); return; }
       runProgressForPage(4, getPageDuration(4), true);
     }
@@ -4673,6 +5158,188 @@ body.mode-interactive #page7 .three-panel {
         page10_thankyou: getPageDurationSeconds(10) + 's'
       }
     });
+
+    // ============================================================
+    // INLINE YEAR LEGEND + COLOUR PICKERS
+    // For each year on the Electricity / Water "by building" pages:
+    //   • click the YEAR NUMBER  -> show/hide (filter) that year in the chart
+    //   • click a COLOUR SWATCH  -> set that year's colour (does NOT filter)
+    // Each chart keeps its own colours. Saved per-browser.
+    // ============================================================
+    function buildInlineColorControls() {
+      const sortedYears = [...allYears]
+        .map((y) => parseInt(y, 10))
+        .filter((y) => !isNaN(y))
+        .sort((a, b) => a - b);
+
+      [
+        { id: "elecColorControls",  key: "electricity" },
+        { id: "waterColorControls", key: "water" }
+      ].forEach(function (cfg) {
+        const wrap = document.getElementById(cfg.id);
+        if (!wrap) return;
+        wrap.innerHTML = "";
+        sortedYears.forEach(function (year, yearIndex) {
+          const active = getYearColor(cfg.key, year, yearIndex, sortedYears.length).toLowerCase();
+          const off = isYearHidden(cfg.key, year);
+
+          const chip = document.createElement("div");
+          chip.className = "ccc-chip";
+
+          // Colour box (current colour) = click to OPEN the pop-up grid picker.
+          const colorBtn = document.createElement("button");
+          colorBtn.type = "button";
+          colorBtn.className = "ccc-color";
+          colorBtn.style.background = active;
+          colorBtn.title = "Change " + year + " colour";
+          colorBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            openColorPopup(cfg.key, year, yearIndex, sortedYears.length, colorBtn);
+          });
+          chip.appendChild(colorBtn);
+
+          // Year number = click to show/hide (filter) this year in the chart.
+          const yearBtn = document.createElement("button");
+          yearBtn.type = "button";
+          yearBtn.className = "ccc-year" + (off ? " off" : "");
+          yearBtn.title = (off ? "Show " : "Hide ") + year + " in the chart";
+          yearBtn.textContent = year;
+          yearBtn.addEventListener("click", function () { toggleYearVisibility(cfg.key, year); });
+          chip.appendChild(yearBtn);
+
+          wrap.appendChild(chip);
+        });
+      });
+    }
+
+    // ============================================================
+    // POP-UP COLOUR GRID PICKER (anchored to the clicked colour box)
+    // ============================================================
+    let _colorPopupEl = null;
+    let _popupCtx = null;
+
+    function getColorPopup() {
+      if (_colorPopupEl) return _colorPopupEl;
+      const el = document.createElement("div");
+      el.id = "colorPopup";
+      el.className = "color-popup";
+      el.hidden = true;
+      el.innerHTML =
+        '<div class="cpop-header"><span class="cpop-dot"></span><span class="cpop-title"></span></div>' +
+        '<div class="cpop-grid"></div>' +
+        '<button class="cpop-reset" type="button">↺ Reset to Default</button>';
+      document.body.appendChild(el);
+      el.addEventListener("click", function (e) { e.stopPropagation(); }); // keep inner clicks from closing
+      el.querySelector(".cpop-reset").addEventListener("click", function () {
+        if (!_popupCtx) return;
+        if (chartColorPrefs[_popupCtx.chartKey]) delete chartColorPrefs[_popupCtx.chartKey][String(_popupCtx.year)];
+        saveColorPrefs();
+        applyChartColors();
+        buildInlineColorControls();
+        renderColorPopup();
+      });
+      _colorPopupEl = el;
+      return el;
+    }
+
+    function renderColorPopup() {
+      if (!_popupCtx) return;
+      const el = getColorPopup();
+      const current = getYearColor(_popupCtx.chartKey, _popupCtx.year, _popupCtx.yearIndex, _popupCtx.total).toLowerCase();
+      el.querySelector(".cpop-title").textContent = _popupCtx.year;
+      el.querySelector(".cpop-dot").style.background = current;
+      const grid = el.querySelector(".cpop-grid");
+      grid.innerHTML = "";
+      COLOR_GRID.forEach(function (hex) {
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "cpop-cell" + (hex.toLowerCase() === current ? " active" : "");
+        cell.style.background = hex;
+        cell.title = hex;
+        cell.addEventListener("click", function () {
+          setYearColor(_popupCtx.chartKey, _popupCtx.year, hex);
+          renderColorPopup();
+        });
+        grid.appendChild(cell);
+      });
+    }
+
+    function openColorPopup(chartKey, year, yearIndex, total, anchorEl) {
+      _popupCtx = { chartKey: chartKey, year: year, yearIndex: yearIndex, total: total };
+      const el = getColorPopup();
+      el.hidden = false;
+      renderColorPopup();
+      // Position under the colour box, clamped to the viewport (flip up if no room below).
+      const r = anchorEl.getBoundingClientRect();
+      const pw = el.offsetWidth || 204;
+      const ph = el.offsetHeight || 260;
+      let left = r.left;
+      let top = r.bottom + 6;
+      if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+      if (left < 8) left = 8;
+      if (top + ph > window.innerHeight - 8) top = r.top - ph - 6;
+      if (top < 8) top = 8;
+      el.style.left = left + "px";
+      el.style.top = top + "px";
+      document.removeEventListener("click", outsideCloseHandler);
+      setTimeout(function () { document.addEventListener("click", outsideCloseHandler); }, 0);
+    }
+
+    function closeColorPopup() {
+      if (_colorPopupEl) _colorPopupEl.hidden = true;
+      _popupCtx = null;
+      document.removeEventListener("click", outsideCloseHandler);
+    }
+    function outsideCloseHandler() { closeColorPopup(); }
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeColorPopup(); });
+
+    // Build the year legend / colour controls once on load (containers already exist).
+    buildInlineColorControls();
+
+
+    // ============================================================
+    // WELCOME PAGE KPI SUMMARY (average monthly, latest year)
+    // ============================================================
+    (function setupWelcomeKpis(){
+      const year = latestDataYear || newestYear;
+      if (!year) return;
+
+      // Electricity + Water totals (sum all buildings for the year)
+      let elecTotal = 0, waterTotal = 0;
+      const overview = overviewByYear[year] || [];
+      overview.forEach(b => {
+        elecTotal  += Number(b.electricity || 0);
+        waterTotal += Number(b.water || 0);
+      });
+
+      // Solar total (sum monthly urban + greenhouse)
+      let solarTotal = 0;
+      (solarByYear[year] || []).forEach(m => {
+        solarTotal += Number(m.urban || 0) + Number(m.greenhouse || 0);
+      });
+
+      // Waste total (sum monthly general + recyclable)
+      let wasteTotal = 0;
+      (wasteByYear[year] || []).forEach(m => {
+        wasteTotal += Number(m.generalKg || 0) + Number(m.recyclableKg || 0);
+      });
+
+      // Count months that actually have data, for a fair monthly average
+      const elecMonths  = 12; // building totals are annual; divide by 12
+      const solarMonths = (solarByYear[year] || []).filter(m => (Number(m.urban||0)+Number(m.greenhouse||0)) > 0).length || 12;
+      const wasteMonths = (wasteByYear[year] || []).filter(m => (Number(m.generalKg||0)+Number(m.recyclableKg||0)) > 0).length || 12;
+
+      const avgElec  = elecTotal  / elecMonths;
+      const avgWater = waterTotal / elecMonths;
+      const avgSolar = solarTotal / solarMonths;
+      const avgWaste = wasteTotal / wasteMonths;
+
+      // Animate using the existing count-up helper
+      animateCountUp(document.getElementById("kpiElec"),  Math.round(avgElec),  1200);
+      animateCountUp(document.getElementById("kpiWater"), Math.round(avgWater), 1200);
+      animateCountUp(document.getElementById("kpiSolar"), Math.round(avgSolar), 1200);
+      animateCountUp(document.getElementById("kpiWaste"), Math.round(avgWaste), 1200);
+    })();
   </script>
 </body>
 </html>

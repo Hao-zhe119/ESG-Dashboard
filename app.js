@@ -4,6 +4,7 @@ const multer = require("multer");
 const session = require("express-session");
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 const { execFile } = require("child_process");
 const XLSX = require("xlsx");
 const bcrypt = require("bcrypt");
@@ -140,6 +141,25 @@ function getAccountId(req) {
     return req.session.user.id;
   }
   return 1;
+}
+
+/**
+ * Bump the dashboard data version. Open dashboard screens poll this number
+ * (via GET /dashboard/data-version) and reload when it changes, so a newly
+ * uploaded dataset shows up without anyone manually refreshing the display.
+ */
+function bumpDataVersion() {
+  try {
+    const updated = updateRuntimeConfig((config) => {
+      config.dataVersion = (Number(config.dataVersion) || 0) + 1;
+      return config;
+    });
+    console.log("Dashboard data version bumped to", updated.dataVersion);
+    return updated.dataVersion;
+  } catch (e) {
+    console.warn("Could not bump dashboard data version:", e.message);
+    return null;
+  }
 }
 
 /* ==============================
@@ -475,6 +495,7 @@ async function getNextMediaSortOrder(accountId, mediaType) {
 }
 
 let healthMonitorId = null;
+let hibernateMonitorId = null;
 let interactiveRevertMonitorId = null;
 let latestHealthSnapshot = {
   status: "unknown",
@@ -549,6 +570,22 @@ function isValidTimeString(value) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || ""));
 }
 
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+function normalizeHibernateDays(input, fallbackStart = "22:00", fallbackEnd = "07:00") {
+  const source = input && typeof input === "object" ? input : {};
+  return WEEKDAYS.reduce((days, day) => {
+    const hasDay = source[day] && typeof source[day] === "object";
+    const item = hasDay ? source[day] : {};
+    days[day] = {
+      enabled: hasDay ? boolFromRequest(item.enabled) : !["saturday", "sunday"].includes(day),
+      startTime: isValidTimeString(item.startTime) ? item.startTime : fallbackStart,
+      endTime: isValidTimeString(item.endTime) ? item.endTime : fallbackEnd
+    };
+    return days;
+  }, {});
+}
+
 function normalizeHibernateProfile(input) {
   const name = String(input.name || "").trim();
   const startTime = String(input.startTime || input.start_time || "").trim();
@@ -557,7 +594,7 @@ function normalizeHibernateProfile(input) {
   if (!isValidTimeString(startTime) || !isValidTimeString(endTime)) {
     throw new Error("Start and end time must use HH:MM format");
   }
-  return { name, startTime, endTime };
+  return { name, startTime, endTime, days: normalizeHibernateDays(input.days, startTime, endTime) };
 }
 
 function normalizeTimerRows(rows) {
@@ -609,6 +646,11 @@ async function upsertTimerRowsForAccount(accountId, timerRows) {
 }
 
 async function runHealthCheck() {
+  const totalMemoryBytes = os.totalmem();
+  const freeMemoryBytes = os.freemem();
+  const memoryUsedPercent = totalMemoryBytes > 0
+    ? Math.round(((totalMemoryBytes - freeMemoryBytes) / totalMemoryBytes) * 100)
+    : 0;
   const checks = {
     backend: { ok: true, message: "Express process is running", uptimeSeconds: Math.round(process.uptime()) },
     process: {
@@ -616,6 +658,19 @@ async function runHealthCheck() {
       message: "Node process is responsive",
       pid: process.pid,
       memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024)
+    },
+    hardware: {
+      ok: memoryUsedPercent < 95,
+      message: memoryUsedPercent < 95 ? "Basic hardware health is within limits" : "System memory usage is critically high",
+      hostname: os.hostname(),
+      platform: `${os.platform()} ${os.release()}`,
+      cpuCores: os.cpus().length,
+      cpuModel: os.cpus()[0] ? os.cpus()[0].model : "Unknown",
+      loadAverage: os.loadavg().map((value) => Number(value.toFixed(2))),
+      uptimeHours: Number((os.uptime() / 3600).toFixed(1)),
+      totalMemoryGb: Number((totalMemoryBytes / 1024 / 1024 / 1024).toFixed(1)),
+      freeMemoryGb: Number((freeMemoryBytes / 1024 / 1024 / 1024).toFixed(1)),
+      memoryUsedPercent
     },
     database: { ok: false, message: "Not checked" },
     dashboard: { ok: false, message: "Not checked" },
@@ -652,6 +707,34 @@ async function runHealthCheck() {
     checks.dashboard = { ok: false, message: error.message };
   }
 
+  if (process.platform === "win32") {
+    try {
+      const hardwareJson = await new Promise((resolve, reject) => {
+        const command = [
+          "$disk = Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='C:'\" | Select-Object Size,FreeSpace;",
+          "$battery = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object EstimatedChargeRemaining,BatteryStatus;",
+          "[PSCustomObject]@{ disk=$disk; battery=$battery } | ConvertTo-Json -Compress -Depth 3"
+        ].join(" ");
+        execFile("powershell.exe", ["-NoProfile", "-Command", command], { timeout: 5000 }, (error, stdout) => {
+          if (error) return reject(error);
+          resolve(String(stdout || "{}").trim());
+        });
+      });
+      const windowsHardware = JSON.parse(hardwareJson || "{}");
+      const disk = windowsHardware.disk || {};
+      const diskFreePercent = Number(disk.Size) > 0 ? Math.round((Number(disk.FreeSpace) / Number(disk.Size)) * 100) : null;
+      checks.hardware.diskFreePercent = diskFreePercent;
+      checks.hardware.diskFreeGb = Number(disk.FreeSpace) > 0 ? Number((Number(disk.FreeSpace) / 1024 / 1024 / 1024).toFixed(1)) : null;
+      checks.hardware.battery = windowsHardware.battery || null;
+      if (diskFreePercent !== null && diskFreePercent < 10) {
+        checks.hardware.ok = false;
+        checks.hardware.message = "System disk space is critically low";
+      }
+    } catch (error) {
+      checks.hardware.windowsDetails = `Unavailable: ${error.message}`;
+    }
+  }
+
   const ok = Object.values(checks).every((check) => check.ok);
   latestHealthSnapshot = {
     status: ok ? "ok" : "degraded",
@@ -664,7 +747,6 @@ async function runHealthCheck() {
 function syncHealthMonitor() {
   const config = readRuntimeConfig();
   const enabled = !!config.automation.healthCheckEnabled;
-  const intervalMs = Math.max(10, Number(config.automation.healthCheckIntervalSeconds || 30)) * 1000;
 
   if (!enabled) {
     if (healthMonitorId) clearInterval(healthMonitorId);
@@ -681,11 +763,50 @@ function syncHealthMonitor() {
   runHealthCheck().catch((error) => {
     latestHealthSnapshot = { status: "degraded", checkedAt: new Date().toISOString(), checks: { monitor: { ok: false, message: error.message } } };
   });
-  healthMonitorId = setInterval(() => {
-    runHealthCheck().catch((error) => {
+  healthMonitorId = setInterval(async () => {
+    const current = readRuntimeConfig();
+    const scheduledTime = isValidTimeString(current.automation.healthCheckTime) ? current.automation.healthCheckTime : "08:00";
+    const now = new Date();
+    const today = now.toLocaleDateString("en-CA");
+    const time = now.toTimeString().slice(0, 5);
+    if (time !== scheduledTime || current.automation.lastScheduledHealthCheckDate === today) return;
+    try {
+      await runHealthCheck();
+      updateRuntimeConfig((nextConfig) => {
+        nextConfig.automation.lastScheduledHealthCheckDate = today;
+        return nextConfig;
+      });
+    } catch (error) {
       latestHealthSnapshot = { status: "degraded", checkedAt: new Date().toISOString(), checks: { monitor: { ok: false, message: error.message } } };
+    }
+  }, 30000);
+}
+
+function syncHibernateMonitor() {
+  if (hibernateMonitorId) clearInterval(hibernateMonitorId);
+  hibernateMonitorId = setInterval(async () => {
+    const config = readRuntimeConfig();
+    if (!config.automation.autoHibernateEnabled) return;
+    const now = new Date();
+    const dayName = WEEKDAYS[now.getDay()];
+    const schedule = config.automation.autoHibernateSchedule || {};
+    const daySchedule = normalizeHibernateDays(schedule.days, schedule.startTime, schedule.endTime)[dayName];
+    const time = now.toTimeString().slice(0, 5);
+    const runKey = `${now.toLocaleDateString("en-CA")}-${dayName}-${time}`;
+    if (!daySchedule.enabled || time !== daySchedule.startTime || config.automation.lastHibernateRunKey === runKey) return;
+
+    const scriptPath = path.join(__dirname, "scripts", "hibernate.ps1");
+    const args = ["-ExecutionPolicy", "Bypass", "-File", scriptPath];
+    if (config.automation.autoHibernateDryRun !== false) args.push("-DryRun");
+    execFile("powershell.exe", args, { timeout: 10000 }, (error, stdout, stderr) => {
+      if (error) console.error("Scheduled auto-hibernate failed:", error.message);
+      else console.log(`[AUTO-HIBERNATE] ${runKey} - ${String(stdout || stderr || "").trim()}`);
     });
-  }, intervalMs);
+    updateRuntimeConfig((nextConfig) => {
+      nextConfig.automation.lastHibernateRunKey = runKey;
+      return nextConfig;
+    });
+  }, 30000);
 }
 
 function markInteractiveActivity() {
@@ -768,8 +889,10 @@ app.post("/admin/dashboard-mode", async (req, res) => {
 app.post("/admin/config/interactive-auto-revert", requireAuth, async (req, res) => {
   try {
     const enabled = boolFromRequest(req.body.enabled);
+    const autoSwitchOnActivity = boolFromRequest(req.body.autoSwitchOnActivity);
     const idleTimeoutMinutes = Number(req.body.idleTimeoutMinutes || req.body.idle_timeout_minutes || 15);
     const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.interactiveMode.autoSwitchOnActivity = autoSwitchOnActivity;
       nextConfig.interactiveMode.autoRevertEnabled = enabled;
       nextConfig.interactiveMode.idleTimeoutMinutes = Math.max(1, Math.min(240, idleTimeoutMinutes || 15));
       return nextConfig;
@@ -785,8 +908,21 @@ app.post("/dashboard/interactive-activity", async (req, res) => {
   try {
     const accountId = getAccountId(req);
     const mode = await getDashboardModeForAccount(accountId);
-    if (mode === "interactive") markInteractiveActivity();
-    res.json({ ok: true });
+    const config = readRuntimeConfig();
+    let switched = false;
+    if (mode === "auto" && config.interactiveMode.autoSwitchOnActivity) {
+      if (await canUseDatabase()) {
+        await db.query("UPDATE accounts SET dashboard_mode = 'interactive' WHERE id = ?", [accountId]);
+      } else {
+        updateRuntimeConfig((nextConfig) => {
+          nextConfig.offlineDashboardMode = "interactive";
+          return nextConfig;
+        });
+      }
+      switched = true;
+    }
+    if (mode === "interactive" || switched) markInteractiveActivity();
+    res.json({ ok: true, switched, mode: switched ? "interactive" : mode });
   } catch (error) {
     res.status(500).json({ ok: false });
   }
@@ -990,7 +1126,8 @@ app.post("/admin/automation/hibernate-settings", requireAuth, async (req, res) =
       nextConfig.automation.autoHibernateSchedule = {
         ...(nextConfig.automation.autoHibernateSchedule || {}),
         startTime,
-        endTime
+        endTime,
+        days: normalizeHibernateDays(req.body.days, startTime, endTime)
       };
       return nextConfig;
     });
@@ -1009,6 +1146,7 @@ app.post("/admin/automation/hibernate-profiles", requireAuth, async (req, res) =
       name: normalized.name,
       startTime: normalized.startTime,
       endTime: normalized.endTime,
+      days: normalized.days,
       isDefault: false,
       createdAt: new Date().toISOString()
     };
@@ -1037,6 +1175,7 @@ app.post("/admin/automation/hibernate-profiles/:profile_id/load", requireAuth, a
       nextConfig.automation.autoHibernateSchedule = {
         startTime: profile.startTime,
         endTime: profile.endTime,
+        days: normalizeHibernateDays(profile.days, profile.startTime, profile.endTime),
         activeProfileId: profile.id
       };
       return nextConfig;
@@ -1061,6 +1200,7 @@ app.post("/admin/automation/hibernate-profiles/:profile_id/default", requireAuth
       nextConfig.automation.autoHibernateSchedule = {
         startTime: profile.startTime,
         endTime: profile.endTime,
+        days: normalizeHibernateDays(profile.days, profile.startTime, profile.endTime),
         activeProfileId: profile.id
       };
       return nextConfig;
@@ -1149,6 +1289,19 @@ app.get("/admin/health/json", requireAuth, async (req, res) => {
     enabled: !!config.automation.healthCheckEnabled,
     health: latestHealthSnapshot
   });
+});
+
+app.post("/admin/automation/health-settings", requireAuth, async (req, res) => {
+  const healthCheckTime = String(req.body.healthCheckTime || "").trim();
+  if (!isValidTimeString(healthCheckTime)) {
+    return res.status(400).json({ ok: false, error: "Health check time must use HH:MM format" });
+  }
+  const config = updateRuntimeConfig((nextConfig) => {
+    nextConfig.automation.healthCheckTime = healthCheckTime;
+    return nextConfig;
+  });
+  syncHealthMonitor();
+  res.json({ ok: true, automation: config.automation });
 });
 
 app.get("/health", async (req, res) => {
@@ -1705,6 +1858,13 @@ app.get("/", async (req, res) => {
   }
 });
 
+// Lightweight version probe so open dashboard screens can detect a fresh
+// upload and reload themselves. Returns the current data version number.
+app.get("/dashboard/data-version", (req, res) => {
+  const version = Number(readRuntimeConfig().dataVersion) || 0;
+  res.json({ version });
+});
+
 
 
 /* ==============================
@@ -1785,6 +1945,244 @@ app.get('/interactivemap', (req, res) => {res.render('interactivemap');});
    ------------------------------
    Talks to a locally-running Ollama server. No data leaves the machine.
    Configurable via databaseinfo.env if the model/host ever changes.
+============================== */
+const OLLAMA_HOST  = process.env.OLLAMA_HOST  || "http://127.0.0.1:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
+
+const ASSISTANT_SYSTEM_PROMPT =
+  "You are the assistant for the Republic Polytechnic (RP) ESG Sustainability Dashboard. " +
+  "ESG stands for Environmental, Social, and Governance. Help visitors understand " +
+  "sustainability topics such as electricity use, water use, solar energy, and waste. " +
+  "Keep answers short, clear, and friendly. " +
+  "A section titled 'REAL DASHBOARD DATA' is provided below with the actual figures. " +
+  "When asked about specific numbers, buildings, years, or trends, use ONLY the figures in that " +
+  "section. Do NOT invent or estimate numbers. If a requested figure is not in the data, say you " +
+  "don't have that figure rather than guessing.";
+
+// ---- Real ESG data context (the model phrases these; it never computes them) ----
+const fmtNum = n => Number(n || 0).toLocaleString("en-US");
+let _esgCtxCache = { ts: 0, accountId: null, text: "" };
+const ESG_CTX_TTL_MS = 5 * 60 * 1000; // refresh at most every 5 min
+
+async function buildEsgDataContext(accountId) {
+  // Serve from cache when fresh (data only changes on admin upload)
+  if (_esgCtxCache.text &&
+      _esgCtxCache.accountId === accountId &&
+      (Date.now() - _esgCtxCache.ts) < ESG_CTX_TTL_MS) {
+    return _esgCtxCache.text;
+  }
+
+  const [years, elecYear, elecTop, waterYear, solarYear, wasteYear, bldgCount] = await Promise.all([
+    db.query("SELECT year FROM year_range WHERE account_id=? ORDER BY year", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(total_bill) v FROM total_ebills WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT building_name, SUM(bill_amount) v FROM building_ebills WHERE account_id=? GROUP BY building_name ORDER BY v DESC LIMIT 6", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(portable_water) p, SUM(recycled_water) r FROM total_waterusage WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(urban_renewables) u, SUM(green_house) g FROM total_solardata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT YEAR(bill_month) y, SUM(general_kg) gen, SUM(recyclable_kg) rec FROM total_wastedata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
+    db.query("SELECT COUNT(*) n FROM building_info WHERE account_id=?", [accountId]),
+  ]);
+
+  const yearList = years[0].map(r => r.year);
+  const L = [];
+  L.push("===== REAL DASHBOARD DATA =====");
+  L.push("Units: electricity & solar in kWh, water in m³ (cubic metres), waste in kg.");
+  L.push("Reporting years available: " + (yearList.length ? yearList.join(", ") : "none") + ". " +
+         "Buildings tracked: " + fmtNum(bldgCount[0][0].n) + ".");
+
+  L.push("\nELECTRICITY USE — total campus (kWh):");
+  elecYear[0].forEach(r => L.push(`  ${r.y}: ${fmtNum(r.v)} kWh`));
+
+  L.push("Top buildings by electricity use (all available years combined):");
+  elecTop[0].forEach((r, i) => L.push(`  ${i + 1}. ${r.building_name}: ${fmtNum(r.v)} kWh`));
+
+  L.push("\nWATER USE — total campus (m³):");
+  waterYear[0].forEach(r => {
+    const tot = Number(r.p || 0) + Number(r.r || 0);
+    L.push(`  ${r.y}: ${fmtNum(tot)} m³ total (potable ${fmtNum(r.p)}, recycled ${fmtNum(r.r)})`);
+  });
+
+  L.push("\nSOLAR ENERGY GENERATED (kWh):");
+  solarYear[0].forEach(r => {
+    const tot = Number(r.u || 0) + Number(r.g || 0);
+    L.push(`  ${r.y}: ${fmtNum(tot)} kWh (urban renewables ${fmtNum(r.u)}, green house ${fmtNum(r.g)})`);
+  });
+
+  L.push("\nWASTE (kg):");
+  wasteYear[0].forEach(r => {
+    const gen = Number(r.gen || 0), rec = Number(r.rec || 0), tot = gen + rec;
+    if (tot === 0) return; // skip years with no waste data yet
+    const pct = ((rec / tot) * 100).toFixed(1);
+    L.push(`  ${r.y}: general ${fmtNum(gen)} kg, recyclable ${fmtNum(rec)} kg (recycled share ${pct}%)`);
+  });
+
+  L.push("===== END DATA =====");
+
+  const text = L.join("\n");
+  _esgCtxCache = { ts: Date.now(), accountId, text };
+  return text;
+}
+
+// Render the standalone chat page
+app.get("/assistant", (req, res) => {
+  res.render("assistant", { model: OLLAMA_MODEL });
+});
+
+// Streaming chat endpoint: browser -> here -> Ollama -> stream tokens back
+app.post("/api/chat", async (req, res) => {
+  try {
+    const incoming = Array.isArray(req.body && req.body.messages) ? req.body.messages : [];
+
+    // Keep only valid user/assistant turns, cap history + length to stay fast & safe
+    const history = incoming
+      .filter(m => m && typeof m.content === "string" &&
+                   (m.role === "user" || m.role === "assistant") &&
+                   m.content.trim().length > 0)
+      .slice(-10)
+      .map(m => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
+
+    if (history.length === 0) {
+      return res.status(400).json({ error: "No message provided." });
+    }
+
+    // Build the system prompt with the account's real ESG figures injected.
+    let systemContent = ASSISTANT_SYSTEM_PROMPT;
+    try {
+      const dataContext = await buildEsgDataContext(getAccountId(req));
+      systemContent += "\n\n" + dataContext;
+    } catch (e) {
+      console.error("[/api/chat] could not load ESG data context:", e.message);
+      // Fall back to the general assistant without live data rather than failing.
+    }
+
+    const messages = [{ role: "system", content: systemContent }, ...history];
+
+    const ollamaRes = await fetch(`${OLLAMA_HOST}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream: true })
+    });
+
+    if (!ollamaRes.ok || !ollamaRes.body) {
+      return res.status(502).json({ error: "The assistant model did not respond. Is Ollama running?" });
+    }
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    // Ollama streams newline-delimited JSON; forward only the text tokens.
+    let buffer = "";
+    for await (const chunk of ollamaRes.body) {
+      buffer += Buffer.from(chunk).toString("utf8");
+      const lines = buffer.split("\n");
+      buffer = lines.pop(); // keep any partial line for the next chunk
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+          const obj = JSON.parse(trimmed);
+          if (obj.message && obj.message.content) res.write(obj.message.content);
+        } catch (_) { /* ignore non-JSON keep-alive lines */ }
+      }
+    }
+    res.end();
+  } catch (err) {
+    console.error("[/api/chat] error:", err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Assistant unavailable. Make sure Ollama is running (ollama serve)." });
+    } else {
+      res.end();
+    }
+  }
+});
+
+/* ==============================
+   ADMIN: EXPORT ALL DATA TO EXCEL
+   ------------------------------
+   One multi-sheet .xlsx with every ESG dataset for the account. No AI involved.
+============================== */
+app.get("/admin/export-excel", requireAuth, async (req, res) => {
+  try {
+    const accountId = getAccountId(req);
+    const ym = d => (d instanceof Date ? d.toISOString().slice(0, 7) : String(d || "").slice(0, 7)); // YYYY-MM
+    const num = v => (v == null ? null : Number(v));
+
+    // Pull every dataset for this account
+    const [
+      [elecYear], [waterYear], [solarYear], [wasteYear],
+      [totElec], [bldgElec], [totWater], [bldgWater],
+      [solar], [waste], [buildings]
+    ] = await Promise.all([
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(total_bill)) `Electricity (kWh)` FROM total_ebills WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(portable_water)) `Potable Water (m3)`, ROUND(SUM(recycled_water)) `Recycled Water (m3)` FROM total_waterusage WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(urban_renewables)) `Urban Renewables (kWh)`, ROUND(SUM(green_house)) `Green House (kWh)` FROM total_solardata WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT YEAR(bill_month) Year, ROUND(SUM(general_kg)) `General (kg)`, ROUND(SUM(recyclable_kg)) `Recyclable (kg)` FROM total_wastedata WHERE account_id=? GROUP BY Year ORDER BY Year", [accountId]),
+      db.query("SELECT bill_month, total_bill FROM total_ebills WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT building_name, bill_month, bill_amount FROM building_ebills WHERE account_id=? ORDER BY building_name, bill_month", [accountId]),
+      db.query("SELECT bill_month, portable_water, recycled_water FROM total_waterusage WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT building_name, bill_month, water_used FROM building_waterusage WHERE account_id=? ORDER BY building_name, bill_month", [accountId]),
+      db.query("SELECT bill_month, urban_renewables, green_house FROM total_solardata WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT bill_month, general_kg, recyclable_kg, general_percent, recyclable_percent FROM total_wastedata WHERE account_id=? ORDER BY bill_month", [accountId]),
+      db.query("SELECT building_name, `desc`, display_label, card_label, elec_startyear, elec_endyear, water_startyear, water_endyear FROM building_info WHERE account_id=? ORDER BY building_name", [accountId]),
+    ]);
+
+    // Build a yearly Summary sheet (recycled share computed in code = exact)
+    const years = new Map();
+    const touch = y => { if (!years.has(y)) years.set(y, { Year: y }); return years.get(y); };
+    elecYear.forEach(r => { touch(r.Year)["Electricity (kWh)"] = num(r["Electricity (kWh)"]); });
+    waterYear.forEach(r => {
+      const row = touch(r.Year);
+      row["Potable Water (m3)"]  = num(r["Potable Water (m3)"]);
+      row["Recycled Water (m3)"] = num(r["Recycled Water (m3)"]);
+    });
+    solarYear.forEach(r => {
+      const row = touch(r.Year);
+      row["Solar Generated (kWh)"] = num(r["Urban Renewables (kWh)"]) + num(r["Green House (kWh)"]);
+    });
+    wasteYear.forEach(r => {
+      const row = touch(r.Year);
+      const g = num(r["General (kg)"]) || 0, rc = num(r["Recyclable (kg)"]) || 0;
+      row["Waste General (kg)"]   = g;
+      row["Waste Recyclable (kg)"] = rc;
+      row["Recycled Share (%)"]   = (g + rc) ? Number(((rc / (g + rc)) * 100).toFixed(1)) : 0;
+    });
+    const summaryCols = ["Electricity (kWh)", "Potable Water (m3)", "Recycled Water (m3)",
+                         "Solar Generated (kWh)", "Waste General (kg)", "Waste Recyclable (kg)"];
+    const summary = Array.from(years.values())
+      .filter(r => summaryCols.some(k => Number(r[k]) > 0)) // drop years with no data (e.g. empty 2026)
+      .sort((a, b) => a.Year - b.Year);
+
+    // Shape detail sheets with clean, formatted columns
+    const sElecTot  = totElec.map(r  => ({ Month: ym(r.bill_month), "Electricity (kWh)": num(r.total_bill) }));
+    const sElecBldg = bldgElec.map(r => ({ Building: r.building_name, Month: ym(r.bill_month), "Electricity (kWh)": num(r.bill_amount) }));
+    const sWaterTot = totWater.map(r => ({ Month: ym(r.bill_month), "Potable (m3)": num(r.portable_water), "Recycled (m3)": num(r.recycled_water) }));
+    const sWaterBl  = bldgWater.map(r => ({ Building: r.building_name, Month: ym(r.bill_month), "Water Used (m3)": num(r.water_used) }));
+    const sSolar    = solar.map(r    => ({ Month: ym(r.bill_month), "Urban Renewables (kWh)": num(r.urban_renewables), "Green House (kWh)": num(r.green_house) }));
+    const sWaste    = waste.map(r    => ({ Month: ym(r.bill_month), "General (kg)": num(r.general_kg), "Recyclable (kg)": num(r.recyclable_kg), "General %": num(r.general_percent), "Recyclable %": num(r.recyclable_percent) }));
+    const sBldg     = buildings.map(r => ({ Building: r.building_name, Description: r.desc, "Display Label": r.display_label, "Card Label": r.card_label, "Elec Start": r.elec_startyear, "Elec End": r.elec_endyear, "Water Start": r.water_startyear, "Water End": r.water_endyear }));
+
+    const wb = XLSX.utils.book_new();
+    const add = (rows, name) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{}]), name);
+    add(summary,   "Summary by Year");
+    add(sElecTot,  "Electricity Total");
+    add(sElecBldg, "Electricity by Building");
+    add(sWaterTot, "Water Total");
+    add(sWaterBl,  "Water by Building");
+    add(sSolar,    "Solar");
+    add(sWaste,    "Waste");
+    add(sBldg,     "Buildings");
+
+    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Disposition", `attachment; filename="RP_ESG_Data_${stamp}.xlsx"`);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buf);
+  } catch (err) {
+    console.error("[/admin/export-excel] error:", err.message);
+    res.status(500).send("Could not generate the Excel export. Please try again.");
+  }
+});
+
 /* ==============================
    LOGIN ROUTES
 ============================== */
@@ -3034,6 +3432,37 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
     const insertBuildingElectricSQL =
       "INSERT INTO building_ebills (account_id, building_name, bill_month, bill_amount) VALUES (?, ?, ?, ?)";
 
+    // Detect year blocks from the building-electric tab's OWN "CYxxxx" labels in
+    // column B, rather than reusing the electricity-total year list (yearsArray):
+    // the building tab can cover more years than the totals tab (e.g. it has 2026
+    // while the totals do not). For each block we locate the "January" row
+    // explicitly, so an extra blank row inside a block (the file is not always
+    // uniformly 15 rows apart) cannot push the month data out of alignment.
+    const elecYearBlocks = [];
+    for (let r = 1; r <= 300; r++) {
+      const cell = sheet2[`B${r}`];
+      if (!cell || cell.v === undefined || cell.v === null) continue;
+      const m = String(cell.v).match(/CY\s*(\d{4})/i);
+      if (!m) continue;
+      const blockYear = parseInt(m[1], 10);
+      if (!(blockYear >= 2000 && blockYear <= 2100)) continue;
+      let janRow = null;
+      for (let rr = r + 1; rr <= r + 6; rr++) {
+        const c = sheet2[`B${rr}`];
+        if (c && String(c.v).trim().toLowerCase() === "january") { janRow = rr; break; }
+      }
+      if (janRow) elecYearBlocks.push({ year: blockYear, startRow: janRow });
+    }
+    // Fallback to the legacy fixed layout (rows 5, 20, 35 ...) for older files
+    // that do not carry "CYxxxx" labels in this tab.
+    if (elecYearBlocks.length === 0) {
+      for (let yearIndex = 0; yearIndex < yearsArray.length; yearIndex++) {
+        elecYearBlocks.push({ year: yearsArray[yearIndex], startRow: 5 + yearIndex * 15 });
+      }
+    }
+    console.log(`Tab 2: Detected ${elecYearBlocks.length} electric year blocks:`,
+      elecYearBlocks.map(b => `${b.year}@row${b.startRow}`).join(", "));
+
     for (let colIndex = 2; colIndex <= 23; colIndex++) {
       const col = XLSX.utils.encode_col(colIndex);
       const buildingNameRaw = sheet2[`${col}4`]?.v;
@@ -3046,9 +3475,9 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
         buildingElecYears.set(buildingName, new Set());
       }
 
-      for (let yearIndex = 0; yearIndex < yearsArray.length; yearIndex++) {
-        const year = yearsArray[yearIndex];
-        const startRow = 5 + yearIndex * 15;
+      for (const block of elecYearBlocks) {
+        const year = block.year;
+        const startRow = block.startRow;
         let monthsWithData = 0;
         let hasAnyData = false;
 
@@ -3084,8 +3513,29 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
     const insertTotalWaterSQL =
       "INSERT INTO total_waterusage (account_id, bill_month, portable_water, recycled_water) VALUES (?, ?, ?, ?)";
 
-    for (let yearIndex = 0; yearIndex < yearsArray.length; yearIndex++) {
-      const year = yearsArray[yearIndex];
+    // Detect years from the Water tab itself (col B, rows 3, 15, 27, ...).
+    // Do NOT reuse the electricity year list (yearsArray): water can cover
+    // different years than electricity (e.g. water has 2026 but electricity does not).
+    const waterYearsArray = [];
+    {
+      let waterRow = 3;
+      while (waterYearsArray.length < 20) {
+        const cell = sheet3[`B${waterRow}`];
+        if (!cell || cell.v === undefined || cell.v === null || String(cell.v).trim() === "") break;
+        const y = Number(cell.v);
+        if (Number.isFinite(y) && y >= 2000 && y <= 2100) {
+          waterYearsArray.push(y);
+          waterRow += 12;
+        } else {
+          console.warn(`Tab 3 cell B${waterRow} contains "${cell.v}" - not a valid year`);
+          break;
+        }
+      }
+    }
+    console.log(`Tab 3: Detected ${waterYearsArray.length} water years:`, waterYearsArray);
+
+    for (let yearIndex = 0; yearIndex < waterYearsArray.length; yearIndex++) {
+      const year = waterYearsArray[yearIndex];
       const startRow = 3 + yearIndex * 12;
       let monthsWithData = 0;
 
@@ -3110,7 +3560,7 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
       }
     }
 
-    console.log(`Tab 3: Inserted ${yearsArray.length * 12} total water records`);
+    console.log(`Tab 3: Inserted ${waterYearsArray.length * 12} total water records`);
 
     // ===================== TAB 4: BUILDING WATER USAGE =====================
     console.log("Processing Tab 4: Building Water Usage...");
@@ -3484,6 +3934,9 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
     console.log(`Years: ${yearsArray.join(", ")}`);
     console.log(`Buildings: ${buildingNameSet.size}`);
 
+    // Signal open dashboard screens to reload with the new data.
+    bumpDataVersion();
+
     res.send(
       `Data successfully uploaded! Years: ${yearsArray.join(", ")} | Buildings: ${buildingsList}`
     );
@@ -3561,6 +4014,10 @@ app.post("/clear/all", async (req, res) => {
     }
 
     await db.query("COMMIT");
+
+    // Signal open dashboard screens to reload now that data was cleared.
+    bumpDataVersion();
+
     res.send("All data cleared successfully");
 
   } catch (err) {
@@ -3585,6 +4042,7 @@ const port = process.env.PORT || 3000;
 app.listen(port, "127.0.0.1", () => {
   console.log(`Server running at http://localhost:${port}/`);
   syncHealthMonitor();
+  syncHibernateMonitor();
   syncInteractiveRevertMonitor();
 });
 

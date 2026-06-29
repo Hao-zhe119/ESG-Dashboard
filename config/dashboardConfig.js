@@ -4,6 +4,10 @@ const path = require("path");
 const CONFIG_FILE = path.join(__dirname, "dashboardRuntimeConfig.json");
 
 const DEFAULT_CONFIG = {
+  // Bumped every time ESG data is uploaded or cleared. Open dashboards poll
+  // this value and reload themselves when it changes, so the charts always
+  // reflect the latest upload without a manual refresh.
+  dataVersion: 0,
   defaultTimersSeconds: {
     1: 15,
     2: 60,
@@ -17,6 +21,7 @@ const DEFAULT_CONFIG = {
     10: 15
   },
   interactiveMode: {
+    autoSwitchOnActivity: true,
     autoRevertEnabled: true,
     idleTimeoutMinutes: 15,
     lastActivityAt: null
@@ -28,7 +33,16 @@ const DEFAULT_CONFIG = {
     autoHibernateSchedule: {
       startTime: "22:00",
       endTime: "07:00",
-      activeProfileId: "default"
+      activeProfileId: "default",
+      days: {
+        monday: { enabled: true, startTime: "22:00", endTime: "07:00" },
+        tuesday: { enabled: true, startTime: "22:00", endTime: "07:00" },
+        wednesday: { enabled: true, startTime: "22:00", endTime: "07:00" },
+        thursday: { enabled: true, startTime: "22:00", endTime: "07:00" },
+        friday: { enabled: true, startTime: "22:00", endTime: "07:00" },
+        saturday: { enabled: false, startTime: "22:00", endTime: "07:00" },
+        sunday: { enabled: false, startTime: "22:00", endTime: "07:00" }
+      }
     },
     autoHibernateProfiles: [
       {
@@ -41,8 +55,10 @@ const DEFAULT_CONFIG = {
       }
     ],
     lastHibernateDryRunAt: null,
+    lastHibernateRunKey: null,
     healthCheckEnabled: false,
-    healthCheckIntervalSeconds: 30
+    healthCheckTime: "08:00",
+    lastScheduledHealthCheckDate: null
   },
   timerProfiles: [],
   buildingPageGroups: {
