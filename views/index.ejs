@@ -84,40 +84,176 @@ html, body {
 /* ========================================
    PAGE 1: WELCOME
    ======================================== */
-#page1 { position: relative; }
+/* Welcome KPI summary cards */
+#page1 .welcome-kpis{
+  position:static;
+  transform:none;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:18px;
+  width:min(1100px, 88vw);
+  z-index:2;
+  margin-top: clamp(8px, 2vh, 20px);
+}
+#page1 .kpi-card{
+  background: var(--glassBgStrong);
+  -webkit-backdrop-filter: var(--glassBlur);
+  backdrop-filter: var(--glassBlur);
+  border: var(--glassBorder);
+  border-radius: var(--glassRadius);
+  box-shadow: var(--glassShadow);
+  padding:18px 16px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  color:#fff;
+}
+
+/* ---- KPI card animations ---- */
+
+/* Entrance: fade + rise, staggered */
+#page1 .kpi-card{
+  opacity: 0;
+  animation: kpiRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+#page1 .kpi-card:nth-child(1){ animation-delay: 0.25s; }
+#page1 .kpi-card:nth-child(2){ animation-delay: 0.40s; }
+#page1 .kpi-card:nth-child(3){ animation-delay: 0.55s; }
+#page1 .kpi-card:nth-child(4){ animation-delay: 0.70s; }
+
+@keyframes kpiRise{
+  from{ opacity:0; transform: translateY(30px) scale(0.96); }
+  to  { opacity:1; transform: translateY(0)    scale(1); }
+}
+
+/* Idle float: inner wrapper floats so it doesn't fight the entrance */
+#page1 .kpi-card .kpi-icon,
+#page1 .kpi-card .kpi-value,
+#page1 .kpi-card .kpi-label{
+  animation: kpiWave 2.8s ease-in-out infinite;
+}
+/* Stagger the wave so cards float ONE BY ONE */
+#page1 .kpi-card:nth-child(1) .kpi-icon,
+#page1 .kpi-card:nth-child(1) .kpi-value,
+#page1 .kpi-card:nth-child(1) .kpi-label{ animation-delay: 0s; }
+
+#page1 .kpi-card:nth-child(2) .kpi-icon,
+#page1 .kpi-card:nth-child(2) .kpi-value,
+#page1 .kpi-card:nth-child(2) .kpi-label{ animation-delay: 0.35s; }
+
+#page1 .kpi-card:nth-child(3) .kpi-icon,
+#page1 .kpi-card:nth-child(3) .kpi-value,
+#page1 .kpi-card:nth-child(3) .kpi-label{ animation-delay: 0.7s; }
+
+#page1 .kpi-card:nth-child(4) .kpi-icon,
+#page1 .kpi-card:nth-child(4) .kpi-value,
+#page1 .kpi-card:nth-child(4) .kpi-label{ animation-delay: 1.05s; }
+
+@keyframes kpiWave{
+  0%, 100%{ transform: translateY(0); }
+  50%     { transform: translateY(-14px); }
+}
+
+/* Hover: glow (no transform, so it won't fight the wave) */
+#page1 .kpi-card{
+  transition: box-shadow .25s ease, border-color .25s ease;
+}
+#page1 .kpi-card:hover{
+  box-shadow: 0 18px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(126,174,51,0.55), 0 0 26px rgba(126,174,51,0.30);
+  border-color: rgba(126,174,51,0.55);
+}
+
+#page1 .kpi-icon{
+  width:48px; height:48px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; margin-bottom:2px;
+}
+
+#page1 .kpi-value{
+  font-size:clamp(22px, 2vw, 34px);
+  font-weight:800;
+  text-shadow:0 2px 8px rgba(0,0,0,0.5);
+  line-height:1.1;
+}
+#page1 .kpi-label{
+  font-size:clamp(11px, 0.9vw, 13px);
+  color:rgba(255,255,255,0.8);
+  text-align:center;
+}
+@media (max-width:900px){
+  #page1 .welcome-kpis{ grid-template-columns:repeat(2,1fr); }
+}
+
+#page1 {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3vh, 36px);
+}
 
 #page1 .welcome-logo {
-  height: 350px;
+  height: clamp(95px, 12vh, 150px);
   width: auto;
-  border-radius: 18px;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.45);
   position: absolute;
-  top: 50%;
-  left: 100px;
-  transform: translateY(-50%);
-  z-index: 1;
+  top: clamp(70px, 10vh, 110px);
+  left: clamp(24px, 3vw, 52px);
+  box-sizing: border-box;
+  padding: clamp(10px, 1.4vh, 18px);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.40),
+    0 2px 6px rgba(0, 0, 0, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  filter: none;
+  z-index: 3;
+  animation: logoFloat 4s ease-in-out infinite;
+}
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
 
 #page1 .welcome-title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(2.2rem, 4.2vw, 4.5rem);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  position: static;
+  transform: none;
+  font-size: clamp(2rem, 4vw, 4.4rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-align: center;
-  color: var(--text);
+  color: #ffffff;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.6);
   padding: 0 clamp(10px, 2vw, 24px);
   max-width: 92vw;
+  margin: 0;
+  line-height: 1.12;
+  animation: titleRise 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes titleRise {
+  from { opacity: 0; transform: translateY(28px); filter: blur(6px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
 }
 
-#page1 .welcome-subtitle {
-  position: absolute;
-  right: clamp(12px, 2vw, 28px);
-  bottom: calc(var(--progH) + clamp(12px, 2.6vh, 28px));
-  font-size: clamp(12px, 1.4vw, 16px);
-  color: var(--muted);
+#page1 .welcome-rp-text {
+  display: inline-block;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  background: linear-gradient(100deg, #8fd14f 0%, #ffffff 45%, #7eae33 70%, #ffffff 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 14px rgba(126,174,51,0.45));
+  animation: rpShimmer 5s linear infinite;
+}
+@keyframes rpShimmer {
+  to { background-position: 250% center; }
 }
 
 #welcome-page .welcome-rp-text,
@@ -220,13 +356,47 @@ html, body {
   background: url("/images/rp-main.jpg") no-repeat center center / cover;
 }
 
-#page1::before, #page2::before, #page3::before, #page4::before, #page5::before, 
+#page1::before, #page2::before, #page3::before, #page4::before, #page5::before,
 #page6::before, #page7::before, #page8::before, #page9::before, #page10::before {
   content: "";
   position: absolute;
   inset: 0;
   background: rgba(20, 28, 38, 0.45);;
   z-index: 0;
+}
+
+/* Floating "pollen / energy" specks over the photo, behind all content.
+   z-index:0 sits above the ::before overlay (painted later in tree order)
+   yet below page content (z-index:1 / auto). pointer-events:none keeps it
+   purely decorative. Hidden for users who prefer reduced motion. */
+.bg-particles {
+  /* !important needed because `#pageN > *` (ID specificity) otherwise
+     forces position:relative / z-index:1 onto every direct child. */
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Campus-map mirror overlay — audience view, driven by the control panel.
+   Covers everything (incl. navbar) while a guest browses the map. */
+#mapOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #050d0a;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+#mapOverlay.open { opacity: 1; pointer-events: auto; }
+#mapOverlay iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
 }
 
 #page1 > *, #page2 > *, #page3 > *, #page4 > *, #page8 > *, #page9 > *, #page10 > * {
@@ -684,6 +854,30 @@ body.mode-interactive #page7 .three-panel {
   min-width: 0;
   overflow: auto;
   min-height: 0;
+}
+
+/* Solar / Waste left info panels can be taller than the column — let them
+   scroll instead of clipping the last cards (they inherit overflow:hidden
+   from .three-info-body). */
+#page6 #solarLeftBody,
+#page7 #wasteLeftBody {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0 4px 0 0;   /* right gap for the scrollbar only — no vertical padding */
+}
+/* Scrollable content gets a little bottom room so the last card's rounded
+   corners show; this lives on the CONTENT (adds scroll height) rather than the
+   fixed-height container, so it never shrinks the visible area. */
+#page6 #solarLeftBody > .slug-sandbox,
+#page7 #wasteLeftBody > .slug-sandbox {
+  padding-bottom: 6px;
+}
+#page6 #solarLeftBody::-webkit-scrollbar,
+#page7 #wasteLeftBody::-webkit-scrollbar { width: 7px; }
+#page6 #solarLeftBody::-webkit-scrollbar-thumb,
+#page7 #wasteLeftBody::-webkit-scrollbar-thumb {
+  background: rgba(17,24,39,0.22);
+  border-radius: 999px;
 }
 
 .three-metrics {
@@ -1337,13 +1531,45 @@ body.mode-interactive #page7 .three-panel {
   </nav>
 
   <!-- PAGE 1: WELCOME -->
-  <div id="page1" class="page active-page">
+  <!-- <div id="page1" class="page active-page">
     <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
     <h1 class="welcome-title">
       WELCOME TO<br>
       <span class="welcome-rp-text animate__animated animate__heartBeat animate__infinite">REPUBLIC POLYTECHNIC'S</span><br>
       ESG CENTRE!
     </h1>
+  </div> -->
+
+  <!-- PAGE 1: WELCOME -->
+  <div id="page1" class="page active-page">
+    <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
+    <h1 class="welcome-title">
+      WELCOME TO<br>
+      <span class="welcome-rp-text">REPUBLIC POLYTECHNIC'S</span><br>
+      ESG CENTRE!
+    </h1>
+    <div class="welcome-kpis" id="welcomeKpis">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(250,204,21,0.18);">⚡</div>
+        <div class="kpi-value" id="kpiElec">—</div>
+        <div class="kpi-label">Avg Monthly Electricity (kWh)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(59,130,246,0.18);">💧</div>
+        <div class="kpi-value" id="kpiWater">—</div>
+        <div class="kpi-label">Avg Monthly Water (m³)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(34,197,94,0.18);">☀️</div>
+        <div class="kpi-value" id="kpiSolar">—</div>
+        <div class="kpi-label">Avg Monthly Solar (kWh)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(239,68,68,0.18);">♻️</div>
+        <div class="kpi-value" id="kpiWaste">—</div>
+        <div class="kpi-label">Avg Monthly Waste (kg)</div>
+      </div>
+    </div>
   </div>
 
   <!-- PAGE 2: ALL BUILDINGS SUMMARY -->
@@ -1406,8 +1632,10 @@ body.mode-interactive #page7 .three-panel {
         <div class="three-building-title animate__animated animate__pulse animate__infinite" style="--animate-duration: 3s;" id="threeChartTitle">
           Monthly Trend (Jan–Dec)
         </div>
-        <div class="three-chart-wrap">
-          <canvas id="threeBuildingMonthlyChart"></canvas>
+        <div id="buildingColorControls" class="compare-color-controls"></div>
+        <div class="three-chart-wrap compare-split">
+          <div class="compare-bars"><canvas id="threeBuildingBarChart"></canvas></div>
+          <div class="compare-line"><canvas id="threeBuildingLineChart"></canvas></div>
         </div>
       </div>
       <div class="panel panel-right">
@@ -1430,8 +1658,10 @@ body.mode-interactive #page7 .three-panel {
         <div class="three-building-title animate__animated animate__pulse animate__infinite" style="--animate-duration: 3s;" id="solarChartTitle">
           Solar (Urban Renewables &amp; Green House)
         </div>
-        <div class="three-chart-wrap">
-          <canvas id="solarThreeChart"></canvas>
+        <div id="solarColorControls" class="compare-color-controls"></div>
+        <div class="three-chart-wrap compare-split">
+          <div class="compare-bars"><canvas id="solarBarChart"></canvas></div>
+          <div class="compare-line"><canvas id="solarLineChart"></canvas></div>
         </div>
       </div>
       <div class="panel panel-right">
@@ -1451,8 +1681,10 @@ body.mode-interactive #page7 .three-panel {
         <div class="three-building-title animate__animated animate__pulse animate__infinite" style="--animate-duration: 3s;" id="wasteChartTitle">
           Waste (General &amp; Recyclable)
         </div>
-        <div class="three-chart-wrap">
-          <canvas id="wasteThreeChart"></canvas>
+        <div id="wasteColorControls" class="compare-color-controls"></div>
+        <div class="three-chart-wrap compare-split">
+          <div class="compare-bars"><canvas id="wasteBarChart"></canvas></div>
+          <div class="compare-line"><canvas id="wasteLineChart"></canvas></div>
         </div>
       </div>
       <div class="panel panel-right">
@@ -1989,6 +2221,36 @@ body.mode-interactive #page7 .three-panel {
       return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
     }
 
+    // Shrink a solar/waste info panel just enough to fit its fixed-height column
+    // so NO card is clipped. Uses Chrome's `zoom` (the kiosk browser), which
+    // reduces layout height and keeps full width. Never enlarges; floors at 0.7
+    // and the column still scrolls as a last resort.
+    function fitPanelToHeight(bodyEl) {
+      if (!bodyEl) return;
+      function apply() {
+        const content = bodyEl.firstElementChild;
+        if (!content) return;
+        content.style.zoom = "1";
+        content.style.width = "";
+        const avail = bodyEl.clientHeight;
+        const needed = content.scrollHeight;
+        if (avail > 0 && needed > avail + 2) {
+          const z = Math.max(0.7, (avail / needed) * 0.99);
+          content.style.zoom = z;
+          // Final visual width = specified width * z, so (100/z)% always fills
+          // the column regardless of how `zoom` treats auto width.
+          content.style.width = (100 / z) + "%";
+        }
+      }
+      requestAnimationFrame(function () { apply(); requestAnimationFrame(apply); });
+      setTimeout(apply, 300); // re-measure once the page-slide settles
+    }
+    // Re-fit if the window is resized while a solar/waste panel is showing.
+    window.addEventListener("resize", function () {
+      fitPanelToHeight(document.getElementById("solarLeftBody"));
+      fitPanelToHeight(document.getElementById("wasteLeftBody"));
+    });
+
     function normalizeBuildingKey(name) {
       if (!name) return "";
       const raw = String(name).trim();
@@ -2080,7 +2342,7 @@ body.mode-interactive #page7 .three-panel {
     // Colours are stored PER CHART ("electricity" / "water") so each one keeps
     // its own per-year colours and changing one never affects the other.
     function defaultColorPrefs() {
-      return { electricity: {}, water: {} };
+      return { electricity: {}, water: {}, solar: {}, waste: {} };
     }
 
     let chartColorPrefs = (function loadColorPrefs() {
@@ -2089,7 +2351,9 @@ body.mode-interactive #page7 .three-panel {
         const parsed = raw ? (JSON.parse(raw) || {}) : {};
         return {
           electricity: (parsed && parsed.electricity) || {},
-          water: (parsed && parsed.water) || {}
+          water: (parsed && parsed.water) || {},
+          solar: (parsed && parsed.solar) || {},
+          waste: (parsed && parsed.waste) || {}
         };
       } catch (e) { return defaultColorPrefs(); }
     })();
@@ -2139,6 +2403,9 @@ body.mode-interactive #page7 .three-panel {
       saveColorPrefs();
       applyChartColors();
       buildInlineColorControls();
+      applyBuildingChartColors();
+      buildBuildingColorControls();
+      refreshCategoryChartsAndControls();
     }
 
     // Recolour an already-built compare chart in place (no rebuild, keeps timers running).
@@ -2800,6 +3067,13 @@ body.mode-interactive #page7 .three-panel {
     let allBuildingCodes = [];
     let latestOverviewByKey = {};
     let threePanelChart = null;
+    // Building monthly view (Page 5): split into a top BAR panel and a bottom
+    // LINE panel, with their own per-year colour + filter controls.
+    let threeBuildingBarChart = null;
+    let threeBuildingLineChart = null;
+    let _buildingElecYears = [];
+    let _buildingWaterYears = [];
+    const buildingHiddenSeries = { electricity: {}, water: {} };
     let threeCycleTimeoutId = null;
     let threeCycleList = [];
     let threeCycleIdx = 0;
@@ -3277,112 +3551,64 @@ body.mode-interactive #page7 .three-panel {
         seriesIndex++;
       });
 
-      const elecColors = ["#facc15", "#fbbf24", "#f59e0b", "#d97706", "#b45309", "#92400e"];
-      const waterColors = ["#3b82f6", "#60a5fa", "#2563eb", "#1d4ed8", "#1e40af", "#1e3a8a"];
+      // Colours come from the shared per-year colour prefs (same store the
+      // Electricity/Water "by building" pages use) so a year keeps one colour
+      // everywhere. Electricity -> left axis (y, kWh); Water -> right axis (y1, m³).
+      _buildingElecYears  = elecYearsForChart.slice();
+      _buildingWaterYears = waterYearsForChart.slice();
 
-      const datasets = [];
-      let barIndex = 0;
+      const barDatasets  = [];
+      const lineDatasets = [];
 
-      elecYearsForChart.forEach((year, index) => {
-        const color = elecColors[index % elecColors.length];
-        const currentBarIndex = barIndex;
-
-        datasets.push({
-          label: `Electricity ${year} (kWh)`,
-          data: filteredElecData[year] || [],
+      function pushSeries(metric, year, yearIndex, total, data, axisId, unit) {
+        const color = buildingYearColor(metric, year, yearIndex, total);
+        const meta  = { _metric: metric, _year: year, _yearIndex: yearIndex, _yearTotal: total };
+        const label = (metric === "electricity" ? "Electricity " : "Water ") + year + " (" + unit + ")";
+        barDatasets.push(Object.assign({
+          label: label,
+          data: data,
           backgroundColor: color,
-          yAxisID: "y",
-          order: 2
-        });
-
-        datasets.push({
-          label: `_ElecLine${year}`,
-          type: "line",
-          data: filteredElecData[year] || [],
+          borderColor: color,
+          borderWidth: 1,
+          yAxisID: axisId
+        }, meta));
+        lineDatasets.push(Object.assign({
+          label: label,
+          data: data,
           borderColor: color,
           backgroundColor: "transparent",
           pointBackgroundColor: color,
-          pointBorderColor: color,
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 1.5,
           pointRadius: 3,
           pointHoverRadius: 5,
-          borderWidth: 2,
+          borderWidth: 3,
           tension: 0,
           fill: false,
-          yAxisID: "y",
-          order: 1,
-          snapToBarIndex: currentBarIndex
-        });
-
-        barIndex += 2;
-      });
-
-      waterYearsForChart.forEach((year, index) => {
-        const color = waterColors[index % waterColors.length];
-        const currentBarIndex = barIndex;
-
-        datasets.push({
-          label: `Water ${year} (m³)`,
-          data: filteredWaterData[year] || [],
-          backgroundColor: color,
-          yAxisID: "y1",
-          order: 2
-        });
-
-        datasets.push({
-          label: `_WaterLine${year}`,
-          type: "line",
-          data: filteredWaterData[year] || [],
-          borderColor: color,
-          backgroundColor: "transparent",
-          pointBackgroundColor: color,
-          pointBorderColor: color,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          borderWidth: 2,
-          tension: 0,
-          fill: false,
-          yAxisID: "y1",
-          order: 1,
-          snapToBarIndex: currentBarIndex
-        });
-
-        barIndex += 2;
-      });
-
-      const ctx = document.getElementById("threeBuildingMonthlyChart");
-
-      if (threePanelChart) { 
-        threePanelChart.destroy(); 
-        threePanelChart = null; 
+          yAxisID: axisId
+        }, meta));
       }
 
-      if (ctx) {
-        threePanelChart = new Chart(ctx, {
-          type: "bar",
-          data: {
-            labels: filtered.labels,
-            datasets: datasets
-          },
-          options: {
-            ...baseChartOptions(),
-            plugins: {
-              ...(baseChartOptions().plugins || {}),
-              barValueLabel: { enabled: false, mode: "max-per-dataset" },
-              legend: {
-                onClick: createLegendClickHandler(),
-                labels: {
-                  color: "#111827",
-                  filter: (legendItem) => !String(legendItem.text || "").startsWith("_"),
-                  usePointStyle: false,
-                  boxWidth: 12,
-                  padding: 8,
-                  font: { size: 11 }
-                }
-              }
-            }
-          }
-        });
-      }
+      elecYearsForChart.forEach((year, index) =>
+        pushSeries("electricity", year, index, elecYearsForChart.length, filteredElecData[year] || [], "y", "kWh"));
+      waterYearsForChart.forEach((year, index) =>
+        pushSeries("water", year, index, waterYearsForChart.length, filteredWaterData[year] || [], "y1", "m³"));
+
+      if (threeBuildingBarChart)  { threeBuildingBarChart.destroy();  threeBuildingBarChart = null; }
+      if (threeBuildingLineChart) { threeBuildingLineChart.destroy(); threeBuildingLineChart = null; }
+
+      const built = makeBuildingPanels({
+        barCanvasId: "threeBuildingBarChart",
+        lineCanvasId: "threeBuildingLineChart",
+        labels: filtered.labels,
+        barDatasets: barDatasets,
+        lineDatasets: lineDatasets
+      });
+      threeBuildingBarChart  = built.barChart;
+      threeBuildingLineChart = built.lineChart;
+
+      buildBuildingColorControls();
+      reapplyBuildingVisibility();
 
       document.querySelectorAll("#three-buildings-grid .building-list-item").forEach((card) => {
         if (card && card.dataset && card.dataset.building === buildingCode) card.classList.add("active");
@@ -3474,6 +3700,316 @@ body.mode-interactive #page7 .three-panel {
       }) : null;
 
       return { barChart, lineChart };
+    }
+
+    // Two stacked panels for the single-building monthly view: electricity +
+    // water BARS on top, the matching TREND LINES below. Electricity uses the
+    // left axis (y, kWh), water the right axis (y1, m³) — independent scales.
+    function makeBuildingPanels(cfg) {
+      const barCtx  = document.getElementById(cfg.barCanvasId);
+      const lineCtx = document.getElementById(cfg.lineCanvasId);
+      const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
+      const tickSize = isUltra ? 20 : 12;
+
+      function panelOptions(showXLabels) {
+        const options = baseChartOptions();
+        options.plugins.legend.display = false;        // on-page swatch row is the legend
+        options.plugins.barValueLabel = { enabled: false };
+        options.scales.x.ticks.font = { size: tickSize };
+        options.scales.x.ticks.display = showXLabels;
+        options.scales.y.ticks.font = { size: tickSize };
+        options.scales.y.title = { display: true, text: "Electricity (kWh)", color: "#92400e", font: { size: tickSize } };
+        options.scales.y1.display = true;
+        options.scales.y1.grid.drawOnChartArea = false;
+        options.scales.y1.ticks.font = { size: tickSize };
+        options.scales.y1.title = { display: true, text: "Water (m³)", color: "#1e40af", font: { size: tickSize } };
+        return options;
+      }
+
+      const barChart = barCtx ? new Chart(barCtx, {
+        type: "bar",
+        data: { labels: cfg.labels, datasets: cfg.barDatasets },
+        options: panelOptions(false)
+      }) : null;
+
+      const lineChart = lineCtx ? new Chart(lineCtx, {
+        type: "line",
+        data: { labels: cfg.labels, datasets: cfg.lineDatasets },
+        options: panelOptions(true)
+      }) : null;
+
+      return { barChart, lineChart };
+    }
+
+    // Colour for a building-page series. Honours a saved per-year override
+    // (shared with the compare pages), else falls back to a metric-specific
+    // default palette so electricity (warm) and water (cool) never collide.
+    const BUILDING_ELEC_DEFAULTS  = ["#facc15", "#f59e0b", "#d97706", "#b45309", "#92400e", "#fbbf24"];
+    const BUILDING_WATER_DEFAULTS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e40af", "#1e3a8a", "#60a5fa"];
+    function buildingYearColor(metric, year, yearIndex, total) {
+      const map = chartColorPrefs[metric] || {};
+      const override = map[String(year)];
+      if (isHex6(override)) return normalizeHex(override);
+      const palette = metric === "water" ? BUILDING_WATER_DEFAULTS : BUILDING_ELEC_DEFAULTS;
+      return palette[yearIndex % palette.length];
+    }
+
+    // ---- Building monthly chart: per-year colour + filter (independent of the
+    //      Electricity/Water compare pages' own filter state) ----
+    function isBuildingSeriesHidden(metric, year) {
+      return !!(buildingHiddenSeries[metric] && buildingHiddenSeries[metric][String(year)]);
+    }
+    function applyBuildingSeriesVisibility(metric, year, hide) {
+      [threeBuildingBarChart, threeBuildingLineChart].forEach(function (chart) {
+        if (!chart || !chart.data) return;
+        chart.data.datasets.forEach(function (ds, i) {
+          if (ds._metric === metric && String(ds._year) === String(year)) {
+            chart.setDatasetVisibility(i, !hide);
+          }
+        });
+        chart.update();
+      });
+    }
+    function toggleBuildingSeries(metric, year) {
+      const hide = !isBuildingSeriesHidden(metric, year);
+      if (!buildingHiddenSeries[metric]) buildingHiddenSeries[metric] = {};
+      buildingHiddenSeries[metric][String(year)] = hide;
+      applyBuildingSeriesVisibility(metric, year, hide);
+      buildBuildingColorControls();
+    }
+    function reapplyBuildingVisibility() {
+      ["electricity", "water"].forEach(function (metric) {
+        const map = buildingHiddenSeries[metric] || {};
+        Object.keys(map).forEach(function (year) {
+          if (map[year]) applyBuildingSeriesVisibility(metric, year, true);
+        });
+      });
+    }
+    // Re-skin the building charts in place after a colour pref changes.
+    function applyBuildingChartColors() {
+      [threeBuildingBarChart, threeBuildingLineChart].forEach(function (chart) {
+        if (!chart || !chart.data) return;
+        const isLine = (chart === threeBuildingLineChart);
+        chart.data.datasets.forEach(function (ds) {
+          const color = buildingYearColor(ds._metric, ds._year, ds._yearIndex, ds._yearTotal);
+          if (isLine) {
+            ds.borderColor = color;
+            ds.pointBackgroundColor = color;
+            ds.pointBorderColor = "#ffffff";
+          } else {
+            ds.backgroundColor = color;
+            ds.borderColor = color;
+          }
+        });
+        chart.update();
+      });
+    }
+    // Build the colour swatch + year-filter chips for the building monthly chart.
+    // Two groups: ⚡ electricity years and 💧 water years.
+    function buildBuildingColorControls() {
+      const wrap = document.getElementById("buildingColorControls");
+      if (!wrap) return;
+      wrap.innerHTML = "";
+
+      function addGroup(icon, metric, years) {
+        if (!years || years.length === 0) return;
+        const tagChip = document.createElement("div");
+        tagChip.className = "ccc-chip";
+        const tag = document.createElement("span");
+        tag.style.fontWeight = "800";
+        tag.style.fontSize = "13px";
+        tag.textContent = icon;
+        tagChip.appendChild(tag);
+        wrap.appendChild(tagChip);
+
+        years.forEach(function (year, yearIndex) {
+          const active = buildingYearColor(metric, year, yearIndex, years.length).toLowerCase();
+          const off = isBuildingSeriesHidden(metric, year);
+
+          const chip = document.createElement("div");
+          chip.className = "ccc-chip";
+
+          const colorBtn = document.createElement("button");
+          colorBtn.type = "button";
+          colorBtn.className = "ccc-color";
+          colorBtn.style.background = active;
+          colorBtn.title = "Change " + year + " colour";
+          colorBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            openColorPopup(metric, year, yearIndex, years.length, colorBtn);
+          });
+          chip.appendChild(colorBtn);
+
+          const yearBtn = document.createElement("button");
+          yearBtn.type = "button";
+          yearBtn.className = "ccc-year" + (off ? " off" : "");
+          yearBtn.title = (off ? "Show " : "Hide ") + year + " in the chart";
+          yearBtn.textContent = year;
+          yearBtn.addEventListener("click", function () { toggleBuildingSeries(metric, year); });
+          chip.appendChild(yearBtn);
+
+          wrap.appendChild(chip);
+        });
+      }
+
+      addGroup("⚡", "electricity", _buildingElecYears);
+      addGroup("💧", "water", _buildingWaterYears);
+    }
+
+    // ============================================================
+    // CATEGORY CHARTS (Solar / Waste): one year, fixed categories, split into
+    // a top BAR panel + bottom LINE panel, each with colour + filter controls.
+    // ============================================================
+    let solarBarChart = null, solarLineChart = null;
+    let wasteBarChart = null, wasteLineChart = null;
+    const categoryHidden = { solar: {}, waste: {} };
+    const SOLAR_CATS = [
+      { id: "urban",      label: "Urban Renewables", def: color_solar_urban },
+      { id: "greenhouse", label: "Green House",      def: color_solar_gh }
+    ];
+    const WASTE_CATS = [
+      { id: "general",    label: "General (kg)",    def: color_waste_gen },
+      { id: "recyclable", label: "Recyclable (kg)", def: color_waste_rec }
+    ];
+
+    function categoryColor(groupKey, catId, defaultHex) {
+      const map = chartColorPrefs[groupKey] || {};
+      const override = map[String(catId)];
+      if (isHex6(override)) return normalizeHex(override);
+      return defaultHex;
+    }
+
+    // Top bar panel + bottom line panel on a single Y axis (y1 hidden).
+    function makeCategoryPanels(cfg) {
+      const barCtx  = document.getElementById(cfg.barCanvasId);
+      const lineCtx = document.getElementById(cfg.lineCanvasId);
+      const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
+      const tickSize = isUltra ? 20 : 12;
+      function panelOptions(showXLabels) {
+        const options = baseChartOptions();
+        options.plugins.legend.display = false;
+        options.plugins.barValueLabel = { enabled: false };
+        options.scales.x.ticks.font = { size: tickSize };
+        options.scales.x.ticks.display = showXLabels;
+        options.scales.y.ticks.font = { size: tickSize };
+        if (cfg.yTitle) options.scales.y.title = { display: true, text: cfg.yTitle, color: "#374151", font: { size: tickSize } };
+        options.scales.y1.display = false;
+        return options;
+      }
+      const barChart = barCtx ? new Chart(barCtx, {
+        type: "bar", data: { labels: cfg.labels, datasets: cfg.barDatasets }, options: panelOptions(false)
+      }) : null;
+      const lineChart = lineCtx ? new Chart(lineCtx, {
+        type: "line", data: { labels: cfg.labels, datasets: cfg.lineDatasets }, options: panelOptions(true)
+      }) : null;
+      return { barChart, lineChart };
+    }
+
+    // Build bar + line datasets for a group, tagged with _group/_cat for
+    // recolour + filtering.
+    function buildCategoryDatasets(groupKey, cats, seriesByCat) {
+      const barDatasets = [], lineDatasets = [];
+      cats.forEach(function (cat) {
+        const color = categoryColor(groupKey, cat.id, cat.def);
+        const data  = seriesByCat[cat.id] || [];
+        const meta  = { _group: groupKey, _cat: cat.id };
+        barDatasets.push(Object.assign({
+          label: cat.label, data: data, backgroundColor: color, borderColor: color, borderWidth: 1, yAxisID: "y"
+        }, meta));
+        lineDatasets.push(Object.assign({
+          label: cat.label, data: data, borderColor: color, backgroundColor: "transparent",
+          pointBackgroundColor: color, pointBorderColor: "#ffffff", pointBorderWidth: 1.5,
+          pointRadius: 4, pointHoverRadius: 6, borderWidth: 3, tension: 0, fill: false, yAxisID: "y"
+        }, meta));
+      });
+      return { barDatasets: barDatasets, lineDatasets: lineDatasets };
+    }
+
+    function isCategoryHidden(groupKey, catId) {
+      return !!(categoryHidden[groupKey] && categoryHidden[groupKey][String(catId)]);
+    }
+    function applyCategoryVisibility(charts, groupKey, catId, hide) {
+      charts().forEach(function (chart) {
+        if (!chart || !chart.data) return;
+        chart.data.datasets.forEach(function (ds, i) {
+          if (ds._group === groupKey && ds._cat === catId) chart.setDatasetVisibility(i, !hide);
+        });
+        chart.update();
+      });
+    }
+    function toggleCategory(groupKey, catId, charts, rebuild) {
+      const hide = !isCategoryHidden(groupKey, catId);
+      if (!categoryHidden[groupKey]) categoryHidden[groupKey] = {};
+      categoryHidden[groupKey][String(catId)] = hide;
+      applyCategoryVisibility(charts, groupKey, catId, hide);
+      rebuild();
+    }
+    function reapplyCategoryVisibility(charts, groupKey) {
+      const map = categoryHidden[groupKey] || {};
+      Object.keys(map).forEach(function (catId) {
+        if (map[catId]) applyCategoryVisibility(charts, groupKey, catId, true);
+      });
+    }
+    function applyCategoryColors(charts, cats) {
+      charts().forEach(function (chart) {
+        if (!chart || !chart.data) return;
+        const isLine = !!(chart.config && chart.config.type === "line");
+        chart.data.datasets.forEach(function (ds) {
+          const cat = cats.find(function (c) { return c.id === ds._cat; });
+          if (!cat) return;
+          const color = categoryColor(ds._group, ds._cat, cat.def);
+          if (isLine) { ds.borderColor = color; ds.pointBackgroundColor = color; ds.pointBorderColor = "#ffffff"; }
+          else { ds.backgroundColor = color; ds.borderColor = color; }
+        });
+        chart.update();
+      });
+    }
+    function buildCategoryControls(containerId, groupKey, cats, charts) {
+      const wrap = document.getElementById(containerId);
+      if (!wrap) return;
+      wrap.innerHTML = "";
+      cats.forEach(function (cat) {
+        const active = categoryColor(groupKey, cat.id, cat.def).toLowerCase();
+        const off = isCategoryHidden(groupKey, cat.id);
+
+        const chip = document.createElement("div");
+        chip.className = "ccc-chip";
+
+        const colorBtn = document.createElement("button");
+        colorBtn.type = "button";
+        colorBtn.className = "ccc-color";
+        colorBtn.style.background = active;
+        colorBtn.title = "Change " + cat.label + " colour";
+        colorBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          openColorPopup(groupKey, cat.id, 0, 1, colorBtn);
+        });
+        chip.appendChild(colorBtn);
+
+        const labelBtn = document.createElement("button");
+        labelBtn.type = "button";
+        labelBtn.className = "ccc-year" + (off ? " off" : "");
+        labelBtn.style.fontSize = "12px";
+        labelBtn.textContent = cat.label;
+        labelBtn.title = (off ? "Show " : "Hide ") + cat.label + " in the chart";
+        labelBtn.addEventListener("click", function () {
+          toggleCategory(groupKey, cat.id, charts, function () {
+            buildCategoryControls(containerId, groupKey, cats, charts);
+          });
+        });
+        chip.appendChild(labelBtn);
+
+        wrap.appendChild(chip);
+      });
+    }
+    // Re-skin + rebuild the solar/waste controls after a colour pref changes.
+    function refreshCategoryChartsAndControls() {
+      const solarCharts = function () { return [solarBarChart, solarLineChart]; };
+      const wasteCharts = function () { return [wasteBarChart, wasteLineChart]; };
+      applyCategoryColors(solarCharts, SOLAR_CATS);
+      applyCategoryColors(wasteCharts, WASTE_CATS);
+      buildCategoryControls("solarColorControls", "solar", SOLAR_CATS, solarCharts);
+      buildCategoryControls("wasteColorControls", "waste", WASTE_CATS, wasteCharts);
     }
 
     function setupElectricityComparePage() {
@@ -3942,9 +4478,10 @@ body.mode-interactive #page7 .three-panel {
       
       fetch(`/infographics/SolarInfo?year=${encodeURIComponent(String(year || ""))}`)
         .then(response => response.text())
-        .then(html => { 
-          element.innerHTML = html; 
-          
+        .then(html => {
+          element.innerHTML = html;
+          fitPanelToHeight(element);
+
           // Use MutationObserver to detect when content is added
           const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
@@ -4068,26 +4605,21 @@ body.mode-interactive #page7 .three-panel {
         const urban = labels.map((_, index) => Number((months[index] && months[index].urban) || 0));
         const gh = labels.map((_, index) => Number((months[index] && months[index].greenhouse) || 0));
         const filtered = hideZeroMonths(labels, urban, gh);
-        const ctx = document.getElementById("solarThreeChart");
-        if (!ctx) return;
-        if (solarThreeChart) { solarThreeChart.destroy(); solarThreeChart = null; }
-        solarThreeChart = new Chart(ctx, {
-          type: "bar",
-          data: {
-            labels: filtered.labels,
-            datasets: [
-              { label: "Urban Renewables", data: filtered.series[0], backgroundColor: color_solar_urban, yAxisID: "y", order: 2 },
-              { label: "Green House", data: filtered.series[1], backgroundColor: color_solar_gh, yAxisID: "y", order: 2 },
-              { label: "_UrbanLine", type: "line", data: filtered.series[0], borderColor: color_solar_urban, backgroundColor: "transparent",
-                pointBackgroundColor: color_solar_urban, pointBorderColor: color_solar_urban, pointRadius: 4, pointHoverRadius: 5,
-                borderWidth: 2, tension: 0, fill: false, yAxisID: "y", order: 1, snapToBarIndex: 0 },
-              { label: "_GHLine", type: "line", data: filtered.series[1], borderColor: color_solar_gh, backgroundColor: "transparent",
-                pointBackgroundColor: color_solar_gh, pointBorderColor: color_solar_gh, pointRadius: 4, pointHoverRadius: 5,
-                borderWidth: 2, tension: 0, fill: false, yAxisID: "y", order: 1, snapToBarIndex: 1 }
-            ]
-          },
-          options: (function () { const options = baseChartOptions(); options.scales.y1.display = false; return options; })()
+        const solarCharts = function () { return [solarBarChart, solarLineChart]; };
+        if (solarBarChart)  { solarBarChart.destroy();  solarBarChart = null; }
+        if (solarLineChart) { solarLineChart.destroy(); solarLineChart = null; }
+        const solarDs = buildCategoryDatasets("solar", SOLAR_CATS, {
+          urban: filtered.series[0], greenhouse: filtered.series[1]
         });
+        const builtSolar = makeCategoryPanels({
+          barCanvasId: "solarBarChart", lineCanvasId: "solarLineChart",
+          labels: filtered.labels, barDatasets: solarDs.barDatasets, lineDatasets: solarDs.lineDatasets,
+          yTitle: "kWh"
+        });
+        solarBarChart  = builtSolar.barChart;
+        solarLineChart = builtSolar.lineChart;
+        buildCategoryControls("solarColorControls", "solar", SOLAR_CATS, solarCharts);
+        reapplyCategoryVisibility(solarCharts, "solar");
         
         // Update chart title with year
         const chartTitle = document.getElementById("solarChartTitle");
@@ -4177,9 +4709,10 @@ body.mode-interactive #page7 .three-panel {
         
         fetch(`/infographics/WasteInfo?fy=${encodeURIComponent(String(year || ""))}`)
           .then(response => response.text())
-          .then(html => { 
-            element.innerHTML = html; 
-            
+          .then(html => {
+            element.innerHTML = html;
+            fitPanelToHeight(element);
+
             // Use MutationObserver to detect when content is added
             const observer = new MutationObserver((mutations) => {
               mutations.forEach((mutation) => {
@@ -4305,26 +4838,21 @@ body.mode-interactive #page7 .three-panel {
         const generalWaste = labels.map((_, index) => Number((months[index] && months[index].generalKg) || 0));
         const recyclableWaste = labels.map((_, index) => Number((months[index] && months[index].recyclableKg) || 0));
         const filtered = hideZeroMonths(labels, generalWaste, recyclableWaste);
-        const ctx = document.getElementById("wasteThreeChart");
-        if (!ctx) return;
-        if (wasteThreeChart) { wasteThreeChart.destroy(); wasteThreeChart = null; }
-        wasteThreeChart = new Chart(ctx, {
-          type: "bar",
-          data: {
-            labels: filtered.labels,
-            datasets: [
-              { label: "General (kg)", data: filtered.series[0], backgroundColor: color_waste_gen, yAxisID: "y", order: 2 },
-              { label: "Recyclable (kg)", data: filtered.series[1], backgroundColor: color_waste_rec, yAxisID: "y", order: 2 },
-              { label: "_GeneralLine", type: "line", data: filtered.series[0], borderColor: color_waste_gen, backgroundColor: "transparent",
-                pointBackgroundColor: color_waste_gen, pointBorderColor: color_waste_gen, pointRadius: 4, pointHoverRadius: 5,
-                borderWidth: 2, tension: 0, fill: false, yAxisID: "y", order: 1, snapToBarIndex: 0 },
-              { label: "_RecycleLine", type: "line", data: filtered.series[1], borderColor: color_waste_rec, backgroundColor: "transparent",
-                pointBackgroundColor: color_waste_rec, pointBorderColor: color_waste_rec, pointRadius: 4, pointHoverRadius: 5,
-                borderWidth: 2, tension: 0, fill: false, yAxisID: "y", order: 1, snapToBarIndex: 1 }
-            ]
-          },
-          options: (function () { const options = baseChartOptions(); options.scales.y1.display = false; return options; })()
+        const wasteCharts = function () { return [wasteBarChart, wasteLineChart]; };
+        if (wasteBarChart)  { wasteBarChart.destroy();  wasteBarChart = null; }
+        if (wasteLineChart) { wasteLineChart.destroy(); wasteLineChart = null; }
+        const wasteDs = buildCategoryDatasets("waste", WASTE_CATS, {
+          general: filtered.series[0], recyclable: filtered.series[1]
         });
+        const builtWaste = makeCategoryPanels({
+          barCanvasId: "wasteBarChart", lineCanvasId: "wasteLineChart",
+          labels: filtered.labels, barDatasets: wasteDs.barDatasets, lineDatasets: wasteDs.lineDatasets,
+          yTitle: "kg"
+        });
+        wasteBarChart  = builtWaste.barChart;
+        wasteLineChart = builtWaste.lineChart;
+        buildCategoryControls("wasteColorControls", "waste", WASTE_CATS, wasteCharts);
+        reapplyCategoryVisibility(wasteCharts, "waste");
         
         // Update chart title with year
         const chartTitle = document.getElementById("wasteChartTitle");
@@ -4610,6 +5138,48 @@ body.mode-interactive #page7 .three-panel {
     }
 
     // ============================================================
+    // CAMPUS MAP MIRROR OVERLAY (audience view, driven by control panel)
+    // ============================================================
+    let mapReturnPage = null;             // page to restore when the map closes
+    // Looked up lazily — these elements sit near </body>, after this script.
+    function mapOverlayElement() { return document.getElementById("mapOverlay"); }
+
+    function isMapOverlayOpen() {
+      const el = mapOverlayElement();
+      return !!(el && el.classList.contains("open"));
+    }
+
+    function showMapOverlay() {
+      const el = mapOverlayElement();
+      if (!el) return;
+      if (!isMapOverlayOpen()) mapReturnPage = currentPageNumber; // remember where we were
+      // Load the model once, then keep it for instant re-opens.
+      const frame = document.getElementById("mapOverlayFrame");
+      if (frame && !frame.getAttribute("src")) {
+        frame.setAttribute("src", "/interactivemap?embed=1&mode=mirror");
+      }
+      stopProgressBarAnimation();          // freeze auto-advance while the map is up
+      el.classList.add("open");
+      el.setAttribute("aria-hidden", "false");
+    }
+
+    function hideMapOverlay() {
+      const el = mapOverlayElement();
+      if (!el) return;
+      el.classList.remove("open");
+      el.setAttribute("aria-hidden", "true");
+    }
+
+    // Close the map and return to the page the guest left before opening it.
+    function closeMapAndRestore() {
+      hideMapOverlay();
+      const target = (mapReturnPage != null) ? mapReturnPage : currentPageNumber;
+      mapReturnPage = null;
+      if (target === currentPageNumber) onEnterPage(currentPageNumber); // resume timers in place
+      else showPageByNumber(target, "right");
+    }
+
+    // ============================================================
     // CONTROLS WINDOW MESSAGE HANDLER
     // ============================================================
     window.addEventListener("message", (event) => {
@@ -4617,9 +5187,13 @@ body.mode-interactive #page7 .three-panel {
       if (!event.data) return;
       markInteractiveActivityClient();
 
+      if (event.data.type === "SHOW_MAP") { showMapOverlay(); return; }
+      if (event.data.type === "CLOSE_MAP") { closeMapAndRestore(); return; }
+
       if (event.data.type === "SET_BUILDING") {
         const buildingCode = normalizeBuildingKey(event.data.building);
         if (!buildingCode) return;
+        hideMapOverlay(); // reveal the full data on the big screen
         if (currentPageNumber !== 5) showPageByNumber(5, "left");
         clearThreeCycleTimer();
         setThreePanelBuilding(buildingCode);
@@ -5074,6 +5648,9 @@ body.mode-interactive #page7 .three-panel {
         saveColorPrefs();
         applyChartColors();
         buildInlineColorControls();
+        applyBuildingChartColors();
+        buildBuildingColorControls();
+        refreshCategoryChartsAndControls();
         renderColorPopup();
       });
       _colorPopupEl = el;
@@ -5133,6 +5710,171 @@ body.mode-interactive #page7 .three-panel {
 
     // Build the year legend / colour controls once on load (containers already exist).
     buildInlineColorControls();
+
+
+    // ============================================================
+    // WELCOME PAGE KPI SUMMARY (average monthly, latest year)
+    // ============================================================
+    (function setupWelcomeKpis(){
+      const year = latestDataYear || newestYear;
+      if (!year) return;
+
+      // Electricity + Water totals (sum all buildings for the year)
+      let elecTotal = 0, waterTotal = 0;
+      const overview = overviewByYear[year] || [];
+      overview.forEach(b => {
+        elecTotal  += Number(b.electricity || 0);
+        waterTotal += Number(b.water || 0);
+      });
+
+      // Solar total (sum monthly urban + greenhouse)
+      let solarTotal = 0;
+      (solarByYear[year] || []).forEach(m => {
+        solarTotal += Number(m.urban || 0) + Number(m.greenhouse || 0);
+      });
+
+      // Waste total (sum monthly general + recyclable)
+      let wasteTotal = 0;
+      (wasteByYear[year] || []).forEach(m => {
+        wasteTotal += Number(m.generalKg || 0) + Number(m.recyclableKg || 0);
+      });
+
+      // Count months that actually have data, for a fair monthly average
+      const elecMonths  = 12; // building totals are annual; divide by 12
+      const solarMonths = (solarByYear[year] || []).filter(m => (Number(m.urban||0)+Number(m.greenhouse||0)) > 0).length || 12;
+      const wasteMonths = (wasteByYear[year] || []).filter(m => (Number(m.generalKg||0)+Number(m.recyclableKg||0)) > 0).length || 12;
+
+      const avgElec  = elecTotal  / elecMonths;
+      const avgWater = waterTotal / elecMonths;
+      const avgSolar = solarTotal / solarMonths;
+      const avgWaste = wasteTotal / wasteMonths;
+
+      // Animate using the existing count-up helper
+      animateCountUp(document.getElementById("kpiElec"),  Math.round(avgElec),  1200);
+      animateCountUp(document.getElementById("kpiWater"), Math.round(avgWater), 1200);
+      animateCountUp(document.getElementById("kpiSolar"), Math.round(avgSolar), 1200);
+      animateCountUp(document.getElementById("kpiWaste"), Math.round(avgWaste), 1200);
+    })();
+  </script>
+
+  <!-- Campus-map mirror overlay (audience view; opened by the control panel) -->
+  <div id="mapOverlay" aria-hidden="true">
+    <!-- src is set lazily on first open so the heavy 3D model only loads once -->
+    <iframe id="mapOverlayFrame" title="RP Campus Map" allow="xr-spatial-tracking"></iframe>
+  </div>
+
+  <!-- ============================================================
+       BACKGROUND PARTICLES — gentle rising "pollen / energy" specks
+       Sits over the campus photo, behind all page content. One shared
+       particle field; only the active page's canvas is drawn each frame
+       to keep it light. Disabled when prefers-reduced-motion is set.
+  ============================================================ -->
+  <script>
+  (function setupBackgroundParticles(){
+    var pages = Array.prototype.slice.call(document.querySelectorAll(".page"));
+    if (!pages.length) return;
+
+    // One canvas per page, inserted as the first child (above the dark
+    // ::before overlay, below the z-index:1 content).
+    var canvases = pages.map(function (pg) {
+      var c = document.createElement("canvas");
+      c.className = "bg-particles";
+      pg.insertBefore(c, pg.firstChild);
+      return c;
+    });
+
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = 0, H = 0;
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvases.forEach(function (c) {
+        c.width = Math.round(W * dpr);
+        c.height = Math.round(H * dpr);
+      });
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Density scales with screen area; capped so big displays stay tasteful.
+    var COUNT = Math.max(60, Math.min(130, Math.round((W * H) / 18000)));
+    var particles = [];
+    function rand(a, b) { return a + Math.random() * (b - a); }
+
+    function makeParticle(atBottom) {
+      return {
+        x: rand(0, W),
+        y: atBottom ? rand(H, H + 60) : rand(0, H),
+        r: rand(1.6, 4.5),                 // radius
+        speed: rand(0.2, 0.7),             // upward drift
+        sway: rand(10, 30),                // horizontal sway amplitude
+        swaySpeed: rand(0.0006, 0.0018),   // sway frequency
+        phase: rand(0, Math.PI * 2),
+        opacity: rand(0.45, 0.9)
+      };
+    }
+    for (var i = 0; i < COUNT; i++) particles.push(makeParticle(false));
+
+    // During a page transition TWO pages briefly carry .active-page (the
+    // outgoing one isn't cleared until the 500ms slide ends). Draw to ALL of
+    // them so the incoming page animates immediately instead of staying blank
+    // until cleanup — this is what caused "next" to hitch while "previous"
+    // looked smooth (querySelector had been returning the outgoing page).
+    function getActiveCanvases() {
+      var out = [];
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].classList.contains("active-page")) out.push(canvases[i]);
+      }
+      return out;
+    }
+
+    // Pre-computed x positions so every active canvas renders the same frame.
+    var xs = new Array(particles.length);
+
+    function renderTo(canvas) {
+      var ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        if (p.y < -10) continue;
+        ctx.beginPath();
+        ctx.arc(xs[i], p.y, p.r, 0, Math.PI * 2);
+        // Light mint-green so specks read clearly over the teal photo.
+        ctx.fillStyle = "rgba(190, 255, 214, " + p.opacity + ")";
+        ctx.shadowColor = "rgba(52, 211, 153, 0.95)";
+        ctx.shadowBlur = p.r * 3.2;
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    var lastT = performance.now();
+    function frame(now) {
+      var dt = Math.min(now - lastT, 50);
+      lastT = now;
+
+      // 1) Advance particles once per frame (shared across all canvases).
+      for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        p.y -= p.speed * (dt / 16.6);
+        p.phase += p.swaySpeed * dt;
+        if (p.y < -10) {
+          particles[i] = makeParticle(true); // recycle from the bottom
+          p = particles[i];
+        }
+        xs[i] = p.x + Math.sin(p.phase) * p.sway;
+      }
+
+      // 2) Render to every page that is currently active.
+      var active = getActiveCanvases();
+      for (var j = 0; j < active.length; j++) renderTo(active[j]);
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
   </script>
 </body>
 </html>
