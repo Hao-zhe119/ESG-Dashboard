@@ -295,6 +295,18 @@
     }
     .legend { animation-delay: 0.3s; }
     .zoom-controls { animation-delay: 0.4s; }
+
+    /* ── EMBEDDED MODES (inside control panel / big-screen iframe) ── */
+    /* embed: hide the "back to dashboard" link (navigation handled by host) */
+    body.embed .back-btn { display: none !important; }
+    /* mirror: audience view on the big screen — no operator chrome, not clickable */
+    body.mirror .map-header,
+    body.mirror .zoom-controls,
+    body.mirror .cycle-panel,
+    body.mirror .cycle-bar,
+    body.mirror .controls-hint,
+    body.mirror .info-panel { display: none !important; }
+    body.mirror .hotspot { pointer-events: none; }
   </style>
 </head>
 <body>
@@ -468,6 +480,24 @@
   <div class="cycle-bar"><div class="cycle-bar-fill" id="cycleBarFill"></div></div>
 
   <script>
+    // ── EMBED / MIRROR MODE ─────────────────────────────────────────────
+    // /interactivemap?embed=1                → interactive copy (control panel)
+    // /interactivemap?embed=1&mode=mirror    → audience copy (big screen)
+    const MAP_PARAMS = new URLSearchParams(location.search);
+    const MAP_EMBED  = MAP_PARAMS.get('embed') === '1';
+    const MAP_MIRROR = (MAP_PARAMS.get('mode') || 'interactive') === 'mirror';
+    if (MAP_EMBED)  document.body.classList.add('embed');
+    if (MAP_MIRROR) document.body.classList.add('mirror');
+
+    // Tell the hosting window (control panel) which building the guest picked.
+    function mapPostToParent(payload){
+      try {
+        if (MAP_EMBED && window.parent && window.parent !== window){
+          window.parent.postMessage(payload, window.location.origin);
+        }
+      } catch (_e) {}
+    }
+
     const viewer   = document.getElementById('campusViewer');
     const overlay  = document.getElementById('loadingOverlay');
     const loadFill = document.getElementById('loadingFill');
@@ -647,6 +677,7 @@
     document.querySelectorAll('.hotspot').forEach(hotspot => {
       hotspot.addEventListener('click', e => {
         e.preventDefault();
+        if (MAP_MIRROR) return; // audience copy is not interactive
         const href = hotspot.getAttribute('href');
         const slug = href.split('/building-left/')[1];
         const b = buildings.find(b => b.slug === slug);
@@ -654,7 +685,18 @@
         pauseCycle();
         viewer.autoRotate = false;
         openPanel(b);
+        // Drive the big screen to this building's full data (Page 5).
+        mapPostToParent({ type: 'MAP_SELECT_BUILDING', building: slug });
       });
+    });
+
+    // "View Full Data": when embedded, push to the big screen instead of
+    // navigating this iframe to /?building=...
+    panelViewBtn.addEventListener('click', e => {
+      if (MAP_EMBED) {
+        e.preventDefault();
+        if (activeSlug) mapPostToParent({ type: 'MAP_SELECT_BUILDING', building: activeSlug });
+      }
     });
 
     // Click on empty model area closes panel
@@ -799,6 +841,7 @@
 
     // ── START ──
     viewer.addEventListener('load', () => {
+      if (MAP_MIRROR) { pauseCycle(); return; } // audience copy: just auto-rotate
       setTimeout(() => { showCycleBuilding(); }, 800);
     });
   </script>
