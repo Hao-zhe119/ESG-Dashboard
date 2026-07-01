@@ -1455,11 +1455,65 @@ body.mode-interactive #page7 .three-panel {
   width: 0;
   height: 0;
 }
+
+
+/* ===== Ambient falling-water droplets ===== */
+#page1 .rain-layer{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.rain-layer .drop{
+  position: absolute;
+  top: -8%;
+  width: 2px;
+  height: 60px;
+  background: linear-gradient(to bottom,
+              rgba(160,210,255,0) 0%,
+              rgba(160,210,255,0.45) 60%,
+              rgba(200,230,255,0.85) 100%);
+  border-radius: 0 0 2px 2px;
+  filter: drop-shadow(0 0 4px rgba(140,200,255,0.5));
+  animation: dropFall linear infinite;
+  opacity: 0;
+}
+@keyframes dropFall{
+  0%   { transform: translateY(-10vh) scaleY(0.8); opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateY(110vh) scaleY(1);   opacity: 0; }
+}
+
+/* Randomized positions / speeds / delays per droplet */
+.rain-layer .drop:nth-child(1) { left: 5%;  animation-duration: 2.4s; animation-delay: 0s;   }
+.rain-layer .drop:nth-child(2) { left: 12%; animation-duration: 3.1s; animation-delay: 1.2s; }
+.rain-layer .drop:nth-child(3) { left: 19%; animation-duration: 2.0s; animation-delay: 0.6s; }
+.rain-layer .drop:nth-child(4) { left: 26%; animation-duration: 3.6s; animation-delay: 2.0s; }
+.rain-layer .drop:nth-child(5) { left: 33%; animation-duration: 2.7s; animation-delay: 0.3s; }
+.rain-layer .drop:nth-child(6) { left: 40%; animation-duration: 3.3s; animation-delay: 1.6s; }
+.rain-layer .drop:nth-child(7) { left: 47%; animation-duration: 2.2s; animation-delay: 0.9s; }
+.rain-layer .drop:nth-child(8) { left: 54%; animation-duration: 3.8s; animation-delay: 2.4s; }
+.rain-layer .drop:nth-child(9) { left: 61%; animation-duration: 2.5s; animation-delay: 0.2s; }
+.rain-layer .drop:nth-child(10){ left: 68%; animation-duration: 3.0s; animation-delay: 1.4s; }
+.rain-layer .drop:nth-child(11){ left: 9%;  animation-duration: 3.4s; animation-delay: 2.1s; }
+.rain-layer .drop:nth-child(12){ left: 23%; animation-duration: 2.3s; animation-delay: 0.7s; }
+.rain-layer .drop:nth-child(13){ left: 37%; animation-duration: 3.7s; animation-delay: 1.9s; }
+.rain-layer .drop:nth-child(14){ left: 51%; animation-duration: 2.1s; animation-delay: 0.4s; }
+.rain-layer .drop:nth-child(15){ left: 65%; animation-duration: 3.2s; animation-delay: 1.1s; }
+.rain-layer .drop:nth-child(16){ left: 75%; animation-duration: 2.6s; animation-delay: 0.5s; }
+.rain-layer .drop:nth-child(17){ left: 82%; animation-duration: 3.5s; animation-delay: 1.8s; }
+.rain-layer .drop:nth-child(18){ left: 89%; animation-duration: 2.4s; animation-delay: 0.8s; }
+.rain-layer .drop:nth-child(19){ left: 95%; animation-duration: 3.1s; animation-delay: 2.2s; }
+.rain-layer .drop:nth-child(20){ left: 72%; animation-duration: 2.8s; animation-delay: 1.3s; }
 </style>
 
 </head>
 <body class="<%= (String(dashboardMode||'auto').toLowerCase()==='auto') ? 'mode-auto' : 'mode-interactive' %>">
   <!-- ===== INLINE CHART COLOUR PICKERS (on the Electricity / Water by-building pages) ===== -->
+
   <style>
     .compare-color-controls{
       display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:16px;
@@ -1542,6 +1596,15 @@ body.mode-interactive #page7 .three-panel {
 
   <!-- PAGE 1: WELCOME -->
   <div id="page1" class="page active-page">
+    <div class="rain-layer" aria-hidden="true">
+      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
+      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
+      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
+      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
+      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
+      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
+      <span class="drop"></span><span class="drop"></span>
+    </div>
     <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
     <h1 class="welcome-title">
       WELCOME TO<br>

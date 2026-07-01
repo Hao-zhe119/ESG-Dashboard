@@ -16,7 +16,7 @@
     "autoSwitchOnActivity": true,
     "autoRevertEnabled": true,
     "idleTimeoutMinutes": 15,
-    "lastActivityAt": "2026-07-01T02:17:00.624Z"
+    "lastActivityAt": "2026-06-29T07:03:04.177Z"
   },
   "automation": {
     "applyDefaultTimingEnabled": false,
@@ -76,7 +76,7 @@
     ],
     "lastHibernateDryRunAt": null,
     "lastHibernateRunKey": null,
-    "healthCheckEnabled": true,
+    "healthCheckEnabled": false,
     "healthCheckTime": "08:00",
     "lastScheduledHealthCheckDate": null
   },
