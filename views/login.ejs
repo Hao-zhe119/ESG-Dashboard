@@ -143,6 +143,12 @@
                     </div>
                 <% } %>
 
+                <% if (typeof databaseError !== 'undefined' && databaseError) { %>
+                    <div class="alert alert-warning">
+                        <strong>Database connection failed:</strong> <%= databaseError %>
+                    </div>
+                <% } %>
+
                 <!-- LOGIN PANEL -->
                 <div id="login-panel">
                     <h4 class="card-title text-center mb-4">Admin Login</h4>

@@ -15,13 +15,17 @@ const {
 } = require("./config/dashboardConfig");
 const app = express();
 
-require('dotenv').config({ path: './databaseinfo.env' });
+const envPath = path.join(__dirname, "databaseinfo.env");
+const envResult = require("dotenv").config({ path: envPath });
+if (envResult.error) {
+  console.error("Could not load databaseinfo.env:", envResult.error.message);
+}
 const RESET_PASSCODE = process.env.RESET_PASSCODE || "Reset@ESGDashboard!";
 const SESSION_SECRET = process.env.SESSION_SECRET || "dev-key";
 const OFFLINE_ADMIN_PASSWORD = process.env.OFFLINE_ADMIN_PASSWORD || RESET_PASSCODE;
 const OFFLINE_ADMIN_USER = {
   id: 1,
-  account: "No-XAMPP Test Admin",
+  account: "Offline Admin",
   isOffline: true
 };
 
@@ -101,28 +105,82 @@ function mergeCaptionsIntoItems(items, accountId) {
 /* ==============================
    MYSQL CONNECTION
 ============================== */
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+function numberFromEnv(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const defaultDbEnv = {
+  DB_HOST: "localhost",
+  DB_PORT: "3306",
+  DB_USER: "ESGAdmin",
+  DB_PASSWORD: "12345678",
+  DB_NAME: "esgdashboard",
+  DB_CONNECT_TIMEOUT_MS: "10000"
+};
+
+function readEnv(name, fallback = null) {
+  const value = process.env[name];
+  return typeof value === "string" && value !== "" ? value : fallback;
+}
+
+function describeDbConfigError() {
+  const missing = [];
+  if (!readEnv("DB_USER", defaultDbEnv.DB_USER)) missing.push("DB_USER");
+  if (!readEnv("DB_PASSWORD", defaultDbEnv.DB_PASSWORD)) missing.push("DB_PASSWORD");
+  if (!readEnv("DB_NAME", defaultDbEnv.DB_NAME)) missing.push("DB_NAME");
+  if (!readEnv("DB_SOCKET") && !readEnv("DB_HOST", defaultDbEnv.DB_HOST)) missing.push("DB_HOST or DB_SOCKET");
+  return missing.length
+    ? `${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} missing or empty. Check ${envPath}.`
+    : null;
+}
+
+const databaseConfigError = describeDbConfigError();
+const dbConfig = {
+  host: readEnv("DB_HOST", defaultDbEnv.DB_HOST),
+  port: numberFromEnv(readEnv("DB_PORT", defaultDbEnv.DB_PORT), 3306),
+  user: readEnv("DB_USER", defaultDbEnv.DB_USER),
+  password: readEnv("DB_PASSWORD", defaultDbEnv.DB_PASSWORD),
+  database: readEnv("DB_NAME", defaultDbEnv.DB_NAME),
+  connectTimeout: numberFromEnv(readEnv("DB_CONNECT_TIMEOUT_MS", defaultDbEnv.DB_CONNECT_TIMEOUT_MS), 10000),
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+};
+
+if (readEnv("DB_SOCKET")) {
+  dbConfig.socketPath = readEnv("DB_SOCKET");
+  delete dbConfig.host;
+  delete dbConfig.port;
+}
+
+const connection = mysql.createPool(dbConfig);
 
 let databaseAvailable = false;
+let latestDatabaseError = databaseConfigError;
 
-connection.connect((err) => {
-  if (err) {
+if (databaseConfigError) {
+  console.error("Database configuration error:", databaseConfigError);
+} else {
+  connection.query("SELECT 1 AS ok", (err) => {
+    if (err) {
+      databaseAvailable = false;
+      latestDatabaseError = err.message;
+      console.error('MySQL connection error:', err);
+    } else {
+      databaseAvailable = true;
+      latestDatabaseError = null;
+      console.log('Connected to MySQL as', process.env.DB_USER);
+    }
+  });
+}
+
+connection.on("connection", (poolConnection) => {
+  poolConnection.on("error", (err) => {
     databaseAvailable = false;
-    console.error('MySQL connection error:', err);
-  } else {
-    databaseAvailable = true;
-    console.log('Connected to MySQL as', process.env.DB_USER);
-  }
-});
-
-connection.on("error", (err) => {
-  databaseAvailable = false;
-  console.error("MySQL runtime error:", err.message);
+    latestDatabaseError = err.message;
+    console.error("MySQL runtime error:", err.message);
+  });
 });
 
 /* ==============================
@@ -508,12 +566,20 @@ function boolFromRequest(value) {
 }
 
 async function canUseDatabase() {
+  if (databaseConfigError) {
+    databaseAvailable = false;
+    latestDatabaseError = databaseConfigError;
+    return false;
+  }
+
   try {
     await db.query("SELECT 1 AS ok");
     databaseAvailable = true;
+    latestDatabaseError = null;
     return true;
   } catch (error) {
     databaseAvailable = false;
+    latestDatabaseError = error.message;
     return false;
   }
 }
@@ -674,7 +740,7 @@ async function runHealthCheck() {
     },
     database: { ok: false, message: "Not checked" },
     dashboard: { ok: false, message: "Not checked" },
-    noXamppTestMode: { ok: true, message: databaseAvailable ? "Database mode" : "No-XAMPP test fallback available" }
+    databaseMode: { ok: databaseAvailable, message: databaseAvailable ? "Database mode" : "Offline fallback is available" }
   };
 
   try {
@@ -1905,7 +1971,7 @@ function renderOfflineAdmin(req, res) {
       ...latestHealthSnapshot,
       status: "offline",
       checks: {
-        database: { ok: false, message: "MySQL/XAMPP is not running. Admin config is using JSON test fallback." }
+        database: { ok: false, message: latestDatabaseError || "Database is unavailable. Admin config is using the JSON fallback." }
       }
     },
     buildingsLoadError: true
@@ -2186,13 +2252,14 @@ app.get("/admin/export-excel", requireAuth, async (req, res) => {
 /* ==============================
    LOGIN ROUTES
 ============================== */
-app.get("/login", (req, res) => {
-  if (!databaseAvailable) {
+app.get("/login", async (req, res) => {
+  if (!(await canUseDatabase())) {
     return res.render("login", {
       adminAccount: OFFLINE_ADMIN_USER.account,
       loginError: null,
       resetError: null,
-      resetSuccess: "No-XAMPP test mode: MySQL is not running. Use the test/admin passcode to access configuration-only admin tools."
+      resetSuccess: null,
+      databaseError: latestDatabaseError
     });
   }
 
@@ -2205,7 +2272,8 @@ app.get("/login", (req, res) => {
         adminAccount: OFFLINE_ADMIN_USER.account,
         loginError: null,
         resetError: null,
-        resetSuccess: "No-XAMPP test mode: MySQL is not running. Use the test/admin passcode to access configuration-only admin tools."
+        resetSuccess: null,
+        databaseError: latestDatabaseError || err.message
       });
     }
 
@@ -2215,24 +2283,26 @@ app.get("/login", (req, res) => {
       adminAccount: adminAccount,
       loginError: null,
       resetError: null,
-      resetSuccess: null
+      resetSuccess: null,
+      databaseError: null
     });
   });
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
   const { password } = req.body;
 
-  if (!databaseAvailable) {
+  if (!(await canUseDatabase())) {
     if (password === OFFLINE_ADMIN_PASSWORD) {
       req.session.user = OFFLINE_ADMIN_USER;
       return res.redirect("/admin");
     }
     return res.render("login", {
       adminAccount: OFFLINE_ADMIN_USER.account,
-      loginError: "Invalid test/admin passcode",
+      loginError: "Invalid offline admin passcode",
       resetError: null,
-      resetSuccess: "No-XAMPP test mode: MySQL is not running. Use the configured test/admin passcode."
+      resetSuccess: "Database is unavailable. Use the configured offline admin passcode.",
+      databaseError: latestDatabaseError
     });
   }
 
@@ -2247,9 +2317,10 @@ app.post("/login", (req, res) => {
       }
       return res.render("login", {
         adminAccount: OFFLINE_ADMIN_USER.account,
-        loginError: "Database unavailable. Invalid test/admin passcode.",
+        loginError: "Database unavailable. Invalid offline admin passcode.",
         resetError: null,
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: latestDatabaseError || err.message
       });
     }
 
@@ -2258,7 +2329,8 @@ app.post("/login", (req, res) => {
         adminAccount: null,
         loginError: "No admin account found in database",
         resetError: null,
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: null
       });
     }
 
@@ -2295,7 +2367,8 @@ app.post("/login", (req, res) => {
           adminAccount: user.account,
           loginError: "Invalid password",
           resetError: null,
-          resetSuccess: null
+          resetSuccess: null,
+          databaseError: null
         });
       }
 
@@ -2323,7 +2396,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: null,
         loginError: null,
         resetError: "Database error. Please try again.",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: err.message
       });
     }
 
@@ -2335,7 +2409,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: adminAccount,
         loginError: null,
         resetError: "All fields are required",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: null
       });
     }
 
@@ -2344,7 +2419,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: adminAccount,
         loginError: null,
         resetError: "Invalid reset passcode",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: null
       });
     }
 
@@ -2353,7 +2429,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: adminAccount,
         loginError: null,
         resetError: "Passwords do not match",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: null
       });
     }
 
@@ -2386,7 +2463,8 @@ app.post("/reset-password", async (req, res) => {
             adminAccount: adminAccount,
             loginError: null,
             resetError: "Failed to update password. Please try again.",
-            resetSuccess: null
+            resetSuccess: null,
+            databaseError: updateErr.message
           });
         }
 
@@ -2396,7 +2474,8 @@ app.post("/reset-password", async (req, res) => {
           adminAccount: adminAccount,
           loginError: null,
           resetError: null,
-          resetSuccess: "Password reset successful! You can now login with your new password."
+          resetSuccess: "Password reset successful! You can now login with your new password.",
+          databaseError: null
         });
       });
 
@@ -2406,7 +2485,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: adminAccount,
         loginError: null,
         resetError: "An error occurred. Please try again.",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: compareErr.message
       });
     }
   });
@@ -4045,4 +4125,3 @@ app.listen(port, "127.0.0.1", () => {
   syncHibernateMonitor();
   syncInteractiveRevertMonitor();
 });
-
