@@ -12,11 +12,23 @@
     "9": 30,
     "10": 15
   },
+  "defaultAnimations": {
+    "1": "both",
+    "2": "particles",
+    "3": "particles",
+    "4": "particles",
+    "5": "particles",
+    "6": "particles",
+    "7": "particles",
+    "8": "particles",
+    "9": "particles",
+    "10": "particles"
+  },
   "interactiveMode": {
     "autoSwitchOnActivity": true,
     "autoRevertEnabled": true,
     "idleTimeoutMinutes": 15,
-    "lastActivityAt": "2026-07-01T02:17:00.624Z"
+    "lastActivityAt": "2026-07-06T05:26:08.798Z"
   },
   "automation": {
     "applyDefaultTimingEnabled": false,
@@ -76,7 +88,7 @@
     ],
     "lastHibernateDryRunAt": null,
     "lastHibernateRunKey": null,
-    "healthCheckEnabled": true,
+    "healthCheckEnabled": false,
     "healthCheckTime": "08:00",
     "lastScheduledHealthCheckDate": null
   },

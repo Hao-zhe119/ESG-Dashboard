@@ -20,6 +20,18 @@ const DEFAULT_CONFIG = {
     9: 30,
     10: 15
   },
+  defaultAnimations: {
+    1: "rain",
+    2: "particles",
+    3: "sparks",
+    4: "particles",
+    5: "particles",
+    6: "sun",
+    7: "leaves",
+    8: "particles",
+    9: "particles",
+    10: "particles"
+  },
   interactiveMode: {
     autoSwitchOnActivity: true,
     autoRevertEnabled: true,
@@ -113,11 +125,14 @@ function updateRuntimeConfig(mutator) {
 }
 
 function getDefaultTimerRows() {
-  const timers = readRuntimeConfig().defaultTimersSeconds || {};
+  const config = readRuntimeConfig();
+  const timers = config.defaultTimersSeconds || {};
+  const animations = config.defaultAnimations || {};
   return Object.entries(timers)
     .map(([pageNumber, seconds]) => ({
       page_number: Number(pageNumber),
-      duration_seconds: Math.max(0, Number(seconds) || 0)
+      duration_seconds: Math.max(0, Number(seconds) || 0),
+      background_animation: animations[pageNumber] || "particles"
     }))
     .filter((item) => Number.isFinite(item.page_number))
     .sort((a, b) => a.page_number - b.page_number);
