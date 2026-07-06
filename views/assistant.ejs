@@ -165,6 +165,57 @@
     }
     #send:disabled{ opacity:0.45; cursor:not-allowed; box-shadow:none; }
     .modelTag{ text-align:center; color:var(--muted); font-size:11px; margin-top:10px; }
+
+    /* ── Quick-question panel (touch-only, no-keyboard friendly) ── */
+    #quickToggle{
+      flex:0 0 auto;
+      width:50px; height:50px;
+      display:flex; align-items:center; justify-content:center;
+      background:var(--glassBot);
+      -webkit-backdrop-filter:var(--glassBlur); backdrop-filter:var(--glassBlur);
+      border:var(--glassBorder); border-radius:14px;
+      font-size:20px; cursor:pointer;
+      transition:transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    #quickToggle.active{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(52,211,153,0.18);
+    }
+    #quickToggle:hover{ transform:translateY(-2px); }
+
+    #quickPanel{
+      max-width:900px; margin:0 auto 12px auto;
+      background:var(--glassBot);
+      -webkit-backdrop-filter:var(--glassBlur); backdrop-filter:var(--glassBlur);
+      border:var(--glassBorder); border-radius:16px;
+      padding:14px;
+      max-height:38vh; overflow-y:auto;
+    }
+    #quickPanel.hidden{ display:none; }
+    .quickTabs{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+    .quickTab{
+      background:rgba(255,255,255,0.05);
+      border:var(--glassBorder); color:var(--muted);
+      padding:10px 16px; border-radius:999px; font-size:14px; font-weight:700;
+      cursor:pointer; transition:all 0.15s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .quickTab.active{
+      background:var(--brandGrad); color:#06210f; border-color:transparent;
+    }
+    .quickList{ display:flex; flex-wrap:wrap; gap:10px; }
+    .quickQ{
+      background:rgba(255,255,255,0.05);
+      border:var(--glassBorder); color:var(--text);
+      padding:12px 16px; border-radius:12px; font-size:14px;
+      cursor:pointer; text-align:left; line-height:1.4;
+      transition:transform 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .quickQ:hover, .quickQ:active{
+      border-color:var(--accent); color:var(--accent);
+      transform:translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -187,7 +238,12 @@
   </div>
 
   <footer>
+    <div id="quickPanel" class="hidden">
+      <div class="quickTabs" id="quickTabs"></div>
+      <div class="quickList" id="quickList"></div>
+    </div>
     <div class="inputRow">
+      <button id="quickToggle" type="button" title="Quick questions">💡</button>
       <textarea id="input" placeholder="Type your question and press Enter..." rows="1"></textarea>
       <button id="send">Send</button>
     </div>
@@ -199,6 +255,85 @@
     const welcomeEl  = document.getElementById("welcome");
     const inputEl    = document.getElementById("input");
     const sendBtn    = document.getElementById("send");
+    const quickToggle = document.getElementById("quickToggle");
+    const quickPanel  = document.getElementById("quickPanel");
+    const quickTabs   = document.getElementById("quickTabs");
+    const quickList   = document.getElementById("quickList");
+
+    // Preset questions, grouped by topic, so the assistant can be used
+    // entirely by tapping on touch panels with no keyboard attached.
+    const QUICK_QUESTIONS = {
+      "🌱 ESG": [
+        "What is ESG?",
+        "Why does ESG matter for RP?",
+        "What are RP's sustainability goals?"
+      ],
+      "⚡ Electricity": [
+        "Why does saving electricity matter?",
+        "How can we reduce electricity usage on campus?",
+        "What is RP's average monthly electricity use?"
+      ],
+      "💧 Water": [
+        "Why is water conservation important?",
+        "How can we save water on campus?"
+      ],
+      "☀️ Solar": [
+        "What is solar energy?",
+        "How much solar energy does RP generate?"
+      ],
+      "♻️ Waste": [
+        "Give me 3 simple ways to reduce waste",
+        "What is RP's recycling rate?",
+        "Why is recycling important?"
+      ]
+    };
+
+    function renderQuickQuestions(category){
+      quickList.innerHTML = "";
+      QUICK_QUESTIONS[category].forEach(q => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "quickQ";
+        btn.textContent = q;
+        quickList.appendChild(btn);
+      });
+    }
+
+    function renderQuickTabs(){
+      quickTabs.innerHTML = "";
+      Object.keys(QUICK_QUESTIONS).forEach((category, i) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "quickTab" + (i === 0 ? " active" : "");
+        tab.textContent = category;
+        tab.dataset.category = category;
+        quickTabs.appendChild(tab);
+      });
+      renderQuickQuestions(Object.keys(QUICK_QUESTIONS)[0]);
+    }
+    renderQuickTabs();
+
+    quickTabs.addEventListener("click", e => {
+      const tab = e.target.closest(".quickTab");
+      if (!tab) return;
+      quickTabs.querySelectorAll(".quickTab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      renderQuickQuestions(tab.dataset.category);
+    });
+
+    quickList.addEventListener("click", e => {
+      const q = e.target.closest(".quickQ");
+      if (!q) return;
+      inputEl.value = q.textContent;
+      quickPanel.classList.add("hidden");
+      quickToggle.classList.remove("active");
+      send();
+    });
+
+    quickToggle.addEventListener("click", () => {
+      quickPanel.classList.toggle("hidden");
+      quickToggle.classList.toggle("active");
+    });
 
     // Full conversation we send to the server each turn
     const history = [];
