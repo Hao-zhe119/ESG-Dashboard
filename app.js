@@ -584,12 +584,19 @@ async function canUseDatabase() {
   }
 }
 
+const BACKGROUND_ANIMATION_OPTIONS = ["particles", "rain", "sparks", "sun", "leaves", "none"];
+
+function normalizeAnimationValue(value) {
+  return BACKGROUND_ANIMATION_OPTIONS.includes(value) ? value : "particles";
+}
+
 function getFallbackTimerRows() {
   return getDefaultTimerRows().map((row) => ({
     timer_id: row.page_number,
     page_number: row.page_number,
     page_name: `Page ${row.page_number}`,
-    duration_seconds: row.duration_seconds
+    duration_seconds: row.duration_seconds,
+    background_animation: normalizeAnimationValue(row.background_animation)
   }));
 }
 
@@ -604,7 +611,8 @@ function buildTimerMap(rows) {
         page_number: pageNumber,
         page_name: timer.page_name || `Page ${pageNumber}`,
         duration_seconds: durationSeconds,
-        duration_ms: durationSeconds * 1000
+        duration_ms: durationSeconds * 1000,
+        background_animation: normalizeAnimationValue(timer.background_animation)
       };
     }
   });
@@ -668,7 +676,8 @@ function normalizeTimerRows(rows) {
     .map((row) => ({
       page_number: Number(row.page_number),
       page_name: row.page_name || `Page ${row.page_number}`,
-      duration_seconds: Math.max(0, Number(row.duration_seconds) || 0)
+      duration_seconds: Math.max(0, Number(row.duration_seconds) || 0),
+      background_animation: normalizeAnimationValue(row.background_animation)
     }))
     .filter((row) => Number.isFinite(row.page_number))
     .sort((a, b) => a.page_number - b.page_number);
@@ -676,7 +685,7 @@ function normalizeTimerRows(rows) {
 
 async function getTimerRowsForAccount(accountId) {
   const [rows] = await db.query(
-    `SELECT timer_id, page_number, page_name, duration_seconds
+    `SELECT timer_id, page_number, page_name, duration_seconds, background_animation
      FROM timers
      WHERE account_id = ?
      ORDER BY page_number ASC`,
@@ -693,19 +702,20 @@ async function upsertTimerRowsForAccount(accountId, timerRows) {
     const pageNumber = Number(row.page_number);
     const seconds = Math.max(0, Number(row.duration_seconds) || 0);
     const pageName = row.page_name || pageNames.get(pageNumber) || `Page ${pageNumber}`;
+    const animation = normalizeAnimationValue(row.background_animation);
 
     const [updateResult] = await db.query(
       `UPDATE timers
-       SET duration_seconds = ?
+       SET duration_seconds = ?, background_animation = ?
        WHERE account_id = ? AND page_number = ?`,
-      [seconds, accountId, pageNumber]
+      [seconds, animation, accountId, pageNumber]
     );
 
     if (updateResult.affectedRows === 0) {
       await db.query(
-        `INSERT INTO timers (account_id, page_number, page_name, duration_seconds)
-         VALUES (?, ?, ?, ?)`,
-        [accountId, pageNumber, pageName, seconds]
+        `INSERT INTO timers (account_id, page_number, page_name, duration_seconds, background_animation)
+         VALUES (?, ?, ?, ?, ?)`,
+        [accountId, pageNumber, pageName, seconds, animation]
       );
     }
   }
@@ -1004,21 +1014,26 @@ app.post("/dashboard/interactive-revert", async (req, res) => {
   }
 });
 
-// POST /admin/timers/:timer_id - Update timer duration
+// POST /admin/timers/:timer_id - Update timer duration and/or background animation
 app.post('/admin/timers/:timer_id(\\d+)', requireAuth, async (req, res) => {
   try {
     const { timer_id } = req.params;
-    const { duration_seconds } = req.body;
-    
+    const { duration_seconds, background_animation } = req.body;
+
     // Validate timer_id
     if (!timer_id) {
       return res.status(400).send("Missing timer_id");
     }
-    
+
     // Validate duration_seconds input
     const seconds = parseInt(duration_seconds, 10);
     if (isNaN(seconds) || seconds < 0 || seconds > 5999) {
       return res.status(400).send("Invalid duration. Must be 0-5999 seconds.");
+    }
+
+    // Validate background_animation input (optional field)
+    if (background_animation !== undefined && !BACKGROUND_ANIMATION_OPTIONS.includes(background_animation)) {
+      return res.status(400).send("Invalid background_animation. Must be one of: " + BACKGROUND_ANIMATION_OPTIONS.join(", "));
     }
 
     // Get account_id from session (check multiple possible locations)
@@ -1034,26 +1049,36 @@ app.post('/admin/timers/:timer_id(\\d+)', requireAuth, async (req, res) => {
       const timerPage = Number(timer_id);
       updateRuntimeConfig((config) => {
         config.defaultTimersSeconds[String(timerPage)] = seconds;
+        if (background_animation !== undefined) {
+          config.defaultAnimations[String(timerPage)] = background_animation;
+        }
         return config;
       });
       return res.status(200).send("Offline timer updated successfully");
     }
 
     // Update the timers table with account_id check
-    const [result] = await db.query(
-      `UPDATE timers 
-       SET duration_seconds = ? 
-       WHERE timer_id = ? AND account_id = ?`,
-      [seconds, timer_id, accountId]
-    );
-    
+    const [result] = background_animation !== undefined
+      ? await db.query(
+          `UPDATE timers
+           SET duration_seconds = ?, background_animation = ?
+           WHERE timer_id = ? AND account_id = ?`,
+          [seconds, background_animation, timer_id, accountId]
+        )
+      : await db.query(
+          `UPDATE timers
+           SET duration_seconds = ?
+           WHERE timer_id = ? AND account_id = ?`,
+          [seconds, timer_id, accountId]
+        );
+
     if (result.affectedRows === 0) {
       return res.status(404).send("Timer not found.");
     }
-    
+
     console.log(`Timer ${timer_id} updated to ${seconds} seconds for account ${accountId}`);
     res.status(200).send("Timer updated successfully");
-    
+
   } catch (error) {
     console.error("Error updating timer:", error);
     res.status(500).send("Failed to update timer");
@@ -1831,9 +1856,9 @@ app.get("/", async (req, res) => {
       
       if (tables && tables.length > 0) {
         const [timerRows] = await db.query(
-          `SELECT timer_id, page_number, page_name, duration_seconds 
-           FROM timers 
-           WHERE account_id = ? 
+          `SELECT timer_id, page_number, page_name, duration_seconds, background_animation
+           FROM timers
+           WHERE account_id = ?
            ORDER BY timer_id ASC`,
           [accountId]
         );
@@ -2606,9 +2631,9 @@ app.get('/admin', requireAuth, async (req, res) => {
 
     // 8. Fetch timers for page duration settings
     const [timerRows] = await db.query(
-      `SELECT timer_id, page_number, page_name, duration_seconds 
-       FROM timers 
-       WHERE account_id = ? 
+      `SELECT timer_id, page_number, page_name, duration_seconds, background_animation
+       FROM timers
+       WHERE account_id = ?
        ORDER BY page_number ASC`,
       [accountId]
     );
