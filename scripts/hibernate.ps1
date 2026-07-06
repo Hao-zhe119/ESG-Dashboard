@@ -15,7 +15,8 @@
 # development or demos.
 
 param(
-  [switch]$DryRun
+  [switch]$DryRun,
+  [switch]$ExecuteHibernate
 )
 
 if ($DryRun) {
@@ -23,5 +24,10 @@ if ($DryRun) {
   exit 0
 }
 
-Write-Output "Auto-hibernate hook reached. Real hibernate remains disabled until approved."
-# shutdown.exe /h
+if ($ExecuteHibernate) {
+  Write-Output "Executing Windows hibernate now."
+  shutdown.exe /h
+  exit 0
+}
+
+Write-Output "Auto-hibernate hook reached. Add -ExecuteHibernate to run Windows hibernate."

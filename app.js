@@ -5,10 +5,11 @@ const session = require("express-session");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { execFile } = require("child_process");
+const { execFile, spawn } = require("child_process");
 const XLSX = require("xlsx");
 const bcrypt = require("bcrypt");
 const {
+  DEFAULT_CONFIG,
   readRuntimeConfig,
   updateRuntimeConfig,
   getDefaultTimerRows
@@ -597,6 +598,85 @@ function normalizeHibernateProfile(input) {
   return { name, startTime, endTime, days: normalizeHibernateDays(input.days, startTime, endTime) };
 }
 
+function normalizeWakeDays(input, fallbackWake = "07:00") {
+  const source = input && typeof input === "object" ? input : {};
+  return WEEKDAYS.reduce((days, day) => {
+    const hasDay = source[day] && typeof source[day] === "object";
+    const item = hasDay ? source[day] : {};
+    days[day] = {
+      enabled: hasDay ? boolFromRequest(item.enabled) : !["saturday", "sunday"].includes(day),
+      wakeTime: isValidTimeString(item.wakeTime) ? item.wakeTime : fallbackWake
+    };
+    return days;
+  }, {});
+}
+
+function normalizeDashboardSettings(input) {
+  return {
+    dashboardMode: String(input.dashboardMode || input.dashboard_mode || "auto").toLowerCase() === "interactive" ? "interactive" : "auto",
+    autoSwitchOnActivity: boolFromRequest(input.autoSwitchOnActivity),
+    autoRevertEnabled: boolFromRequest(input.autoRevertEnabled),
+    idleTimeoutMinutes: Math.max(1, Math.min(240, Number(input.idleTimeoutMinutes || input.idle_timeout_minutes || 15)))
+  };
+}
+
+function defaultDashboardSettings() {
+  const profile = (DEFAULT_CONFIG.dashboardSettingsProfiles || []).find((item) => item.id === "default");
+  return normalizeDashboardSettings((profile && profile.settings) || {});
+}
+
+async function applyDashboardSettings(req, settings) {
+  const accountId = req.session.user.id;
+  if (req.session.user.isOffline || !(await canUseDatabase())) {
+    updateRuntimeConfig((config) => {
+      config.offlineDashboardMode = settings.dashboardMode;
+      return config;
+    });
+  } else {
+    await db.query(
+      "UPDATE accounts SET dashboard_mode = ? WHERE id = ?",
+      [settings.dashboardMode, accountId]
+    );
+  }
+  return updateRuntimeConfig((config) => {
+    config.interactiveMode.autoSwitchOnActivity = settings.autoSwitchOnActivity;
+    config.interactiveMode.autoRevertEnabled = settings.autoRevertEnabled;
+    config.interactiveMode.idleTimeoutMinutes = settings.idleTimeoutMinutes;
+    config.interactiveMode.lastActivityAt = settings.dashboardMode === "interactive" ? new Date().toISOString() : null;
+    return config;
+  });
+}
+
+async function runOperationalScript(args, timeout = 15000) {
+  const scriptPath = path.join(__dirname, "scripts", "process-control.ps1");
+  return new Promise((resolve, reject) => {
+    execFile(
+      "powershell.exe",
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, ...args],
+      { timeout },
+      (error, stdout, stderr) => {
+        const output = String(stdout || stderr || "").trim();
+        if (error) {
+          error.message = `${error.message}${output ? `: ${output}` : ""}`;
+          reject(error);
+          return;
+        }
+        resolve(output);
+      }
+    );
+  });
+}
+
+function runOperationalScriptDetached(args) {
+  const scriptPath = path.join(__dirname, "scripts", "process-control.ps1");
+  const child = spawn(
+    "powershell.exe",
+    ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, ...args],
+    { detached: true, stdio: "ignore", windowsHide: true }
+  );
+  child.unref();
+}
+
 function normalizeTimerRows(rows) {
   return (rows || [])
     .map((row) => ({
@@ -857,32 +937,87 @@ function syncInteractiveRevertMonitor() {
 app.post("/admin/dashboard-mode", async (req, res) => {
   if (!req.session.user) return res.status(401).send("Unauthorized - Please login.");
 
-  const accountId = req.session.user.id;
-  const mode = String(req.body.dashboard_mode || "auto").toLowerCase();
-  const idleTimeoutMinutes = Number(req.body.idle_timeout_minutes || 15);
-
   try {
-    const safeMode = mode === "interactive" ? "interactive" : "auto";
-    if (req.session.user.isOffline || !(await canUseDatabase())) {
-      updateRuntimeConfig((config) => {
-        config.offlineDashboardMode = safeMode;
-        return config;
-      });
-    } else {
-      await db.query(
-        "UPDATE accounts SET dashboard_mode = ? WHERE id = ?",
-        [safeMode, accountId]
-      );
-    }
-    updateRuntimeConfig((config) => {
-      config.interactiveMode.idleTimeoutMinutes = Math.max(1, Math.min(240, idleTimeoutMinutes || 15));
-      config.interactiveMode.lastActivityAt = mode === "interactive" ? new Date().toISOString() : null;
-      return config;
-    });
+    await applyDashboardSettings(req, normalizeDashboardSettings(req.body || {}));
     res.redirect("/admin#sec-dashboard-settings");
   } catch (err) {
     console.error("Error saving dashboard mode:", err);
     res.status(500).send("Failed to save dashboard mode");
+  }
+});
+
+app.post("/admin/dashboard-settings/default", requireAuth, async (req, res) => {
+  try {
+    const config = await applyDashboardSettings(req, defaultDashboardSettings());
+    res.json({ ok: true, interactiveMode: config.interactiveMode, profile: (config.dashboardSettingsProfiles || [])[0] });
+  } catch (error) {
+    console.error("Failed to apply default dashboard settings:", error);
+    res.status(500).json({ ok: false, error: "Failed to apply default dashboard settings" });
+  }
+});
+
+app.post("/admin/dashboard-settings/profiles", requireAuth, async (req, res) => {
+  try {
+    const name = String(req.body.name || "").trim();
+    if (!name) return res.status(400).json({ ok: false, error: "Profile name is required" });
+    if (name.toLowerCase() === "default dashboard settings") {
+      return res.status(400).json({ ok: false, error: "Default profile name is reserved" });
+    }
+
+    const profile = {
+      id: String(Date.now()),
+      name,
+      isDefault: false,
+      isProtected: false,
+      createdAt: new Date().toISOString(),
+      settings: normalizeDashboardSettings(req.body.settings || req.body)
+    };
+
+    const config = updateRuntimeConfig((nextConfig) => {
+      const profiles = Array.isArray(nextConfig.dashboardSettingsProfiles) ? nextConfig.dashboardSettingsProfiles : [];
+      const protectedProfiles = profiles.filter((item) => item.isProtected || item.id === "default");
+      const customProfiles = profiles.filter((item) => !(item.isProtected || item.id === "default"));
+      nextConfig.dashboardSettingsProfiles = protectedProfiles
+        .concat(customProfiles.filter((item) => item.name.toLowerCase() !== name.toLowerCase()))
+        .concat(profile);
+      return nextConfig;
+    });
+
+    res.json({ ok: true, profile, profiles: config.dashboardSettingsProfiles });
+  } catch (error) {
+    console.error("Failed to save dashboard settings profile:", error);
+    res.status(500).json({ ok: false, error: "Failed to save dashboard settings profile" });
+  }
+});
+
+app.post("/admin/dashboard-settings/profiles/:profile_id/load", requireAuth, async (req, res) => {
+  try {
+    const config = readRuntimeConfig();
+    const profile = (config.dashboardSettingsProfiles || []).find((item) => item.id === String(req.params.profile_id));
+    if (!profile) return res.status(404).json({ ok: false, error: "Dashboard settings profile not found" });
+    const updated = await applyDashboardSettings(req, normalizeDashboardSettings(profile.settings || {}));
+    res.json({ ok: true, profile, interactiveMode: updated.interactiveMode });
+  } catch (error) {
+    console.error("Failed to load dashboard settings profile:", error);
+    res.status(500).json({ ok: false, error: "Failed to load dashboard settings profile" });
+  }
+});
+
+app.delete("/admin/dashboard-settings/profiles/:profile_id", requireAuth, async (req, res) => {
+  try {
+    const profileId = String(req.params.profile_id);
+    if (profileId === "default") {
+      return res.status(400).json({ ok: false, error: "Default dashboard settings cannot be deleted" });
+    }
+    const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.dashboardSettingsProfiles = (nextConfig.dashboardSettingsProfiles || [])
+        .filter((item) => item.id === "default" || item.id !== profileId);
+      return nextConfig;
+    });
+    res.json({ ok: true, profiles: config.dashboardSettingsProfiles });
+  } catch (error) {
+    console.error("Failed to delete dashboard settings profile:", error);
+    res.status(500).json({ ok: false, error: "Failed to delete dashboard settings profile" });
   }
 });
 
@@ -1138,6 +1273,28 @@ app.post("/admin/automation/hibernate-settings", requireAuth, async (req, res) =
   }
 });
 
+app.post("/admin/automation/wake-settings", requireAuth, async (req, res) => {
+  try {
+    const wakeTime = String(req.body.wakeTime || req.body.wake_time || "07:00");
+    if (!isValidTimeString(wakeTime)) {
+      return res.status(400).json({ ok: false, error: "Wake time must use HH:MM format" });
+    }
+    const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.automation.autoWakeEnabled = boolFromRequest(req.body.enabled);
+      nextConfig.automation.autoWakeSchedule = {
+        ...(nextConfig.automation.autoWakeSchedule || {}),
+        wakeTime,
+        days: normalizeWakeDays(req.body.days, wakeTime)
+      };
+      return nextConfig;
+    });
+    res.json({ ok: true, automation: config.automation });
+  } catch (error) {
+    console.error("Failed to update auto-wake settings:", error);
+    res.status(500).json({ ok: false, error: "Failed to update auto-wake settings" });
+  }
+});
+
 app.post("/admin/automation/hibernate-profiles", requireAuth, async (req, res) => {
   try {
     const normalized = normalizeHibernateProfile(req.body || {});
@@ -1261,14 +1418,14 @@ app.post("/admin/automation/hibernate-dry-run", requireAuth, async (req, res) =>
       return nextConfig;
     });
 
-    console.log(`[AUTO-HIBERNATE DRY RUN] ${now} - window ${startTime}-${endTime} - ${scriptOutput}`);
+    console.log(`[AUTO-HIBERNATE DRY RUN] ${now} - hibernate at ${startTime}, wake at ${endTime} - ${scriptOutput}`);
     res.json({
       ok: true,
       dryRun: true,
       checkedAt: now,
       startTime,
       endTime,
-      message: `Dry run successful. Auto-hibernate window is ${startTime} to ${endTime}. No OS hibernate command was executed.`,
+      message: `Dry run successful. Hibernate at ${startTime}, wake at ${endTime}. No OS hibernate command was executed.`,
       scriptOutput,
       hibernateScript: scriptPath,
       automation: updated.automation
@@ -1279,15 +1436,134 @@ app.post("/admin/automation/hibernate-dry-run", requireAuth, async (req, res) =>
   }
 });
 
+app.post("/admin/automation/hibernate-now", requireAuth, async (req, res) => {
+  try {
+    const scriptPath = path.join(__dirname, "scripts", "hibernate.ps1");
+    res.json({
+      ok: true,
+      message: "Real Windows hibernate requested. The laptop may sleep immediately."
+    });
+    setTimeout(() => {
+      const child = spawn(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-ExecuteHibernate"],
+        { detached: true, stdio: "ignore", windowsHide: true }
+      );
+      child.unref();
+    }, 750);
+  } catch (error) {
+    console.error("Immediate hibernate failed:", error);
+  }
+});
+
+app.get("/admin/automation/shutdown-start-capability", requireAuth, async (req, res) => {
+  res.json({
+    ok: true,
+    supportedByAppScript: false,
+    summary: "A normal app script cannot power on a fully shut-down PC.",
+    options: [
+      "Use BIOS/UEFI RTC alarm or Power On By RTC, if the laptop/PC supports it.",
+      "Use Wake-on-LAN from another powered device on the same network, if BIOS and network adapter support it.",
+      "Use Windows Task Scheduler wake timers only for sleep/hibernate, not full shutdown."
+    ]
+  });
+});
+
+app.post("/admin/automation/wake-dry-run", requireAuth, async (req, res) => {
+  try {
+    const config = readRuntimeConfig();
+    const wakeSchedule = config.automation.autoWakeSchedule || {};
+    const wakeTime = isValidTimeString(wakeSchedule.wakeTime) ? wakeSchedule.wakeTime : "07:00";
+    const scriptPath = path.join(__dirname, "scripts", "wake-dashboard.ps1");
+    const scriptOutput = await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-WakeTime", wakeTime, "-DryRun"],
+        { timeout: 10000 },
+        (error, stdout, stderr) => {
+          if (error) {
+            error.message = `${error.message}${stderr ? `: ${stderr}` : ""}`;
+            reject(error);
+            return;
+          }
+          resolve(String(stdout || stderr || "").trim());
+        }
+      );
+    });
+    const updated = updateRuntimeConfig((nextConfig) => {
+      nextConfig.automation.lastWakeTaskDryRunAt = new Date().toISOString();
+      return nextConfig;
+    });
+    res.json({
+      ok: true,
+      dryRun: true,
+      wakeTime,
+      message: `Wake task dry run successful. The app would be started at ${wakeTime}.`,
+      scriptOutput,
+      automation: updated.automation
+    });
+  } catch (error) {
+    console.error("Wake task dry run failed:", error);
+    res.status(500).json({ ok: false, error: "Wake task dry run failed" });
+  }
+});
+
+app.post("/admin/automation/wake-register", requireAuth, async (req, res) => {
+  try {
+    const config = readRuntimeConfig();
+    if (!config.automation.autoWakeEnabled) {
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Wake before registering the Windows wake task" });
+    }
+    const wakeSchedule = config.automation.autoWakeSchedule || {};
+    const wakeTime = isValidTimeString(wakeSchedule.wakeTime) ? wakeSchedule.wakeTime : "07:00";
+    const scriptPath = path.join(__dirname, "scripts", "wake-dashboard.ps1");
+    const scriptOutput = await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-WakeTime", wakeTime],
+        { timeout: 15000 },
+        (error, stdout, stderr) => {
+          if (error) {
+            error.message = `${error.message}${stderr ? `: ${stderr}` : ""}`;
+            reject(error);
+            return;
+          }
+          resolve(String(stdout || stderr || "").trim());
+        }
+      );
+    });
+    res.json({
+      ok: true,
+      wakeTime,
+      message: `Windows wake task registered for ${wakeTime}.`,
+      scriptOutput
+    });
+  } catch (error) {
+    console.error("Wake task registration failed:", error);
+    res.status(500).json({ ok: false, error: "Wake task registration failed. Run the app as administrator or use dry run first." });
+  }
+});
+
 app.get("/admin/health/json", requireAuth, async (req, res) => {
   const config = readRuntimeConfig();
   if (config.automation.healthCheckEnabled) {
     await runHealthCheck();
   }
+  let processStatus = {};
+  try {
+    const [appStatus, databaseStatus] = await Promise.all([
+      runOperationalScript(["-Target", "app", "-Action", "status"], 8000),
+      runOperationalScript(["-Target", "database", "-Action", "status"], 8000)
+    ]);
+    processStatus = { app: appStatus, database: databaseStatus };
+  } catch (error) {
+    processStatus = { error: error.message };
+  }
   res.json({
     ok: latestHealthSnapshot.status === "ok",
     enabled: !!config.automation.healthCheckEnabled,
-    health: latestHealthSnapshot
+    health: latestHealthSnapshot,
+    processes: processStatus
   });
 });
 
@@ -1302,6 +1578,31 @@ app.post("/admin/automation/health-settings", requireAuth, async (req, res) => {
   });
   syncHealthMonitor();
   res.json({ ok: true, automation: config.automation });
+});
+
+app.post("/admin/process-control", requireAuth, async (req, res) => {
+  const target = String(req.body.target || "");
+  const action = String(req.body.action || "");
+  const allowedTargets = new Set(["app", "database"]);
+  const allowedActions = new Set(["status", "start", "stop", "restart"]);
+  if (!allowedTargets.has(target) || !allowedActions.has(action)) {
+    return res.status(400).json({ ok: false, error: "Invalid process control request" });
+  }
+
+  try {
+    if (target === "app" && (action === "stop" || action === "restart")) {
+      res.json({ ok: true, target, action, output: `Application ${action} requested. This admin page may disconnect briefly.` });
+      setTimeout(() => {
+        runOperationalScriptDetached(["-Target", target, "-Action", action]);
+      }, 500);
+      return;
+    }
+    const output = await runOperationalScript(["-Target", target, "-Action", action], action === "restart" ? 25000 : 15000);
+    res.json({ ok: true, target, action, output });
+  } catch (error) {
+    console.error("Process control failed:", error);
+    res.status(500).json({ ok: false, error: error.message });
+  }
 });
 
 app.get("/health", async (req, res) => {
@@ -1899,6 +2200,7 @@ function renderOfflineAdmin(req, res) {
     runtimeConfig,
     automationConfig: runtimeConfig.automation,
     interactiveConfig: runtimeConfig.interactiveMode,
+    dashboardSettingsProfiles: runtimeConfig.dashboardSettingsProfiles || [],
     timerProfiles: runtimeConfig.timerProfiles || [],
     defaultTimersSeconds: runtimeConfig.defaultTimersSeconds || {},
     healthSnapshot: {
@@ -2560,6 +2862,7 @@ app.get('/admin', requireAuth, async (req, res) => {
       runtimeConfig: runtimeConfig,
       automationConfig: runtimeConfig.automation,
       interactiveConfig: runtimeConfig.interactiveMode,
+      dashboardSettingsProfiles: runtimeConfig.dashboardSettingsProfiles || [],
       timerProfiles: runtimeConfig.timerProfiles || [],
       defaultTimersSeconds: runtimeConfig.defaultTimersSeconds || {},
       healthSnapshot: latestHealthSnapshot,
@@ -2582,6 +2885,7 @@ app.get('/admin', requireAuth, async (req, res) => {
       runtimeConfig: runtimeConfig,
       automationConfig: runtimeConfig.automation,
       interactiveConfig: runtimeConfig.interactiveMode,
+      dashboardSettingsProfiles: runtimeConfig.dashboardSettingsProfiles || [],
       timerProfiles: runtimeConfig.timerProfiles || [],
       defaultTimersSeconds: runtimeConfig.defaultTimersSeconds || {},
       healthSnapshot: latestHealthSnapshot,
