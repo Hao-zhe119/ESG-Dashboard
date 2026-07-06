@@ -1601,15 +1601,6 @@ body.mode-interactive #page7 .three-panel {
 
   <!-- PAGE 1: WELCOME -->
   <div id="page1" class="page active-page">
-    <div class="rain-layer" aria-hidden="true">
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span>
-    </div>
     <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
     <h1 class="welcome-title">
       WELCOME TO<br>
@@ -6149,7 +6140,7 @@ body.mode-interactive #page7 .three-panel {
     resize();
     window.addEventListener("resize", resize);
 
-    var COUNT = Math.max(28, Math.min(60, Math.round((W * H) / 42000)));
+    var COUNT = Math.max(50, Math.min(100, Math.round((W * H) / 22000)));
     var orbs = [];
     function rand(a, b) { return a + Math.random() * (b - a); }
 
@@ -6157,14 +6148,14 @@ body.mode-interactive #page7 .three-panel {
       return {
         x: rand(0, W),
         y: atBottom ? rand(H, H + 60) : rand(0, H),
-        r: rand(3, 8),               // radius
+        r: rand(5, 12),               // radius
         speed: rand(0.1, 0.32),      // slow upward drift
         sway: rand(8, 22),
         swaySpeed: rand(0.0004, 0.0012),
         phase: rand(0, Math.PI * 2),
         pulsePhase: rand(0, Math.PI * 2),
         pulseSpeed: rand(0.0015, 0.003),
-        opacity: rand(0.35, 0.7)
+        opacity: rand(0.55, 0.95)
       };
     }
     for (var i = 0; i < COUNT; i++) orbs.push(makeOrb(false));
@@ -6192,8 +6183,8 @@ body.mode-interactive #page7 .three-panel {
         ctx.arc(xs[i], o.y, r, 0, Math.PI * 2);
         // Warm amber/gold glow, matching the solar theme.
         ctx.fillStyle = "rgba(255, 214, 140, " + o.opacity + ")";
-        ctx.shadowColor = "rgba(251, 191, 36, 0.9)";
-        ctx.shadowBlur = r * 3.4;
+        ctx.shadowColor = "rgba(251, 191, 36, 0.95)";
+        ctx.shadowBlur = r * 4.5;
         ctx.fill();
       }
       ctx.shadowBlur = 0;
@@ -6258,7 +6249,7 @@ body.mode-interactive #page7 .three-panel {
     resize();
     window.addEventListener("resize", resize);
 
-    var COUNT = Math.max(20, Math.min(45, Math.round((W * H) / 55000)));
+    var COUNT = Math.max(35, Math.min(75, Math.round((W * H) / 28000)));
     var leaves = [];
     function rand(a, b) { return a + Math.random() * (b - a); }
 
@@ -6266,14 +6257,14 @@ body.mode-interactive #page7 .three-panel {
       return {
         x: rand(0, W),
         y: atTop ? rand(-60, -10) : rand(0, H),
-        r: rand(4, 8),
+        r: rand(6, 11),
         speed: rand(0.12, 0.32),     // downward drift
         sway: rand(15, 40),
         swaySpeed: rand(0.0008, 0.002),
         phase: rand(0, Math.PI * 2),
         rotation: rand(0, Math.PI * 2),
         rotationSpeed: rand(-0.0015, 0.0015),
-        opacity: rand(0.4, 0.75)
+        opacity: rand(0.55, 0.9)
       };
     }
     for (var i = 0; i < COUNT; i++) leaves.push(makeLeaf(false));
@@ -6302,8 +6293,8 @@ body.mode-interactive #page7 .three-panel {
         ctx.rotate(rotations[i]);
         // Soft emerald green, matching the recycling/ESG accent.
         ctx.fillStyle = "rgba(134, 224, 172, " + l.opacity + ")";
-        ctx.shadowColor = "rgba(52, 211, 153, 0.85)";
-        ctx.shadowBlur = l.r * 2.2;
+        ctx.shadowColor = "rgba(52, 211, 153, 0.95)";
+        ctx.shadowBlur = l.r * 3.2;
 
         ctx.beginPath();
         ctx.ellipse(0, 0, l.r * 1.6, l.r * 0.85, 0, 0, Math.PI * 2);
