@@ -16,13 +16,17 @@ const {
 } = require("./config/dashboardConfig");
 const app = express();
 
-require('dotenv').config({ path: './databaseinfo.env' });
+const envPath = path.join(__dirname, "databaseinfo.env");
+const envResult = require("dotenv").config({ path: envPath });
+if (envResult.error) {
+  console.error("Could not load databaseinfo.env:", envResult.error.message);
+}
 const RESET_PASSCODE = process.env.RESET_PASSCODE || "Reset@ESGDashboard!";
 const SESSION_SECRET = process.env.SESSION_SECRET || "dev-key";
 const OFFLINE_ADMIN_PASSWORD = process.env.OFFLINE_ADMIN_PASSWORD || RESET_PASSCODE;
 const OFFLINE_ADMIN_USER = {
   id: 1,
-  account: "No-XAMPP Test Admin",
+  account: "Offline Admin",
   isOffline: true
 };
 
@@ -102,28 +106,82 @@ function mergeCaptionsIntoItems(items, accountId) {
 /* ==============================
    MYSQL CONNECTION
 ============================== */
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+function numberFromEnv(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const defaultDbEnv = {
+  DB_HOST: "localhost",
+  DB_PORT: "3306",
+  DB_USER: "ESGAdmin",
+  DB_PASSWORD: "12345678",
+  DB_NAME: "esgdashboard",
+  DB_CONNECT_TIMEOUT_MS: "10000"
+};
+
+function readEnv(name, fallback = null) {
+  const value = process.env[name];
+  return typeof value === "string" && value !== "" ? value : fallback;
+}
+
+function describeDbConfigError() {
+  const missing = [];
+  if (!readEnv("DB_USER", defaultDbEnv.DB_USER)) missing.push("DB_USER");
+  if (!readEnv("DB_PASSWORD", defaultDbEnv.DB_PASSWORD)) missing.push("DB_PASSWORD");
+  if (!readEnv("DB_NAME", defaultDbEnv.DB_NAME)) missing.push("DB_NAME");
+  if (!readEnv("DB_SOCKET") && !readEnv("DB_HOST", defaultDbEnv.DB_HOST)) missing.push("DB_HOST or DB_SOCKET");
+  return missing.length
+    ? `${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} missing or empty. Check ${envPath}.`
+    : null;
+}
+
+const databaseConfigError = describeDbConfigError();
+const dbConfig = {
+  host: readEnv("DB_HOST", defaultDbEnv.DB_HOST),
+  port: numberFromEnv(readEnv("DB_PORT", defaultDbEnv.DB_PORT), 3306),
+  user: readEnv("DB_USER", defaultDbEnv.DB_USER),
+  password: readEnv("DB_PASSWORD", defaultDbEnv.DB_PASSWORD),
+  database: readEnv("DB_NAME", defaultDbEnv.DB_NAME),
+  connectTimeout: numberFromEnv(readEnv("DB_CONNECT_TIMEOUT_MS", defaultDbEnv.DB_CONNECT_TIMEOUT_MS), 10000),
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+};
+
+if (readEnv("DB_SOCKET")) {
+  dbConfig.socketPath = readEnv("DB_SOCKET");
+  delete dbConfig.host;
+  delete dbConfig.port;
+}
+
+const connection = mysql.createPool(dbConfig);
 
 let databaseAvailable = false;
+let latestDatabaseError = databaseConfigError;
 
-connection.connect((err) => {
-  if (err) {
+if (databaseConfigError) {
+  console.error("Database configuration error:", databaseConfigError);
+} else {
+  connection.query("SELECT 1 AS ok", (err) => {
+    if (err) {
+      databaseAvailable = false;
+      latestDatabaseError = err.message;
+      console.error('MySQL connection error:', err);
+    } else {
+      databaseAvailable = true;
+      latestDatabaseError = null;
+      console.log('Connected to MySQL as', process.env.DB_USER);
+    }
+  });
+}
+
+connection.on("connection", (poolConnection) => {
+  poolConnection.on("error", (err) => {
     databaseAvailable = false;
-    console.error('MySQL connection error:', err);
-  } else {
-    databaseAvailable = true;
-    console.log('Connected to MySQL as', process.env.DB_USER);
-  }
-});
-
-connection.on("error", (err) => {
-  databaseAvailable = false;
-  console.error("MySQL runtime error:", err.message);
+    latestDatabaseError = err.message;
+    console.error("MySQL runtime error:", err.message);
+  });
 });
 
 /* ==============================
@@ -509,14 +567,28 @@ function boolFromRequest(value) {
 }
 
 async function canUseDatabase() {
+  if (databaseConfigError) {
+    databaseAvailable = false;
+    latestDatabaseError = databaseConfigError;
+    return false;
+  }
+
   try {
     await db.query("SELECT 1 AS ok");
     databaseAvailable = true;
+    latestDatabaseError = null;
     return true;
   } catch (error) {
     databaseAvailable = false;
+    latestDatabaseError = error.message;
     return false;
   }
+}
+
+const BACKGROUND_ANIMATION_OPTIONS = ["particles", "rain", "sparks", "sun", "leaves", "none"];
+
+function normalizeAnimationValue(value) {
+  return BACKGROUND_ANIMATION_OPTIONS.includes(value) ? value : "particles";
 }
 
 function getFallbackTimerRows() {
@@ -524,7 +596,8 @@ function getFallbackTimerRows() {
     timer_id: row.page_number,
     page_number: row.page_number,
     page_name: `Page ${row.page_number}`,
-    duration_seconds: row.duration_seconds
+    duration_seconds: row.duration_seconds,
+    background_animation: normalizeAnimationValue(row.background_animation)
   }));
 }
 
@@ -539,7 +612,8 @@ function buildTimerMap(rows) {
         page_number: pageNumber,
         page_name: timer.page_name || `Page ${pageNumber}`,
         duration_seconds: durationSeconds,
-        duration_ms: durationSeconds * 1000
+        duration_ms: durationSeconds * 1000,
+        background_animation: normalizeAnimationValue(timer.background_animation)
       };
     }
   });
@@ -682,7 +756,8 @@ function normalizeTimerRows(rows) {
     .map((row) => ({
       page_number: Number(row.page_number),
       page_name: row.page_name || `Page ${row.page_number}`,
-      duration_seconds: Math.max(0, Number(row.duration_seconds) || 0)
+      duration_seconds: Math.max(0, Number(row.duration_seconds) || 0),
+      background_animation: normalizeAnimationValue(row.background_animation)
     }))
     .filter((row) => Number.isFinite(row.page_number))
     .sort((a, b) => a.page_number - b.page_number);
@@ -690,7 +765,7 @@ function normalizeTimerRows(rows) {
 
 async function getTimerRowsForAccount(accountId) {
   const [rows] = await db.query(
-    `SELECT timer_id, page_number, page_name, duration_seconds
+    `SELECT timer_id, page_number, page_name, duration_seconds, background_animation
      FROM timers
      WHERE account_id = ?
      ORDER BY page_number ASC`,
@@ -707,19 +782,20 @@ async function upsertTimerRowsForAccount(accountId, timerRows) {
     const pageNumber = Number(row.page_number);
     const seconds = Math.max(0, Number(row.duration_seconds) || 0);
     const pageName = row.page_name || pageNames.get(pageNumber) || `Page ${pageNumber}`;
+    const animation = normalizeAnimationValue(row.background_animation);
 
     const [updateResult] = await db.query(
       `UPDATE timers
-       SET duration_seconds = ?
+       SET duration_seconds = ?, background_animation = ?
        WHERE account_id = ? AND page_number = ?`,
-      [seconds, accountId, pageNumber]
+      [seconds, animation, accountId, pageNumber]
     );
 
     if (updateResult.affectedRows === 0) {
       await db.query(
-        `INSERT INTO timers (account_id, page_number, page_name, duration_seconds)
-         VALUES (?, ?, ?, ?)`,
-        [accountId, pageNumber, pageName, seconds]
+        `INSERT INTO timers (account_id, page_number, page_name, duration_seconds, background_animation)
+         VALUES (?, ?, ?, ?, ?)`,
+        [accountId, pageNumber, pageName, seconds, animation]
       );
     }
   }
@@ -754,7 +830,7 @@ async function runHealthCheck() {
     },
     database: { ok: false, message: "Not checked" },
     dashboard: { ok: false, message: "Not checked" },
-    noXamppTestMode: { ok: true, message: databaseAvailable ? "Database mode" : "No-XAMPP test fallback available" }
+    databaseMode: { ok: databaseAvailable, message: databaseAvailable ? "Database mode" : "Offline fallback is available" }
   };
 
   try {
@@ -1073,21 +1149,26 @@ app.post("/dashboard/interactive-revert", async (req, res) => {
   }
 });
 
-// POST /admin/timers/:timer_id - Update timer duration
+// POST /admin/timers/:timer_id - Update timer duration and/or background animation
 app.post('/admin/timers/:timer_id(\\d+)', requireAuth, async (req, res) => {
   try {
     const { timer_id } = req.params;
-    const { duration_seconds } = req.body;
-    
+    const { duration_seconds, background_animation } = req.body;
+
     // Validate timer_id
     if (!timer_id) {
       return res.status(400).send("Missing timer_id");
     }
-    
+
     // Validate duration_seconds input
     const seconds = parseInt(duration_seconds, 10);
     if (isNaN(seconds) || seconds < 0 || seconds > 5999) {
       return res.status(400).send("Invalid duration. Must be 0-5999 seconds.");
+    }
+
+    // Validate background_animation input (optional field)
+    if (background_animation !== undefined && !BACKGROUND_ANIMATION_OPTIONS.includes(background_animation)) {
+      return res.status(400).send("Invalid background_animation. Must be one of: " + BACKGROUND_ANIMATION_OPTIONS.join(", "));
     }
 
     // Get account_id from session (check multiple possible locations)
@@ -1103,26 +1184,36 @@ app.post('/admin/timers/:timer_id(\\d+)', requireAuth, async (req, res) => {
       const timerPage = Number(timer_id);
       updateRuntimeConfig((config) => {
         config.defaultTimersSeconds[String(timerPage)] = seconds;
+        if (background_animation !== undefined) {
+          config.defaultAnimations[String(timerPage)] = background_animation;
+        }
         return config;
       });
       return res.status(200).send("Offline timer updated successfully");
     }
 
     // Update the timers table with account_id check
-    const [result] = await db.query(
-      `UPDATE timers 
-       SET duration_seconds = ? 
-       WHERE timer_id = ? AND account_id = ?`,
-      [seconds, timer_id, accountId]
-    );
-    
+    const [result] = background_animation !== undefined
+      ? await db.query(
+          `UPDATE timers
+           SET duration_seconds = ?, background_animation = ?
+           WHERE timer_id = ? AND account_id = ?`,
+          [seconds, background_animation, timer_id, accountId]
+        )
+      : await db.query(
+          `UPDATE timers
+           SET duration_seconds = ?
+           WHERE timer_id = ? AND account_id = ?`,
+          [seconds, timer_id, accountId]
+        );
+
     if (result.affectedRows === 0) {
       return res.status(404).send("Timer not found.");
     }
-    
+
     console.log(`Timer ${timer_id} updated to ${seconds} seconds for account ${accountId}`);
     res.status(200).send("Timer updated successfully");
-    
+
   } catch (error) {
     console.error("Error updating timer:", error);
     res.status(500).send("Failed to update timer");
@@ -2066,9 +2157,9 @@ app.get("/", async (req, res) => {
       
       if (tables && tables.length > 0) {
         const [timerRows] = await db.query(
-          `SELECT timer_id, page_number, page_name, duration_seconds 
-           FROM timers 
-           WHERE account_id = ? 
+          `SELECT timer_id, page_number, page_name, duration_seconds, background_animation
+           FROM timers
+           WHERE account_id = ?
            ORDER BY timer_id ASC`,
           [accountId]
         );
@@ -2207,7 +2298,7 @@ function renderOfflineAdmin(req, res) {
       ...latestHealthSnapshot,
       status: "offline",
       checks: {
-        database: { ok: false, message: "MySQL/XAMPP is not running. Admin config is using JSON test fallback." }
+        database: { ok: false, message: latestDatabaseError || "Database is unavailable. Admin config is using the JSON fallback." }
       }
     },
     buildingsLoadError: true
@@ -2488,13 +2579,14 @@ app.get("/admin/export-excel", requireAuth, async (req, res) => {
 /* ==============================
    LOGIN ROUTES
 ============================== */
-app.get("/login", (req, res) => {
-  if (!databaseAvailable) {
+app.get("/login", async (req, res) => {
+  if (!(await canUseDatabase())) {
     return res.render("login", {
       adminAccount: OFFLINE_ADMIN_USER.account,
       loginError: null,
       resetError: null,
-      resetSuccess: "No-XAMPP test mode: MySQL is not running. Use the test/admin passcode to access configuration-only admin tools."
+      resetSuccess: null,
+      databaseError: latestDatabaseError
     });
   }
 
@@ -2507,7 +2599,8 @@ app.get("/login", (req, res) => {
         adminAccount: OFFLINE_ADMIN_USER.account,
         loginError: null,
         resetError: null,
-        resetSuccess: "No-XAMPP test mode: MySQL is not running. Use the test/admin passcode to access configuration-only admin tools."
+        resetSuccess: null,
+        databaseError: latestDatabaseError || err.message
       });
     }
 
@@ -2517,24 +2610,26 @@ app.get("/login", (req, res) => {
       adminAccount: adminAccount,
       loginError: null,
       resetError: null,
-      resetSuccess: null
+      resetSuccess: null,
+      databaseError: null
     });
   });
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
   const { password } = req.body;
 
-  if (!databaseAvailable) {
+  if (!(await canUseDatabase())) {
     if (password === OFFLINE_ADMIN_PASSWORD) {
       req.session.user = OFFLINE_ADMIN_USER;
       return res.redirect("/admin");
     }
     return res.render("login", {
       adminAccount: OFFLINE_ADMIN_USER.account,
-      loginError: "Invalid test/admin passcode",
+      loginError: "Invalid offline admin passcode",
       resetError: null,
-      resetSuccess: "No-XAMPP test mode: MySQL is not running. Use the configured test/admin passcode."
+      resetSuccess: "Database is unavailable. Use the configured offline admin passcode.",
+      databaseError: latestDatabaseError
     });
   }
 
@@ -2549,9 +2644,10 @@ app.post("/login", (req, res) => {
       }
       return res.render("login", {
         adminAccount: OFFLINE_ADMIN_USER.account,
-        loginError: "Database unavailable. Invalid test/admin passcode.",
+        loginError: "Database unavailable. Invalid offline admin passcode.",
         resetError: null,
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: latestDatabaseError || err.message
       });
     }
 
@@ -2560,7 +2656,8 @@ app.post("/login", (req, res) => {
         adminAccount: null,
         loginError: "No admin account found in database",
         resetError: null,
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: null
       });
     }
 
@@ -2597,7 +2694,8 @@ app.post("/login", (req, res) => {
           adminAccount: user.account,
           loginError: "Invalid password",
           resetError: null,
-          resetSuccess: null
+          resetSuccess: null,
+          databaseError: null
         });
       }
 
@@ -2625,7 +2723,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: null,
         loginError: null,
         resetError: "Database error. Please try again.",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: err.message
       });
     }
 
@@ -2637,7 +2736,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: adminAccount,
         loginError: null,
         resetError: "All fields are required",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: null
       });
     }
 
@@ -2646,7 +2746,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: adminAccount,
         loginError: null,
         resetError: "Invalid reset passcode",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: null
       });
     }
 
@@ -2655,7 +2756,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: adminAccount,
         loginError: null,
         resetError: "Passwords do not match",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: null
       });
     }
 
@@ -2688,7 +2790,8 @@ app.post("/reset-password", async (req, res) => {
             adminAccount: adminAccount,
             loginError: null,
             resetError: "Failed to update password. Please try again.",
-            resetSuccess: null
+            resetSuccess: null,
+            databaseError: updateErr.message
           });
         }
 
@@ -2698,7 +2801,8 @@ app.post("/reset-password", async (req, res) => {
           adminAccount: adminAccount,
           loginError: null,
           resetError: null,
-          resetSuccess: "Password reset successful! You can now login with your new password."
+          resetSuccess: "Password reset successful! You can now login with your new password.",
+          databaseError: null
         });
       });
 
@@ -2708,7 +2812,8 @@ app.post("/reset-password", async (req, res) => {
         adminAccount: adminAccount,
         loginError: null,
         resetError: "An error occurred. Please try again.",
-        resetSuccess: null
+        resetSuccess: null,
+        databaseError: compareErr.message
       });
     }
   });
@@ -2828,9 +2933,9 @@ app.get('/admin', requireAuth, async (req, res) => {
 
     // 8. Fetch timers for page duration settings
     const [timerRows] = await db.query(
-      `SELECT timer_id, page_number, page_name, duration_seconds 
-       FROM timers 
-       WHERE account_id = ? 
+      `SELECT timer_id, page_number, page_name, duration_seconds, background_animation
+       FROM timers
+       WHERE account_id = ?
        ORDER BY page_number ASC`,
       [accountId]
     );
@@ -4349,4 +4454,3 @@ app.listen(port, "127.0.0.1", () => {
   syncHibernateMonitor();
   syncInteractiveRevertMonitor();
 });
-

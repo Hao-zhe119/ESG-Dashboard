@@ -12,11 +12,23 @@
     "9": 30,
     "10": 15
   },
+  "defaultAnimations": {
+    "1": "both",
+    "2": "particles",
+    "3": "particles",
+    "4": "particles",
+    "5": "particles",
+    "6": "particles",
+    "7": "particles",
+    "8": "particles",
+    "9": "particles",
+    "10": "particles"
+  },
   "interactiveMode": {
     "autoSwitchOnActivity": true,
     "autoRevertEnabled": true,
     "idleTimeoutMinutes": 15,
-    "lastActivityAt": "2026-06-29T07:03:04.177Z"
+    "lastActivityAt": "2026-07-06T07:39:43.984Z"
   },
   "automation": {
     "applyDefaultTimingEnabled": false,

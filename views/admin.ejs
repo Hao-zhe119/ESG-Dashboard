@@ -340,6 +340,49 @@
     color: #34d399;
   }
 
+  .timer-animation-select {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 185px;
+    background:
+      linear-gradient(135deg, rgba(126,174,51,.22), rgba(255,255,255,.05)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23bff08a' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px 8px;
+    border: 1.5px solid rgba(126,174,51,.4);
+    border-radius: 999px;
+    color: #eafbe0;
+    padding: 7px 32px 7px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+
+  .timer-animation-select:hover {
+    border-color: #7eae33;
+    background-color: rgba(126,174,51,.12);
+  }
+
+  .timer-animation-select:focus {
+    outline: none;
+    border-color: #9cd35c;
+    box-shadow: 0 0 0 3px rgba(126,174,51,.28);
+  }
+
+  /* Chromium/Firefox respect option colors even though the popup itself
+     is OS-rendered — without this the list falls back to washed-out
+     system colors that are nearly unreadable on a dark UI. */
+  .timer-animation-select option {
+    background-color: #131b12;
+    color: #eafbe0;
+    font-weight: 600;
+    padding: 8px;
+  }
+
   @media (max-width: 991.98px) {
     .admin-side {
       width: 100%;
@@ -380,11 +423,6 @@
       <div class="collapse navbar-collapse justify-content-end">
         <ul class="navbar-nav align-items-center gap-2">
           <li class="nav-item">
-            <a class="btn btn-success" href="/admin/export-excel" title="Download all ESG data as an Excel workbook">
-              &#128202; Export to Excel
-            </a>
-          </li>
-          <li class="nav-item">
             <a class="btn btn-outline-light" href="/logout">Logout</a>
           </li>
         </ul>
@@ -424,7 +462,7 @@
           </div>
           <% if (typeof runtimeConfig !== "undefined" && runtimeConfig && typeof buildingsLoadError !== "undefined" && buildingsLoadError) { %>
             <div class="alert alert-warning">
-              No-XAMPP test mode: MySQL/XAMPP is not connected, so data upload/building records are unavailable. Dashboard configuration, timer profiles, health checks, and automation toggles still work from JSON config.
+              Database unavailable: data upload and building records are unavailable. Dashboard configuration, timer profiles, health checks, and automation toggles still work from JSON config.
             </div>
           <% } %>
 
@@ -525,8 +563,8 @@
             </div>
 
             <div class="alert alert-secondary mb-3">
-              <strong>Configure Page Timers:</strong> Set the display duration for each dashboard page in <strong>MM:SS</strong> format.
-              Changes are <strong>saved automatically</strong>. These timers are used in Auto Mode.
+              <strong>Configure Page Timers:</strong> Set the display duration for each dashboard page in <strong>MM:SS</strong> format,
+              and pick which background animation plays behind it. Changes are <strong>saved automatically</strong>. These timers are used in Auto Mode.
             </div>
 
             <div class="border border-secondary rounded p-3 mb-3">
@@ -602,24 +640,36 @@
                   const mmStr = String(minutes).padStart(2, '0');
                   const ssStr = String(seconds).padStart(2, '0');
                 %>
+                  <% const timerAnimation = timer.background_animation || 'particles'; %>
                   <div class="timer-row" data-timer-id="<%= timer.timer_id %>" data-page-number="<%= timer.page_number %>">
                     <div class="timer-page-number"><%= timer.page_number %></div>
                     <div class="timer-page-name" title="<%= timer.page_name %>"><%= timer.page_name %></div>
+                    <select
+                      class="timer-animation-select"
+                      data-timer-id="<%= timer.timer_id %>"
+                      aria-label="Background animation for <%= timer.page_name %>">
+                      <option value="particles" <%= timerAnimation === 'particles' ? 'selected' : '' %>>✨ Rising Particles</option>
+                      <option value="rain" <%= timerAnimation === 'rain' ? 'selected' : '' %>>💧 Falling Rain</option>
+                      <option value="sparks" <%= timerAnimation === 'sparks' ? 'selected' : '' %>>⚡ Electric Sparks</option>
+                      <option value="sun" <%= timerAnimation === 'sun' ? 'selected' : '' %>>☀️ Sun Glow</option>
+                      <option value="leaves" <%= timerAnimation === 'leaves' ? 'selected' : '' %>>🍃 Drifting Leaves</option>
+                      <option value="none" <%= timerAnimation === 'none' ? 'selected' : '' %>>🚫 None</option>
+                    </select>
                     <div class="timer-input-group">
-                      <input 
-                        type="text" 
-                        class="timer-input timer-minutes" 
-                        value="<%= mmStr %>" 
-                        maxlength="2" 
+                      <input
+                        type="text"
+                        class="timer-input timer-minutes"
+                        value="<%= mmStr %>"
+                        maxlength="2"
                         placeholder="MM"
                         data-timer-id="<%= timer.timer_id %>"
                         aria-label="Minutes for <%= timer.page_name %>">
                       <span class="timer-separator">:</span>
-                      <input 
-                        type="text" 
-                        class="timer-input timer-seconds" 
-                        value="<%= ssStr %>" 
-                        maxlength="2" 
+                      <input
+                        type="text"
+                        class="timer-input timer-seconds"
+                        value="<%= ssStr %>"
+                        maxlength="2"
                         placeholder="SS"
                         data-timer-id="<%= timer.timer_id %>"
                         aria-label="Seconds for <%= timer.page_name %>">
@@ -1413,6 +1463,9 @@
               <div class="d-flex align-items-center gap-2">
                 <button type="submit" class="btn btn-primary">Upload XLSX</button>
                 <button type="button" id="clearDataBtn" class="btn btn-danger">Clear All Data</button>
+                <a class="btn btn-success" href="/admin/export-excel" title="Download all ESG data as an Excel workbook">
+                  &#128202; Export to Excel
+                </a>
               </div>
 
               <small class="text-muted d-block mt-2">Saved to: <code>public/uploads/excel</code></small>
@@ -1766,6 +1819,9 @@
         if (!$row.length) return;
         $row.find(".timer-minutes").val(String(minutes).padStart(2, "0"));
         $row.find(".timer-seconds").val(String(seconds).padStart(2, "0"));
+        if (timer.background_animation) {
+          $row.find(".timer-animation-select").val(timer.background_animation);
+        }
         updateSecondsDisplay($row);
       });
     }
@@ -1777,7 +1833,8 @@
         rows.push({
           page_number: Number($row.data("page-number")),
           page_name: String($row.find(".timer-page-name").text() || "").trim(),
-          duration_seconds: getTimerSeconds($row)
+          duration_seconds: getTimerSeconds($row),
+          background_animation: getTimerAnimation($row)
         });
       });
       return rows;
@@ -2317,20 +2374,25 @@
       }, 1500);
     }
 
+    function getTimerAnimation($row) {
+      return $row.find(".timer-animation-select").val() || "particles";
+    }
+
     async function saveTimer($row) {
       const timerId = $row.data("timer-id");
       const totalSeconds = getTimerSeconds($row);
-      
+      const backgroundAnimation = getTimerAnimation($row);
+
       $row.removeClass("saved error").addClass("saving");
       setTimerChip("saving");
-      
+
       try {
         const response = await fetch("/admin/timers/" + timerId, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ duration_seconds: totalSeconds })
+          body: JSON.stringify({ duration_seconds: totalSeconds, background_animation: backgroundAnimation })
         });
         
         if (!response.ok) {
@@ -2366,6 +2428,11 @@
         saveTimer($row);
       }, 800);
     }
+
+    $(document).on("change", ".timer-animation-select", function() {
+      const $row = $(this).closest(".timer-row");
+      saveTimer($row);
+    });
 
     $(document).on("focus", ".timer-minutes, .timer-seconds", function() {
       const input = this;
