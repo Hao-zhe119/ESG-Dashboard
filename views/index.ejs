@@ -1677,13 +1677,18 @@ body.graph-bg-transparent {
 }
 
 
-/* ===== Ambient falling-water droplets ===== */
-#page1 .rain-layer{
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+/* ===== Ambient falling-water droplets =====
+   !important needed for the same reason as .bg-particles above: `#pageN > *`
+   (ID specificity) otherwise forces position:relative / z-index:1 onto this
+   layer since it's inserted as a direct child of the page. */
+.rain-layer{
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
   overflow: hidden;
-  z-index: 0;
 }
 
 .rain-layer .drop{
@@ -1900,15 +1905,6 @@ body.graph-bg-transparent {
 
   <!-- PAGE 1: WELCOME -->
   <div id="page1" class="page active-page">
-    <div class="rain-layer" aria-hidden="true">
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span><span class="drop"></span>
-      <span class="drop"></span><span class="drop"></span>
-    </div>
     <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
     <h1 class="welcome-title">
       WELCOME TO<br>
@@ -6591,8 +6587,37 @@ body.graph-bg-transparent {
        to keep it light. Disabled when prefers-reduced-motion is set.
   ============================================================ -->
   <script>
-  (function setupBackgroundParticles(){
+  // Per-page background animation choice, configured in
+  // Admin > Dashboard Settings > Page Timer Settings. Defaults to
+  // "particles" for any page without an explicit setting.
+  var VALID_PAGE_ANIMATIONS = ["rain", "sparks", "sun", "leaves", "none"];
+  function getPageAnimation(pageNumber) {
+    var cfg = (typeof timers_by_page !== "undefined" && timers_by_page) ? timers_by_page[pageNumber] : null;
+    var value = cfg && cfg.background_animation;
+    return VALID_PAGE_ANIMATIONS.indexOf(value) !== -1 ? value : "particles";
+  }
+
+  (function setupRainLayers(){
     var pages = Array.prototype.slice.call(document.querySelectorAll(".page"));
+    pages.forEach(function (pg) {
+      var pageNumber = Number((pg.id || "").replace("page", ""));
+      if (getPageAnimation(pageNumber) !== "rain") return;
+
+      var layer = document.createElement("div");
+      layer.className = "rain-layer";
+      layer.setAttribute("aria-hidden", "true");
+      for (var i = 0; i < 20; i++) {
+        layer.appendChild(document.createElement("span")).className = "drop";
+      }
+      pg.insertBefore(layer, pg.firstChild);
+    });
+  })();
+
+  (function setupBackgroundParticles(){
+    var pages = Array.prototype.slice.call(document.querySelectorAll(".page")).filter(function (pg) {
+      var pageNumber = Number((pg.id || "").replace("page", ""));
+      return getPageAnimation(pageNumber) === "particles";
+    });
     if (!pages.length) return;
 
     // One canvas per page, inserted as the first child (above the dark
@@ -6689,6 +6714,381 @@ body.graph-bg-transparent {
       }
 
       // 2) Render to every page that is currently active.
+      var active = getActiveCanvases();
+      for (var j = 0; j < active.length; j++) renderTo(active[j]);
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  // ============================================================
+  // ELECTRIC SPARKS — flickering gold specks with an occasional
+  // mini lightning-bolt glint, for pages configured with the
+  // "sparks" animation (e.g. Electricity Usage). Sparks flicker
+  // in/out and jitter in place rather than drifting, unlike the
+  // rising particles.
+  // ============================================================
+  (function setupSparkParticles(){
+    var pages = Array.prototype.slice.call(document.querySelectorAll(".page")).filter(function (pg) {
+      var pageNumber = Number((pg.id || "").replace("page", ""));
+      return getPageAnimation(pageNumber) === "sparks";
+    });
+    if (!pages.length) return;
+
+    var canvases = pages.map(function (pg) {
+      var c = document.createElement("canvas");
+      c.className = "bg-particles";
+      pg.insertBefore(c, pg.firstChild);
+      return c;
+    });
+
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = 0, H = 0;
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvases.forEach(function (c) {
+        c.width = Math.round(W * dpr);
+        c.height = Math.round(H * dpr);
+      });
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    var COUNT = Math.max(45, Math.min(100, Math.round((W * H) / 22000)));
+    var sparks = [];
+    function rand(a, b) { return a + Math.random() * (b - a); }
+
+    function makeSpark() {
+      return {
+        x: rand(0, W),
+        y: rand(0, H),
+        r: rand(1.4, 3.2),           // radius
+        life: 0,
+        maxLife: rand(400, 1200),    // flicker duration in ms
+        jitter: rand(6, 16),         // buzz radius
+        angle: rand(0, Math.PI * 2),
+        angleSpeed: rand(-0.0025, 0.0025),
+        glint: Math.random() < 0.35  // some sparks render as a tiny lightning-bolt glint
+      };
+    }
+    for (var i = 0; i < COUNT; i++) {
+      var s = makeSpark();
+      s.life = rand(0, s.maxLife); // stagger initial flicker phases
+      sparks.push(s);
+    }
+
+    function getActiveCanvases() {
+      var out = [];
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].classList.contains("active-page")) out.push(canvases[i]);
+      }
+      return out;
+    }
+
+    var xs = new Array(sparks.length);
+    var ys = new Array(sparks.length);
+    var alphas = new Array(sparks.length);
+
+    function renderTo(canvas) {
+      var ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < sparks.length; i++) {
+        var a = alphas[i];
+        if (a <= 0.02) continue;
+        var s = sparks[i];
+
+        ctx.save();
+        ctx.translate(xs[i], ys[i]);
+        ctx.rotate(s.angle);
+        // Warm gold/white, matching the electricity KPI icon color.
+        ctx.fillStyle = "rgba(255, 244, 190, " + a + ")";
+        ctx.shadowColor = "rgba(250, 204, 21, 0.95)";
+        ctx.shadowBlur = s.r * 4;
+
+        if (s.glint) {
+          // Tiny jagged lightning-bolt silhouette, scaled off the spark radius.
+          var bh = s.r * 3.2;
+          var bw = bh * 0.55;
+          ctx.beginPath();
+          ctx.moveTo(0.15 * bw, -1.0 * bh);
+          ctx.lineTo(0.55 * bw, -1.0 * bh);
+          ctx.lineTo(0.05 * bw, -0.1 * bh);
+          ctx.lineTo(0.5 * bw, -0.1 * bh);
+          ctx.lineTo(-0.25 * bw, 1.0 * bh);
+          ctx.lineTo(0.05 * bw, 0.15 * bh);
+          ctx.lineTo(-0.5 * bw, 0.15 * bh);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    var lastT = performance.now();
+    function frame(now) {
+      var dt = Math.min(now - lastT, 50);
+      lastT = now;
+
+      for (var i = 0; i < sparks.length; i++) {
+        var s = sparks[i];
+        s.life += dt;
+        s.angle += s.angleSpeed * dt;
+        if (s.life >= s.maxLife) {
+          sparks[i] = makeSpark();
+          s = sparks[i];
+        }
+
+        // Quick fade in, brief hold, quick fade out — a flicker envelope.
+        var t = s.life / s.maxLife;
+        alphas[i] = t < 0.15 ? (t / 0.15) : (t > 0.75 ? Math.max(0, (1 - t) / 0.25) : 1);
+
+        // Buzz in place instead of drifting.
+        xs[i] = s.x + Math.sin(now * 0.006 + i) * s.jitter;
+        ys[i] = s.y + Math.cos(now * 0.007 + i * 1.3) * s.jitter;
+      }
+
+      var active = getActiveCanvases();
+      for (var j = 0; j < active.length; j++) renderTo(active[j]);
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  // ============================================================
+  // SUN GLOW — soft, warm orbs that drift upward slowly, used for
+  // pages configured with the "sun" animation (e.g. Solar Energy).
+  // Bigger, slower and warmer-toned than the rising particles, with
+  // a gentle pulsing "breathing" glow.
+  // ============================================================
+  (function setupSunGlowParticles(){
+    var pages = Array.prototype.slice.call(document.querySelectorAll(".page")).filter(function (pg) {
+      var pageNumber = Number((pg.id || "").replace("page", ""));
+      return getPageAnimation(pageNumber) === "sun";
+    });
+    if (!pages.length) return;
+
+    var canvases = pages.map(function (pg) {
+      var c = document.createElement("canvas");
+      c.className = "bg-particles";
+      pg.insertBefore(c, pg.firstChild);
+      return c;
+    });
+
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = 0, H = 0;
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvases.forEach(function (c) {
+        c.width = Math.round(W * dpr);
+        c.height = Math.round(H * dpr);
+      });
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    var COUNT = Math.max(50, Math.min(100, Math.round((W * H) / 22000)));
+    var orbs = [];
+    function rand(a, b) { return a + Math.random() * (b - a); }
+
+    function makeOrb(atBottom) {
+      return {
+        x: rand(0, W),
+        y: atBottom ? rand(H, H + 60) : rand(0, H),
+        r: rand(5, 12),               // radius
+        speed: rand(0.1, 0.32),      // slow upward drift
+        sway: rand(8, 22),
+        swaySpeed: rand(0.0004, 0.0012),
+        phase: rand(0, Math.PI * 2),
+        pulsePhase: rand(0, Math.PI * 2),
+        pulseSpeed: rand(0.0015, 0.003),
+        opacity: rand(0.55, 0.95)
+      };
+    }
+    for (var i = 0; i < COUNT; i++) orbs.push(makeOrb(false));
+
+    function getActiveCanvases() {
+      var out = [];
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].classList.contains("active-page")) out.push(canvases[i]);
+      }
+      return out;
+    }
+
+    var xs = new Array(orbs.length);
+    var scales = new Array(orbs.length);
+
+    function renderTo(canvas) {
+      var ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < orbs.length; i++) {
+        var o = orbs[i];
+        if (o.y < -20) continue;
+        var r = o.r * scales[i];
+        ctx.beginPath();
+        ctx.arc(xs[i], o.y, r, 0, Math.PI * 2);
+        // Warm amber/gold glow, matching the solar theme.
+        ctx.fillStyle = "rgba(255, 214, 140, " + o.opacity + ")";
+        ctx.shadowColor = "rgba(251, 191, 36, 0.95)";
+        ctx.shadowBlur = r * 4.5;
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    var lastT = performance.now();
+    function frame(now) {
+      var dt = Math.min(now - lastT, 50);
+      lastT = now;
+
+      for (var i = 0; i < orbs.length; i++) {
+        var o = orbs[i];
+        o.y -= o.speed * (dt / 16.6);
+        o.phase += o.swaySpeed * dt;
+        o.pulsePhase += o.pulseSpeed * dt;
+        if (o.y < -20) {
+          orbs[i] = makeOrb(true);
+          o = orbs[i];
+        }
+        xs[i] = o.x + Math.sin(o.phase) * o.sway;
+        scales[i] = 0.85 + Math.sin(o.pulsePhase) * 0.15; // gentle breathing glow
+      }
+
+      var active = getActiveCanvases();
+      for (var j = 0; j < active.length; j++) renderTo(active[j]);
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  // ============================================================
+  // DRIFTING LEAVES — small green leaf shapes that fall, sway, and
+  // slowly rotate, for pages configured with the "leaves" animation
+  // (e.g. Waste Management).
+  // ============================================================
+  (function setupLeafParticles(){
+    var pages = Array.prototype.slice.call(document.querySelectorAll(".page")).filter(function (pg) {
+      var pageNumber = Number((pg.id || "").replace("page", ""));
+      return getPageAnimation(pageNumber) === "leaves";
+    });
+    if (!pages.length) return;
+
+    var canvases = pages.map(function (pg) {
+      var c = document.createElement("canvas");
+      c.className = "bg-particles";
+      pg.insertBefore(c, pg.firstChild);
+      return c;
+    });
+
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = 0, H = 0;
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvases.forEach(function (c) {
+        c.width = Math.round(W * dpr);
+        c.height = Math.round(H * dpr);
+      });
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    var COUNT = Math.max(35, Math.min(75, Math.round((W * H) / 28000)));
+    var leaves = [];
+    function rand(a, b) { return a + Math.random() * (b - a); }
+
+    function makeLeaf(atTop) {
+      return {
+        x: rand(0, W),
+        y: atTop ? rand(-60, -10) : rand(0, H),
+        r: rand(6, 11),
+        speed: rand(0.12, 0.32),     // downward drift
+        sway: rand(15, 40),
+        swaySpeed: rand(0.0008, 0.002),
+        phase: rand(0, Math.PI * 2),
+        rotation: rand(0, Math.PI * 2),
+        rotationSpeed: rand(-0.0015, 0.0015),
+        opacity: rand(0.55, 0.9)
+      };
+    }
+    for (var i = 0; i < COUNT; i++) leaves.push(makeLeaf(false));
+
+    function getActiveCanvases() {
+      var out = [];
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].classList.contains("active-page")) out.push(canvases[i]);
+      }
+      return out;
+    }
+
+    var xs = new Array(leaves.length);
+    var rotations = new Array(leaves.length);
+
+    function renderTo(canvas) {
+      var ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < leaves.length; i++) {
+        var l = leaves[i];
+        if (l.y > H + 20) continue;
+
+        ctx.save();
+        ctx.translate(xs[i], l.y);
+        ctx.rotate(rotations[i]);
+        // Soft emerald green, matching the recycling/ESG accent.
+        ctx.fillStyle = "rgba(134, 224, 172, " + l.opacity + ")";
+        ctx.shadowColor = "rgba(52, 211, 153, 0.95)";
+        ctx.shadowBlur = l.r * 3.2;
+
+        ctx.beginPath();
+        ctx.ellipse(0, 0, l.r * 1.6, l.r * 0.85, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Center vein line for a bit of leaf detail.
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(20, 90, 60, " + (l.opacity * 0.6) + ")";
+        ctx.lineWidth = Math.max(0.6, l.r * 0.12);
+        ctx.beginPath();
+        ctx.moveTo(-l.r * 1.4, 0);
+        ctx.lineTo(l.r * 1.4, 0);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    var lastT = performance.now();
+    function frame(now) {
+      var dt = Math.min(now - lastT, 50);
+      lastT = now;
+
+      for (var i = 0; i < leaves.length; i++) {
+        var l = leaves[i];
+        l.y += l.speed * (dt / 16.6);
+        l.phase += l.swaySpeed * dt;
+        l.rotation += l.rotationSpeed * dt;
+        if (l.y > H + 20) {
+          leaves[i] = makeLeaf(true);
+          l = leaves[i];
+        }
+        xs[i] = l.x + Math.sin(l.phase) * l.sway;
+        rotations[i] = l.rotation;
+      }
+
       var active = getActiveCanvases();
       for (var j = 0; j < active.length; j++) renderTo(active[j]);
 

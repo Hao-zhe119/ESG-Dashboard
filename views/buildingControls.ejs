@@ -883,6 +883,49 @@
     #aiSend:hover:not(:disabled){ transform:translateY(-2px); box-shadow:0 12px 26px rgba(52,211,153,0.35); }
     #aiSend:disabled{ opacity:0.45; cursor:not-allowed; box-shadow:none; }
     .ai-note{ text-align:center; color:var(--muted); font-size:10px; margin-top:8px; }
+
+    /* ── Quick-question panel (touch-only, no-keyboard friendly) ── */
+    #aiQuickToggle{
+      flex:0 0 auto; width:48px; height:48px;
+      display:flex; align-items:center; justify-content:center;
+      background:var(--aiGlassSoft);
+      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
+      border:var(--aiGlassBorder); border-radius:14px;
+      font-size:19px; cursor:pointer;
+      transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    #aiQuickToggle.active{ border-color:var(--aiAccent); box-shadow:0 0 0 3px rgba(52,211,153,0.18); }
+    #aiQuickToggle:hover{ transform:translateY(-2px); }
+
+    #aiQuickPanel{
+      background:var(--aiGlassSoft);
+      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
+      border:var(--aiGlassBorder); border-radius:16px;
+      padding:12px; margin-bottom:10px;
+      max-height:34vh; overflow-y:auto;
+    }
+    #aiQuickPanel.hidden{ display:none; }
+    .ai-quickTabs{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    .ai-quickTab{
+      background:rgba(255,255,255,0.05);
+      border:var(--aiGlassBorder); color:var(--muted);
+      padding:8px 13px; border-radius:999px; font-size:13px; font-weight:700;
+      cursor:pointer; transition:all .15s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .ai-quickTab.active{ background:var(--aiGrad); color:#06210f; border-color:transparent; }
+    .ai-quickList{ display:flex; flex-wrap:wrap; gap:8px; }
+    .ai-quickQ{
+      background:rgba(255,255,255,0.05);
+      border:var(--aiGlassBorder); color:var(--text);
+      padding:10px 14px; border-radius:12px; font-size:13px;
+      cursor:pointer; text-align:left; line-height:1.4;
+      transition:transform .15s ease, border-color .15s ease, color .15s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .ai-quickQ:hover, .ai-quickQ:active{
+      border-color:var(--aiAccent); color:var(--aiAccent); transform:translateY(-1px);
+    }
   </style>
 </head>
 
@@ -1962,7 +2005,12 @@
       </div>
     </div>
     <div class="ai-foot">
+      <div id="aiQuickPanel" class="hidden">
+        <div class="ai-quickTabs" id="aiQuickTabs"></div>
+        <div class="ai-quickList" id="aiQuickList"></div>
+      </div>
       <div class="ai-inputRow">
+        <button id="aiQuickToggle" type="button" title="Quick questions">💡</button>
         <textarea id="aiInput" placeholder="Type your question..." rows="1"></textarea>
         <button id="aiSend" type="button">Send</button>
       </div>
@@ -2031,9 +2079,88 @@
     const welcome   = document.getElementById("aiWelcome");
     const input     = document.getElementById("aiInput");
     const sendBtn   = document.getElementById("aiSend");
+    const quickToggle = document.getElementById("aiQuickToggle");
+    const quickPanel  = document.getElementById("aiQuickPanel");
+    const quickTabs   = document.getElementById("aiQuickTabs");
+    const quickList   = document.getElementById("aiQuickList");
 
     const history = [];
     let busy = false;
+
+    // Preset questions, grouped by topic, so the assistant can be used
+    // entirely by tapping on touch panels with no keyboard attached.
+    const QUICK_QUESTIONS = {
+      "🌱 ESG": [
+        "What is ESG?",
+        "Why does ESG matter for RP?",
+        "What are RP's sustainability goals?"
+      ],
+      "⚡ Electricity": [
+        "Why does saving electricity matter?",
+        "How can we reduce electricity usage on campus?",
+        "What is RP's average monthly electricity use?"
+      ],
+      "💧 Water": [
+        "Why is water conservation important?",
+        "How can we save water on campus?"
+      ],
+      "☀️ Solar": [
+        "What is solar energy?",
+        "How much solar energy does RP generate?"
+      ],
+      "♻️ Waste": [
+        "Give me 3 simple ways to reduce waste",
+        "What is RP's recycling rate?",
+        "Why is recycling important?"
+      ]
+    };
+
+    function renderQuickQuestions(category){
+      quickList.innerHTML = "";
+      QUICK_QUESTIONS[category].forEach(q => {
+        const qBtn = document.createElement("button");
+        qBtn.type = "button";
+        qBtn.className = "ai-quickQ";
+        qBtn.textContent = q;
+        quickList.appendChild(qBtn);
+      });
+    }
+
+    function renderQuickTabs(){
+      quickTabs.innerHTML = "";
+      Object.keys(QUICK_QUESTIONS).forEach((category, i) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "ai-quickTab" + (i === 0 ? " active" : "");
+        tab.textContent = category;
+        tab.dataset.category = category;
+        quickTabs.appendChild(tab);
+      });
+      renderQuickQuestions(Object.keys(QUICK_QUESTIONS)[0]);
+    }
+    renderQuickTabs();
+
+    quickTabs.addEventListener("click", e => {
+      const tab = e.target.closest(".ai-quickTab");
+      if (!tab) return;
+      quickTabs.querySelectorAll(".ai-quickTab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      renderQuickQuestions(tab.dataset.category);
+    });
+
+    quickList.addEventListener("click", e => {
+      const q = e.target.closest(".ai-quickQ");
+      if (!q) return;
+      input.value = q.textContent;
+      quickPanel.classList.add("hidden");
+      quickToggle.classList.remove("active");
+      send();
+    });
+
+    quickToggle.addEventListener("click", () => {
+      quickPanel.classList.toggle("hidden");
+      quickToggle.classList.toggle("active");
+    });
 
     function openPanel(){
       panel.classList.add("open");
