@@ -122,9 +122,17 @@
       position: relative; z-index: 2;
     }
     
-    .hotspot:hover .hotspot-dot, .hotspot.active .hotspot-dot {
+    /* .hotspot:hover .hotspot-dot, .hotspot.active .hotspot-dot {
       transform: scale(1.6);
       box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+    } */
+     .hotspot:hover .hotspot-dot, .hotspot.active .hotspot-dot {
+      transform: scale(1.75);
+      box-shadow: 0 0 22px currentColor, 0 0 48px currentColor, 0 0 6px #000;
+      border-color: #ffffff;
+    }
+    .hotspot:hover .hotspot-dot {
+      cursor: pointer;
     }
 
     /* Active hotspot ring */
@@ -169,14 +177,28 @@
     }
 
     /* ── INFO PANEL ── */
-    .info-panel {
+    /* .info-panel {
       position: fixed; bottom: 24px; right: 24px; width: 280px;
       background: var(--panel-solid); border: 1px solid var(--panel-border);
       border-radius: 12px; padding: 0; z-index: 200;
       opacity: 0; transform: translateY(16px) scale(0.97);
       transition: opacity 0.3s, transform 0.3s;
       pointer-events: none; overflow: hidden;
+    } */
+
+    .info-panel {
+      position: fixed; bottom: 24px; right: 24px; width: 280px;
+      background: rgba(10,26,20,0.55);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(0,255,179,0.25);
+      border-radius: 16px; padding: 0; z-index: 200;
+      opacity: 0; transform: translateY(16px) scale(0.97);
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none; overflow: hidden;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.5);
     }
+
     .info-panel.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
 
     .info-panel-header {
@@ -266,12 +288,27 @@
     }
 
     /* ── LEGEND ── */
-    .legend {
+    /* .legend {
       position: fixed; top: 70px; left: 24px; z-index: 100;
       display: flex; flex-direction: column; gap: 5px;
+    } */
+
+    .legend {
+      position: fixed; top: 110px; left: 24px; z-index: 150;
+      display: flex; flex-direction: column; gap: 9px;
+      background: rgba(10,26,20,0.88);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      backdrop-filter: blur(14px) saturate(140%);
+      border: 1px solid rgba(0,255,179,0.45);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.3);
     }
-    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.68rem; color: var(--text-dim); }
-    .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* .legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.68rem; color: var(--text-dim); }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; } */
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text); font-weight: 500; }
+    .legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
 
     /* ── CONTROLS HINT ── */
     .controls-hint {
@@ -290,11 +327,27 @@
       from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .map-header, .legend, .zoom-controls {
-      animation: fadeInUp 0.8s ease both;
+    .map-header, .zoom-controls {
+       animation: fadeInUp 0.8s ease both;
     }
-    .legend { animation-delay: 0.3s; }
     .zoom-controls { animation-delay: 0.4s; }
+    .zoom-controls { animation-delay: 0.4s; }
+
+    /* Subtle radial green glow behind the map (replaces flat black void) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;                 /* behind the model and all UI */
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 48%,
+      rgba(0, 200, 150, 0.16) 0%,
+      rgba(0, 200, 150, 0.06) 35%,
+      rgba(5, 13, 10, 0) 70%),
+    var(--dark);
+}
+
   </style>
 </head>
 <body>
@@ -319,7 +372,7 @@
   <div class="legend">
     <div class="legend-item"><div class="legend-dot" style="background:var(--e-color);box-shadow:0 0 6px var(--e-color)"></div> E Block</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--w-color);box-shadow:0 0 6px var(--w-color)"></div> W Block</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--other-color);box-shadow:0 0 6px var(--other-color)"></div> Other Buildings</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--other-color);box-shadow:0 0 6px var(--other-color)"></div> Facilities</div>
   </div>
 
   <!-- Controls hint -->
@@ -357,7 +410,7 @@
     interpolation-decay="80"
     camera-orbit="0deg 55deg 90%"
     camera-target="0m 0m 0m"
-    style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:radial-gradient(ellipse at center,#0c1f18 0%,#050d0a 100%);z-index:0;"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:radial-gradient(ellipse 70% 60% at 50% 48%,#0f3a2c 0%,#0a241b 40%,#050d0a 75%);z-index:0;"
   >
 
     <!-- E Block (cyan) -->
