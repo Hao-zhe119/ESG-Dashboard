@@ -28,7 +28,7 @@
     "autoSwitchOnActivity": true,
     "autoRevertEnabled": true,
     "idleTimeoutMinutes": 15,
-    "lastActivityAt": "2026-07-06T07:39:43.984Z"
+    "lastActivityAt": "2026-07-06T09:41:09.976Z"
   },
   "automation": {
     "applyDefaultTimingEnabled": false,
@@ -124,5 +124,6 @@
       "XLC",
       "ALC"
     ]
-  }
+  },
+  "offlineDashboardMode": "interactive"
 }
