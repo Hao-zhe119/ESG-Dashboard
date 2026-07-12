@@ -20,16 +20,58 @@ const DEFAULT_CONFIG = {
     9: 30,
     10: 15
   },
+  defaultAnimations: {
+    1: "rain",
+    2: "particles",
+    3: "sparks",
+    4: "particles",
+    5: "particles",
+    6: "sun",
+    7: "leaves",
+    8: "particles",
+    9: "particles",
+    10: "particles"
+  },
   interactiveMode: {
     autoSwitchOnActivity: true,
     autoRevertEnabled: true,
     idleTimeoutMinutes: 15,
     lastActivityAt: null
   },
+  dashboardSettingsProfiles: [
+    {
+      id: "default",
+      name: "Default Dashboard Settings",
+      isDefault: true,
+      isProtected: true,
+      createdAt: null,
+      settings: {
+        dashboardMode: "auto",
+        autoSwitchOnActivity: true,
+        autoRevertEnabled: true,
+        idleTimeoutMinutes: 15
+      }
+    }
+  ],
   automation: {
     applyDefaultTimingEnabled: false,
     autoHibernateEnabled: false,
     autoHibernateDryRun: true,
+    autoWakeEnabled: false,
+    autoWakeSchedule: {
+      wakeTime: "07:00",
+      activeProfileId: "default",
+      days: {
+        monday: { enabled: true, wakeTime: "07:00" },
+        tuesday: { enabled: true, wakeTime: "07:00" },
+        wednesday: { enabled: true, wakeTime: "07:00" },
+        thursday: { enabled: true, wakeTime: "07:00" },
+        friday: { enabled: true, wakeTime: "07:00" },
+        saturday: { enabled: false, wakeTime: "07:00" },
+        sunday: { enabled: false, wakeTime: "07:00" }
+      }
+    },
+    lastWakeTaskDryRunAt: null,
     autoHibernateSchedule: {
       startTime: "22:00",
       endTime: "07:00",
@@ -113,11 +155,14 @@ function updateRuntimeConfig(mutator) {
 }
 
 function getDefaultTimerRows() {
-  const timers = readRuntimeConfig().defaultTimersSeconds || {};
+  const config = readRuntimeConfig();
+  const timers = config.defaultTimersSeconds || {};
+  const animations = config.defaultAnimations || {};
   return Object.entries(timers)
     .map(([pageNumber, seconds]) => ({
       page_number: Number(pageNumber),
-      duration_seconds: Math.max(0, Number(seconds) || 0)
+      duration_seconds: Math.max(0, Number(seconds) || 0),
+      background_animation: animations[pageNumber] || "particles"
     }))
     .filter((item) => Number.isFinite(item.page_number))
     .sort((a, b) => a.page_number - b.page_number);

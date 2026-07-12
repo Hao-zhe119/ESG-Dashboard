@@ -521,6 +521,24 @@ body::before {
   <div class="cycle-bar"><div class="cycle-bar-fill" id="cycleBarFill"></div></div>
 
   <script>
+    // ── EMBED / MIRROR MODE ─────────────────────────────────────────────
+    // /interactivemap?embed=1                → interactive copy (control panel)
+    // /interactivemap?embed=1&mode=mirror    → audience copy (big screen)
+    const MAP_PARAMS = new URLSearchParams(location.search);
+    const MAP_EMBED  = MAP_PARAMS.get('embed') === '1';
+    const MAP_MIRROR = (MAP_PARAMS.get('mode') || 'interactive') === 'mirror';
+    if (MAP_EMBED)  document.body.classList.add('embed');
+    if (MAP_MIRROR) document.body.classList.add('mirror');
+
+    // Tell the hosting window (control panel) which building the guest picked.
+    function mapPostToParent(payload){
+      try {
+        if (MAP_EMBED && window.parent && window.parent !== window){
+          window.parent.postMessage(payload, window.location.origin);
+        }
+      } catch (_e) {}
+    }
+
     const viewer   = document.getElementById('campusViewer');
     const overlay  = document.getElementById('loadingOverlay');
     const loadFill = document.getElementById('loadingFill');
@@ -700,6 +718,7 @@ body::before {
     document.querySelectorAll('.hotspot').forEach(hotspot => {
       hotspot.addEventListener('click', e => {
         e.preventDefault();
+        if (MAP_MIRROR) return; // audience copy is not interactive
         const href = hotspot.getAttribute('href');
         const slug = href.split('/building-left/')[1];
         const b = buildings.find(b => b.slug === slug);
@@ -707,7 +726,18 @@ body::before {
         pauseCycle();
         viewer.autoRotate = false;
         openPanel(b);
+        // Drive the big screen to this building's full data (Page 5).
+        mapPostToParent({ type: 'MAP_SELECT_BUILDING', building: slug });
       });
+    });
+
+    // "View Full Data": when embedded, push to the big screen instead of
+    // navigating this iframe to /?building=...
+    panelViewBtn.addEventListener('click', e => {
+      if (MAP_EMBED) {
+        e.preventDefault();
+        if (activeSlug) mapPostToParent({ type: 'MAP_SELECT_BUILDING', building: activeSlug });
+      }
     });
 
     // Click on empty model area closes panel
@@ -852,6 +882,7 @@ body::before {
 
     // ── START ──
     viewer.addEventListener('load', () => {
+      if (MAP_MIRROR) { pauseCycle(); return; } // audience copy: just auto-rotate
       setTimeout(() => { showCycleBuilding(); }, 800);
     });
   </script>

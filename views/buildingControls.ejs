@@ -700,18 +700,69 @@
     /* ============================================================
        ASK AI  — button + slide-in chat overlay
     ============================================================ */
+    /* Brand tokens for the AI assistant (matches dashboard greens) */
+    .ask-ai-btn,
+    .ai-panel{
+      --aiAccent:#34d399;
+      --aiGrad:linear-gradient(100deg,#8fd14f 0%, #34d399 55%, #10b981 100%);
+      --aiGlassPanel:linear-gradient(to bottom, rgba(8,12,16,0.72), rgba(20,28,38,0.55));
+      --aiGlassSoft:linear-gradient(to bottom, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+      --aiGlassBorder:1px solid rgba(255,255,255,0.14);
+      --aiBlur:blur(22px) saturate(160%);
+    }
+
     .ask-ai-btn{
       flex:0 0 auto;
       display:inline-flex; align-items:center; gap:8px;
-      background:linear-gradient(135deg, #2563eb, #60a5fa);
-      color:#fff; border:none; border-radius:999px;
-      padding:12px 22px; font-size:16px; font-weight:700;
+      background:var(--aiGrad);
+      color:#06210f; border:none; border-radius:999px;
+      padding:12px 22px; font-size:16px; font-weight:800;
       cursor:pointer; user-select:none;
-      box-shadow:0 4px 14px rgba(37,99,235,0.45);
+      box-shadow:0 6px 18px rgba(52,211,153,0.35);
       transition:transform .12s ease, box-shadow .12s ease;
     }
-    .ask-ai-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(37,99,235,0.55); }
+    .ask-ai-btn:hover{ transform:translateY(-1px); box-shadow:0 8px 22px rgba(52,211,153,0.5); }
     .ask-ai-btn:active{ transform:translateY(0); }
+
+    /* ── Campus Map button + full-screen interactive map overlay ── */
+    .map-btn{
+      flex:0 0 auto;
+      display:inline-flex; align-items:center; gap:8px;
+      background:linear-gradient(135deg, #1f6feb, #34d399);
+      color:#04121f; border:none; border-radius:999px;
+      padding:12px 22px; font-size:16px; font-weight:800;
+      cursor:pointer; user-select:none;
+      box-shadow:0 6px 18px rgba(31,111,235,0.35);
+      transition:transform .12s ease, box-shadow .12s ease;
+    }
+    .map-btn:hover{ transform:translateY(-1px); box-shadow:0 8px 22px rgba(31,111,235,0.5); }
+    .map-btn:active{ transform:translateY(0); }
+
+    .map-overlay{
+      position:fixed; inset:0; z-index:10000;
+      background:#050d0a;
+      display:flex; flex-direction:column;
+      opacity:0; pointer-events:none; transition:opacity .25s ease;
+    }
+    .map-overlay.open{ opacity:1; pointer-events:auto; }
+    .map-overlay-head{
+      flex:0 0 auto; display:flex; align-items:center; gap:10px;
+      padding:12px 18px; border-bottom:1px solid rgba(255,255,255,0.12);
+      background:linear-gradient(to bottom, rgba(8,12,16,0.9), rgba(20,28,38,0.7));
+    }
+    .map-overlay-head h3{
+      margin:0; font-size:16px; font-weight:800; letter-spacing:.02em;
+      background:linear-gradient(100deg,#8fd14f,#34d399 55%,#10b981);
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .map-overlay-head .hint{ font-size:12px; color:#9ca3af; }
+    .map-close{
+      margin-left:auto; background:transparent; border:1px solid rgba(255,255,255,0.18);
+      color:#cbd5e1; font-size:14px; font-weight:700; cursor:pointer;
+      border-radius:8px; padding:7px 14px; transition:all .15s ease;
+    }
+    .map-close:hover{ border-color:#ff6b6b; color:#ff6b6b; }
+    .map-overlay iframe{ flex:1 1 auto; width:100%; border:0; display:block; }
 
     .ai-backdrop{
       position:fixed; inset:0; z-index:9998;
@@ -723,7 +774,11 @@
     .ai-panel{
       position:fixed; top:0; right:0; z-index:9999;
       height:100%; width:min(460px, 92vw);
-      background:var(--bg); border-left:1px solid rgba(255,255,255,0.12);
+      background:
+        radial-gradient(circle at 90% -10%, rgba(52,211,153,0.16), transparent 55%),
+        radial-gradient(circle at 0% 110%, rgba(143,209,79,0.10), transparent 50%),
+        linear-gradient(160deg,#0d1117 0%, #0b0e12 100%);
+      border-left:var(--aiGlassBorder);
       box-shadow:-12px 0 40px rgba(0,0,0,0.5);
       transform:translateX(100%); transition:transform .28s ease;
       display:flex; flex-direction:column;
@@ -732,11 +787,26 @@
 
     .ai-head{
       flex:0 0 auto; display:flex; align-items:center; gap:10px;
-      padding:16px 18px; border-bottom:1px solid rgba(255,255,255,0.10);
-      background:rgba(255,255,255,0.04);
+      padding:16px 18px; border-bottom:var(--aiGlassBorder);
+      background:var(--aiGlassPanel);
+      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
     }
-    .ai-head .dot{ width:10px; height:10px; border-radius:50%; background:#34d399; box-shadow:0 0 8px #34d399; }
-    .ai-head h3{ margin:0; font-size:17px; font-weight:700; }
+    .ai-head .dot{
+      width:10px; height:10px; border-radius:50%; background:var(--aiAccent);
+      box-shadow:0 0 0 0 rgba(52,211,153,0.6);
+      animation:aiPulse 2.4s ease-out infinite;
+    }
+    @keyframes aiPulse{
+      0%   { box-shadow:0 0 0 0 rgba(52,211,153,0.55); }
+      70%  { box-shadow:0 0 0 10px rgba(52,211,153,0); }
+      100% { box-shadow:0 0 0 0 rgba(52,211,153,0); }
+    }
+    .ai-head h3{
+      margin:0; font-size:17px; font-weight:800; letter-spacing:0.01em;
+      background:var(--aiGrad);
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; color:transparent;
+    }
     .ai-head .sub{ font-size:11px; color:var(--muted); margin-left:auto; }
     .ai-close{
       background:transparent; border:none; color:var(--muted);
@@ -745,41 +815,117 @@
     .ai-close:hover{ color:var(--text); }
 
     .ai-messages{ flex:1 1 auto; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
-    .ai-msg{ display:flex; }
+    .ai-messages::-webkit-scrollbar{ width:8px; }
+    .ai-messages::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.12); border-radius:999px; }
+    .ai-messages::-webkit-scrollbar-thumb:hover{ background:rgba(52,211,153,0.4); }
+    .ai-msg{ display:flex; animation:aiBubbleIn .35s cubic-bezier(0.22,1,0.36,1) both; }
     .ai-msg.user{ justify-content:flex-end; }
-    .ai-bubble{
-      max-width:82%; padding:11px 14px; border-radius:14px;
-      line-height:1.5; font-size:15px; white-space:pre-wrap; word-wrap:break-word;
+    @keyframes aiBubbleIn{
+      from{ opacity:0; transform:translateY(10px); }
+      to  { opacity:1; transform:translateY(0); }
     }
-    .ai-msg.user .ai-bubble{ background:#2563eb; color:#fff; border-bottom-right-radius:4px; }
-    .ai-msg.bot  .ai-bubble{ background:#1f2937; color:var(--text); border-bottom-left-radius:4px; }
+    .ai-bubble{
+      max-width:82%; padding:11px 15px; border-radius:16px;
+      line-height:1.55; font-size:15px; white-space:pre-wrap; word-wrap:break-word;
+      box-shadow:0 6px 18px rgba(0,0,0,0.25);
+    }
+    .ai-msg.user .ai-bubble{ background:var(--aiGrad); color:#06210f; font-weight:600; border-bottom-right-radius:5px; }
+    .ai-msg.bot  .ai-bubble{
+      background:var(--aiGlassSoft);
+      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
+      border:var(--aiGlassBorder);
+      color:var(--text); border-bottom-left-radius:5px;
+    }
     .ai-bubble.thinking{ color:var(--muted); font-style:italic; }
 
     .ai-welcome{ color:var(--muted); font-size:14px; line-height:1.5; }
-    .ai-welcome b{ color:var(--text); }
-    .ai-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-    .ai-chip{
-      background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
-      color:var(--text); padding:8px 12px; border-radius:999px; font-size:13px; cursor:pointer;
+    .ai-welcome b{
+      background:var(--aiGrad);
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; color:transparent;
+      font-weight:800;
     }
-    .ai-chip:hover{ border-color:var(--active); color:var(--active); }
+    .ai-chips{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .ai-chip{
+      background:var(--aiGlassSoft);
+      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
+      border:var(--aiGlassBorder);
+      color:var(--text); padding:9px 14px; border-radius:999px; font-size:13px; cursor:pointer;
+      transition:transform .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+    }
+    .ai-chip:hover{
+      border-color:var(--aiAccent); color:var(--aiAccent);
+      transform:translateY(-2px); box-shadow:0 6px 16px rgba(52,211,153,0.18);
+    }
 
-    .ai-foot{ flex:0 0 auto; border-top:1px solid rgba(255,255,255,0.10); padding:12px 14px; }
+    .ai-foot{
+      flex:0 0 auto; border-top:var(--aiGlassBorder); padding:12px 14px;
+      background:var(--aiGlassPanel);
+      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
+    }
     .ai-inputRow{ display:flex; gap:8px; align-items:flex-end; }
     #aiInput{
       flex:1 1 auto; resize:none;
-      background:#0b0e12; color:var(--text);
-      border:1px solid rgba(255,255,255,0.12); border-radius:12px;
-      padding:11px 12px; font-size:15px; font-family:inherit; line-height:1.4;
-      max-height:120px; min-height:46px;
+      background:rgba(8,12,16,0.6); color:var(--text);
+      border:var(--aiGlassBorder); border-radius:14px;
+      padding:12px 14px; font-size:15px; font-family:inherit; line-height:1.4;
+      max-height:120px; min-height:48px;
+      transition:border-color .15s ease, box-shadow .15s ease;
     }
-    #aiInput:focus{ outline:none; border-color:var(--active); }
+    #aiInput::placeholder{ color:rgba(156,163,175,0.8); }
+    #aiInput:focus{ outline:none; border-color:var(--aiAccent); box-shadow:0 0 0 3px rgba(52,211,153,0.18); }
     #aiSend{
-      flex:0 0 auto; background:var(--active); color:#06121f; font-weight:700;
-      border:none; border-radius:12px; padding:0 18px; height:46px; font-size:15px; cursor:pointer;
+      flex:0 0 auto; background:var(--aiGrad); color:#06210f; font-weight:800;
+      border:none; border-radius:14px; padding:0 20px; height:48px; font-size:15px; cursor:pointer;
+      letter-spacing:0.02em; box-shadow:0 8px 20px rgba(52,211,153,0.25);
+      transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
     }
-    #aiSend:disabled{ opacity:0.5; cursor:not-allowed; }
+    #aiSend:hover:not(:disabled){ transform:translateY(-2px); box-shadow:0 12px 26px rgba(52,211,153,0.35); }
+    #aiSend:disabled{ opacity:0.45; cursor:not-allowed; box-shadow:none; }
     .ai-note{ text-align:center; color:var(--muted); font-size:10px; margin-top:8px; }
+
+    /* ── Quick-question panel (touch-only, no-keyboard friendly) ── */
+    #aiQuickToggle{
+      flex:0 0 auto; width:48px; height:48px;
+      display:flex; align-items:center; justify-content:center;
+      background:var(--aiGlassSoft);
+      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
+      border:var(--aiGlassBorder); border-radius:14px;
+      font-size:19px; cursor:pointer;
+      transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    #aiQuickToggle.active{ border-color:var(--aiAccent); box-shadow:0 0 0 3px rgba(52,211,153,0.18); }
+    #aiQuickToggle:hover{ transform:translateY(-2px); }
+
+    #aiQuickPanel{
+      background:var(--aiGlassSoft);
+      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
+      border:var(--aiGlassBorder); border-radius:16px;
+      padding:12px; margin-bottom:10px;
+      max-height:34vh; overflow-y:auto;
+    }
+    #aiQuickPanel.hidden{ display:none; }
+    .ai-quickTabs{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    .ai-quickTab{
+      background:rgba(255,255,255,0.05);
+      border:var(--aiGlassBorder); color:var(--muted);
+      padding:8px 13px; border-radius:999px; font-size:13px; font-weight:700;
+      cursor:pointer; transition:all .15s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .ai-quickTab.active{ background:var(--aiGrad); color:#06210f; border-color:transparent; }
+    .ai-quickList{ display:flex; flex-wrap:wrap; gap:8px; }
+    .ai-quickQ{
+      background:rgba(255,255,255,0.05);
+      border:var(--aiGlassBorder); color:var(--text);
+      padding:10px 14px; border-radius:12px; font-size:13px;
+      cursor:pointer; text-align:left; line-height:1.4;
+      transition:transform .15s ease, border-color .15s ease, color .15s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .ai-quickQ:hover, .ai-quickQ:active{
+      border-color:var(--aiAccent); color:var(--aiAccent); transform:translateY(-1px);
+    }
   </style>
 </head>
 
@@ -809,9 +955,14 @@
         <div class="subtitle" id="headerSubtitle">Control the main dashboard (Pages 1-10)</div>
       </div>
     </div>
-    <button id="askAiBtn" class="ask-ai-btn" type="button" aria-label="Ask the AI assistant">
-      <span aria-hidden="true">&#128172;</span> Ask AI
-    </button>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button id="campusMapBtn" class="map-btn" type="button" aria-label="Open the campus map">
+        <span aria-hidden="true">&#128506;</span> Campus Map
+      </button>
+      <button id="askAiBtn" class="ask-ai-btn" type="button" aria-label="Ask the AI assistant">
+        <span aria-hidden="true">&#128172;</span> Ask AI
+      </button>
+    </div>
   </div>
 
   <div class="main">
@@ -1854,13 +2005,69 @@
       </div>
     </div>
     <div class="ai-foot">
+      <div id="aiQuickPanel" class="hidden">
+        <div class="ai-quickTabs" id="aiQuickTabs"></div>
+        <div class="ai-quickList" id="aiQuickList"></div>
+      </div>
       <div class="ai-inputRow">
+        <button id="aiQuickToggle" type="button" title="Quick questions">💡</button>
         <textarea id="aiInput" placeholder="Type your question..." rows="1"></textarea>
         <button id="aiSend" type="button">Send</button>
       </div>
       <div class="ai-note">Your conversation stays on this machine. Nothing is sent to the internet.</div>
     </div>
   </aside>
+
+  <!-- ============================================================
+       CAMPUS MAP — full-screen interactive overlay
+  ============================================================ -->
+  <div class="map-overlay" id="mapOverlay" aria-hidden="true">
+    <div class="map-overlay-head">
+      <h3>RP Campus Map</h3>
+      <span class="hint">Click a building to show its full data on the big screen</span>
+      <button class="map-close" id="mapCloseBtn" type="button">&times; Close</button>
+    </div>
+    <!-- src set lazily on first open so the 3D model loads only once -->
+    <iframe id="mapFrame" title="RP Campus Map" allow="xr-spatial-tracking"></iframe>
+  </div>
+
+  <script>
+  (function setupCampusMap(){
+    const openBtn  = document.getElementById("campusMapBtn");
+    const closeBtn = document.getElementById("mapCloseBtn");
+    const overlay  = document.getElementById("mapOverlay");
+    const frame    = document.getElementById("mapFrame");
+    if (!openBtn || !overlay || !frame) return;
+
+    function openMap(){
+      if (!frame.getAttribute("src")) {
+        frame.setAttribute("src", "/interactivemap?embed=1&mode=interactive");
+      }
+      overlay.classList.add("open");
+      overlay.setAttribute("aria-hidden", "false");
+      postToMain({ type: "SHOW_MAP" });           // big screen mirrors the map
+    }
+    function closeMap(){
+      overlay.classList.remove("open");
+      overlay.setAttribute("aria-hidden", "true");
+      postToMain({ type: "CLOSE_MAP" });          // big screen returns to its previous page
+    }
+
+    openBtn.addEventListener("click", openMap);
+    closeBtn.addEventListener("click", closeMap);
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && overlay.classList.contains("open")) closeMap();
+    });
+
+    // Building picked inside the map iframe → drive the big screen's full data.
+    window.addEventListener("message", e => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data && e.data.type === "MAP_SELECT_BUILDING" && e.data.building) {
+        postToMain({ type: "SET_BUILDING", building: e.data.building });
+      }
+    });
+  })();
+  </script>
 
   <script>
   (function(){
@@ -1872,9 +2079,88 @@
     const welcome   = document.getElementById("aiWelcome");
     const input     = document.getElementById("aiInput");
     const sendBtn   = document.getElementById("aiSend");
+    const quickToggle = document.getElementById("aiQuickToggle");
+    const quickPanel  = document.getElementById("aiQuickPanel");
+    const quickTabs   = document.getElementById("aiQuickTabs");
+    const quickList   = document.getElementById("aiQuickList");
 
     const history = [];
     let busy = false;
+
+    // Preset questions, grouped by topic, so the assistant can be used
+    // entirely by tapping on touch panels with no keyboard attached.
+    const QUICK_QUESTIONS = {
+      "🌱 ESG": [
+        "What is ESG?",
+        "Why does ESG matter for RP?",
+        "What are RP's sustainability goals?"
+      ],
+      "⚡ Electricity": [
+        "Why does saving electricity matter?",
+        "How can we reduce electricity usage on campus?",
+        "What is RP's average monthly electricity use?"
+      ],
+      "💧 Water": [
+        "Why is water conservation important?",
+        "How can we save water on campus?"
+      ],
+      "☀️ Solar": [
+        "What is solar energy?",
+        "How much solar energy does RP generate?"
+      ],
+      "♻️ Waste": [
+        "Give me 3 simple ways to reduce waste",
+        "What is RP's recycling rate?",
+        "Why is recycling important?"
+      ]
+    };
+
+    function renderQuickQuestions(category){
+      quickList.innerHTML = "";
+      QUICK_QUESTIONS[category].forEach(q => {
+        const qBtn = document.createElement("button");
+        qBtn.type = "button";
+        qBtn.className = "ai-quickQ";
+        qBtn.textContent = q;
+        quickList.appendChild(qBtn);
+      });
+    }
+
+    function renderQuickTabs(){
+      quickTabs.innerHTML = "";
+      Object.keys(QUICK_QUESTIONS).forEach((category, i) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "ai-quickTab" + (i === 0 ? " active" : "");
+        tab.textContent = category;
+        tab.dataset.category = category;
+        quickTabs.appendChild(tab);
+      });
+      renderQuickQuestions(Object.keys(QUICK_QUESTIONS)[0]);
+    }
+    renderQuickTabs();
+
+    quickTabs.addEventListener("click", e => {
+      const tab = e.target.closest(".ai-quickTab");
+      if (!tab) return;
+      quickTabs.querySelectorAll(".ai-quickTab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      renderQuickQuestions(tab.dataset.category);
+    });
+
+    quickList.addEventListener("click", e => {
+      const q = e.target.closest(".ai-quickQ");
+      if (!q) return;
+      input.value = q.textContent;
+      quickPanel.classList.add("hidden");
+      quickToggle.classList.remove("active");
+      send();
+    });
+
+    quickToggle.addEventListener("click", () => {
+      quickPanel.classList.toggle("hidden");
+      quickToggle.classList.toggle("active");
+    });
 
     function openPanel(){
       panel.classList.add("open");
