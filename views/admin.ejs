@@ -340,6 +340,49 @@
     color: #34d399;
   }
 
+  .timer-animation-select {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 185px;
+    background:
+      linear-gradient(135deg, rgba(126,174,51,.22), rgba(255,255,255,.05)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23bff08a' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px 8px;
+    border: 1.5px solid rgba(126,174,51,.4);
+    border-radius: 999px;
+    color: #eafbe0;
+    padding: 7px 32px 7px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+
+  .timer-animation-select:hover {
+    border-color: #7eae33;
+    background-color: rgba(126,174,51,.12);
+  }
+
+  .timer-animation-select:focus {
+    outline: none;
+    border-color: #9cd35c;
+    box-shadow: 0 0 0 3px rgba(126,174,51,.28);
+  }
+
+  /* Chromium/Firefox respect option colors even though the popup itself
+     is OS-rendered — without this the list falls back to washed-out
+     system colors that are nearly unreadable on a dark UI. */
+  .timer-animation-select option {
+    background-color: #131b12;
+    color: #eafbe0;
+    font-weight: 600;
+    padding: 8px;
+  }
+
   @media (max-width: 991.98px) {
     .admin-side {
       width: 100%;
@@ -380,11 +423,6 @@
       <div class="collapse navbar-collapse justify-content-end">
         <ul class="navbar-nav align-items-center gap-2">
           <li class="nav-item">
-            <a class="btn btn-success" href="/admin/export-excel" title="Download all ESG data as an Excel workbook">
-              &#128202; Export to Excel
-            </a>
-          </li>
-          <li class="nav-item">
             <a class="btn btn-outline-light" href="/logout">Logout</a>
           </li>
         </ul>
@@ -424,7 +462,7 @@
           </div>
           <% if (typeof runtimeConfig !== "undefined" && runtimeConfig && typeof buildingsLoadError !== "undefined" && buildingsLoadError) { %>
             <div class="alert alert-warning">
-              No-XAMPP test mode: MySQL/XAMPP is not connected, so data upload/building records are unavailable. Dashboard configuration, timer profiles, health checks, and automation toggles still work from JSON config.
+              Database unavailable: data upload and building records are unavailable. Dashboard configuration, timer profiles, health checks, and automation toggles still work from JSON config.
             </div>
           <% } %>
 
@@ -465,6 +503,7 @@
                       class="form-check-input"
                       type="checkbox"
                       role="switch"
+                      name="autoSwitchOnActivity"
                       id="interactiveAutoSwitchToggle"
                       <%= (typeof interactiveConfig === "undefined" || !interactiveConfig || interactiveConfig.autoSwitchOnActivity !== false) ? "checked" : "" %>>
                     <label class="form-check-label" for="interactiveAutoSwitchToggle">Switch Auto Mode to Interactive Mode when someone uses the dashboard</label>
@@ -474,6 +513,7 @@
                       class="form-check-input"
                       type="checkbox"
                       role="switch"
+                      name="autoRevertEnabled"
                       id="interactiveAutoRevertToggle"
                       <%= (typeof interactiveConfig !== "undefined" && interactiveConfig && interactiveConfig.autoRevertEnabled) ? "checked" : "" %>>
                     <label class="form-check-label" for="interactiveAutoRevertToggle">Enable Interactive Mode auto-revert</label>
@@ -488,6 +528,30 @@
                   <button type="submit" class="btn btn-primary">Save Mode</button>
                 </div>
               </form>
+              <div class="border border-secondary rounded p-3 mt-3">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                  <h6 class="mb-0">Dashboard Setting Profiles</h6>
+                  <button class="btn btn-outline-primary btn-sm" id="loadDefaultDashboardSettingsBtn" type="button">Load Default</button>
+                </div>
+                <div class="small text-muted mb-3">
+                  Default settings are protected and cannot be edited or deleted. Save custom profiles for demo or lab modes.
+                </div>
+                <div class="input-group input-group-sm mb-2">
+                  <input class="form-control" id="dashboardSettingsProfileName" type="text" maxlength="60" placeholder="e.g. Week 7 Demo Settings">
+                  <button class="btn btn-outline-success" id="saveDashboardSettingsProfileBtn" type="button">Save Profile</button>
+                </div>
+                <div class="input-group input-group-sm">
+                  <select class="form-select" id="dashboardSettingsProfileSelect">
+                    <option value="">Select dashboard settings profile</option>
+                    <% (typeof dashboardSettingsProfiles !== "undefined" ? dashboardSettingsProfiles : []).forEach(function(profile) { %>
+                      <option value="<%= profile.id %>" data-protected="<%= profile.isProtected ? "1" : "0" %>"><%= profile.name %><%= profile.isProtected ? " (Protected)" : "" %></option>
+                    <% }); %>
+                  </select>
+                  <button class="btn btn-outline-info" id="loadDashboardSettingsProfileBtn" type="button">Load</button>
+                  <button class="btn btn-outline-danger" id="deleteDashboardSettingsProfileBtn" type="button">Delete</button>
+                </div>
+                <div id="dashboardSettingsProfileStatus" class="small text-muted mt-2"></div>
+              </div>
             </div>
 
             <hr class="border-secondary my-4">
@@ -499,8 +563,8 @@
             </div>
 
             <div class="alert alert-secondary mb-3">
-              <strong>Configure Page Timers:</strong> Set the display duration for each dashboard page in <strong>MM:SS</strong> format.
-              Changes are <strong>saved automatically</strong>. These timers are used in Auto Mode.
+              <strong>Configure Page Timers:</strong> Set the display duration for each dashboard page in <strong>MM:SS</strong> format,
+              and pick which background animation plays behind it. Changes are <strong>saved automatically</strong>. These timers are used in Auto Mode.
             </div>
 
             <div class="border border-secondary rounded p-3 mb-3">
@@ -576,24 +640,36 @@
                   const mmStr = String(minutes).padStart(2, '0');
                   const ssStr = String(seconds).padStart(2, '0');
                 %>
+                  <% const timerAnimation = timer.background_animation || 'particles'; %>
                   <div class="timer-row" data-timer-id="<%= timer.timer_id %>" data-page-number="<%= timer.page_number %>">
                     <div class="timer-page-number"><%= timer.page_number %></div>
                     <div class="timer-page-name" title="<%= timer.page_name %>"><%= timer.page_name %></div>
+                    <select
+                      class="timer-animation-select"
+                      data-timer-id="<%= timer.timer_id %>"
+                      aria-label="Background animation for <%= timer.page_name %>">
+                      <option value="particles" <%= timerAnimation === 'particles' ? 'selected' : '' %>>✨ Rising Particles</option>
+                      <option value="rain" <%= timerAnimation === 'rain' ? 'selected' : '' %>>💧 Falling Rain</option>
+                      <option value="sparks" <%= timerAnimation === 'sparks' ? 'selected' : '' %>>⚡ Electric Sparks</option>
+                      <option value="sun" <%= timerAnimation === 'sun' ? 'selected' : '' %>>☀️ Sun Glow</option>
+                      <option value="leaves" <%= timerAnimation === 'leaves' ? 'selected' : '' %>>🍃 Drifting Leaves</option>
+                      <option value="none" <%= timerAnimation === 'none' ? 'selected' : '' %>>🚫 None</option>
+                    </select>
                     <div class="timer-input-group">
-                      <input 
-                        type="text" 
-                        class="timer-input timer-minutes" 
-                        value="<%= mmStr %>" 
-                        maxlength="2" 
+                      <input
+                        type="text"
+                        class="timer-input timer-minutes"
+                        value="<%= mmStr %>"
+                        maxlength="2"
                         placeholder="MM"
                         data-timer-id="<%= timer.timer_id %>"
                         aria-label="Minutes for <%= timer.page_name %>">
                       <span class="timer-separator">:</span>
-                      <input 
-                        type="text" 
-                        class="timer-input timer-seconds" 
-                        value="<%= ssStr %>" 
-                        maxlength="2" 
+                      <input
+                        type="text"
+                        class="timer-input timer-seconds"
+                        value="<%= ssStr %>"
+                        maxlength="2"
                         placeholder="SS"
                         data-timer-id="<%= timer.timer_id %>"
                         aria-label="Seconds for <%= timer.page_name %>">
@@ -999,7 +1075,7 @@
                       <label class="form-check-label" for="healthCheckToggle">Health Check Monitoring</label>
                     </div>
                     <div class="small text-muted mt-2">
-                      Runs every day at the selected time and checks the app, database, memory, CPU, disk, uptime, and battery when available.
+                      Shows only PC health and application health for quick troubleshooting.
                     </div>
                     <div class="row g-2 mt-3 align-items-end">
                       <div class="col-7">
@@ -1017,7 +1093,21 @@
                         <%= (typeof healthSnapshot !== "undefined" && healthSnapshot && healthSnapshot.status) ? healthSnapshot.status : "unknown" %>
                       </span>
                     </div>
-                    <pre class="small text-muted mt-3 mb-0" id="healthDetails" style="white-space: pre-wrap;"><%= JSON.stringify(typeof healthSnapshot !== "undefined" ? healthSnapshot : {}, null, 2) %></pre>
+                    <div class="mt-3">
+                      <label class="form-label">Process controls</label>
+                      <div class="d-flex flex-wrap gap-2 mb-2">
+                        <button class="btn btn-outline-success btn-sm process-control-btn" data-target="app" data-action="start" type="button">Start App</button>
+                        <button class="btn btn-outline-warning btn-sm process-control-btn" data-target="app" data-action="restart" type="button">Restart App</button>
+                        <button class="btn btn-outline-danger btn-sm process-control-btn" data-target="app" data-action="stop" type="button">Stop App</button>
+                      </div>
+                      <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-success btn-sm process-control-btn" data-target="database" data-action="start" type="button">Start Database</button>
+                        <button class="btn btn-outline-warning btn-sm process-control-btn" data-target="database" data-action="restart" type="button">Restart Database</button>
+                        <button class="btn btn-outline-danger btn-sm process-control-btn" data-target="database" data-action="stop" type="button">Stop Database</button>
+                      </div>
+                      <div class="small text-muted mt-2" id="processControlStatus">Use with care: stopping the app may close this admin page until the app is started again.</div>
+                    </div>
+                    <div class="mt-3 small" id="healthDetails">Click Check Health to refresh PC and application health.</div>
                   </div>
                 </div>
               </div>
@@ -1025,22 +1115,41 @@
               <div class="col-12 col-lg-6">
                 <div class="card bg-dark text-white border-secondary h-100">
                   <div class="card-body">
-                    <div class="form-check form-switch">
-                      <input
-                        class="form-check-input automation-toggle"
-                        type="checkbox"
-                        role="switch"
-                        id="autoHibernateToggle"
-                        data-key="autoHibernateEnabled"
-                        <%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoHibernateEnabled) ? "checked" : "" %>>
-                      <label class="form-check-label" for="autoHibernateToggle">Auto-Hibernate</label>
+                    <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                      <h5 class="mb-0">Hibernate / Wake Schedule</h5>
+                      <button class="btn btn-outline-primary btn-sm" id="saveWakeSettingsBtn" type="button">Save Schedule</button>
                     </div>
                     <div class="small text-muted mt-2">
-                      Set when hibernate should run. Dry run tests the script path without hibernating your laptop.
+                      Hibernate pauses the laptop overnight. Wake uses Windows scheduling to resume from sleep/hibernate at the wake time.
+                    </div>
+                    <div class="row g-2 mt-3">
+                      <div class="col-12 col-md-6">
+                        <div class="form-check form-switch">
+                          <input
+                            class="form-check-input automation-toggle"
+                            type="checkbox"
+                            role="switch"
+                            id="autoHibernateToggle"
+                            data-key="autoHibernateEnabled"
+                            <%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoHibernateEnabled) ? "checked" : "" %>>
+                          <label class="form-check-label" for="autoHibernateToggle">Enable Hibernate</label>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <div class="form-check form-switch">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            role="switch"
+                            id="autoWakeToggle"
+                            <%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoWakeEnabled) ? "checked" : "" %>>
+                          <label class="form-check-label" for="autoWakeToggle">Enable Wake</label>
+                        </div>
+                      </div>
                     </div>
                     <div class="row g-2 mt-3">
                       <div class="col-6">
-                        <label class="form-label" for="hibernateStartTime">From</label>
+                        <label class="form-label" for="hibernateStartTime">Hibernate at</label>
                         <input
                           type="time"
                           class="form-control form-control-sm"
@@ -1048,7 +1157,7 @@
                           value="<%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoHibernateSchedule && automationConfig.autoHibernateSchedule.startTime) ? automationConfig.autoHibernateSchedule.startTime : "22:00" %>">
                       </div>
                       <div class="col-6">
-                        <label class="form-label" for="hibernateEndTime">To</label>
+                        <label class="form-label" for="hibernateEndTime">Wake at</label>
                         <input
                           type="time"
                           class="form-control form-control-sm"
@@ -1056,14 +1165,15 @@
                           value="<%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoHibernateSchedule && automationConfig.autoHibernateSchedule.endTime) ? automationConfig.autoHibernateSchedule.endTime : "07:00" %>">
                       </div>
                       <div class="col-12">
-                        <small class="text-muted">Saved automatically. Real hibernate remains disabled in the script until approved.</small>
+                        <small class="text-muted">Save Schedule stores both Hibernate at and Wake at. The wake task uses the Wake at time.</small>
                       </div>
                     </div>
+                    <div class="small text-muted mt-2" id="wakeTaskStatus"></div>
                     <div class="mt-3">
                       <label class="form-label">Weekly hibernate schedule</label>
                       <div class="table-responsive">
                         <table class="table table-dark table-sm align-middle mb-0">
-                          <thead><tr><th>Day</th><th>Enabled</th><th>From</th><th>To</th></tr></thead>
+                          <thead><tr><th>Day</th><th>Enabled</th><th>Hibernate at</th><th>Wake at</th></tr></thead>
                           <tbody>
                             <% ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].forEach(function(day) {
                               const dayConfig = (automationConfig && automationConfig.autoHibernateSchedule && automationConfig.autoHibernateSchedule.days && automationConfig.autoHibernateSchedule.days[day]) || {};
@@ -1097,11 +1207,32 @@
                         <button class="btn btn-outline-danger" id="deleteHibernateProfileBtn" type="button">Delete</button>
                       </div>
                     </div>
-                    <button class="btn btn-outline-warning btn-sm mt-3" id="hibernateDryRunBtn" type="button">
-                      Run Hibernate Dry Run
-                    </button>
+                    <div class="border border-secondary rounded p-3 mt-3">
+                      <button
+                        class="btn btn-outline-light btn-sm d-flex align-items-center justify-content-between w-100"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#hibernateAdvancedCollapse"
+                        aria-expanded="false"
+                        aria-controls="hibernateAdvancedCollapse">
+                        <span>Advanced / Demo Controls</span>
+                        <span aria-hidden="true">v</span>
+                      </button>
+                      <div class="collapse mt-3" id="hibernateAdvancedCollapse">
+                        <div class="d-flex flex-wrap gap-2">
+                          <button class="btn btn-outline-warning btn-sm" id="wakeDryRunBtn" type="button">Test Wake Task</button>
+                          <button class="btn btn-outline-info btn-sm" id="registerWakeTaskBtn" type="button">Register Wake Task</button>
+                          <button class="btn btn-outline-light btn-sm" id="shutdownCapabilityBtn" type="button">Check Full Shutdown Support</button>
+                          <button class="btn btn-outline-warning btn-sm" id="hibernateDryRunBtn" type="button">Test Hibernate Script</button>
+                          <button class="btn btn-danger btn-sm" id="hibernateNowBtn" type="button">Hibernate Now</button>
+                        </div>
+                        <div class="small text-muted mt-2">
+                          Register Wake Task may require administrator permission. Hibernate Now can immediately put this laptop into hibernate.
+                        </div>
+                      </div>
+                    </div>
                     <div class="small text-muted mt-2" id="hibernateDryRunStatus">
-                      Last dry run:
+                      Last test:
                       <%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.lastHibernateDryRunAt) ? automationConfig.lastHibernateDryRunAt : "Never" %>
                     </div>
                   </div>
@@ -1332,6 +1463,9 @@
               <div class="d-flex align-items-center gap-2">
                 <button type="submit" class="btn btn-primary">Upload XLSX</button>
                 <button type="button" id="clearDataBtn" class="btn btn-danger">Clear All Data</button>
+                <a class="btn btn-success" href="/admin/export-excel" title="Download all ESG data as an Excel workbook">
+                  &#128202; Export to Excel
+                </a>
               </div>
 
               <small class="text-muted d-block mt-2">Saved to: <code>public/uploads/excel</code></small>
@@ -1602,7 +1736,6 @@
     function updateIdleTimeoutState() {
       const isInteractive = $("#dashboardModeSelect").val() === "interactive";
       $("#idleTimeoutMinutes").prop("disabled", !isInteractive).toggleClass("text-muted", !isInteractive);
-      $("#interactiveAutoRevertToggle").prop("disabled", !isInteractive);
     }
 
     $("#dashboardModeSelect").on("change", updateIdleTimeoutState);
@@ -1618,6 +1751,46 @@
       }
     });
     updateIdleTimeoutState();
+
+    const DASHBOARD_SETTINGS_PROFILES_INITIAL = <%- JSON.stringify(typeof dashboardSettingsProfiles !== "undefined" ? dashboardSettingsProfiles : []) %>;
+    let dashboardSettingsProfilesState = Array.isArray(DASHBOARD_SETTINGS_PROFILES_INITIAL) ? DASHBOARD_SETTINGS_PROFILES_INITIAL.slice() : [];
+
+    function setDashboardSettingsProfileStatus(message, type) {
+      const classes = "text-muted text-success text-danger text-warning";
+      $("#dashboardSettingsProfileStatus").removeClass(classes).addClass(type ? "text-" + type : "text-muted").text(message || "");
+    }
+
+    function dashboardSettingsPayload() {
+      return {
+        dashboardMode: $("#dashboardModeSelect").val(),
+        autoSwitchOnActivity: $("#interactiveAutoSwitchToggle").prop("checked"),
+        autoRevertEnabled: $("#interactiveAutoRevertToggle").prop("checked"),
+        idleTimeoutMinutes: $("#idleTimeoutMinutes").val()
+      };
+    }
+
+    function refreshDashboardSettingsProfileSelect(profiles) {
+      dashboardSettingsProfilesState = Array.isArray(profiles) ? profiles : [];
+      const $select = $("#dashboardSettingsProfileSelect");
+      const selected = $select.val();
+      $select.empty().append('<option value="">Select dashboard settings profile</option>');
+      dashboardSettingsProfilesState.forEach(function(profile) {
+        $select.append($("<option>")
+          .val(profile.id)
+          .attr("data-protected", profile.isProtected ? "1" : "0")
+          .text(profile.name + (profile.isProtected ? " (Protected)" : "")));
+      });
+      if (selected) $select.val(selected);
+    }
+
+    function applyDashboardSettingsToUi(profile) {
+      const settings = profile && profile.settings ? profile.settings : {};
+      $("#dashboardModeSelect").val(settings.dashboardMode || "auto");
+      $("#interactiveAutoSwitchToggle").prop("checked", settings.autoSwitchOnActivity !== false);
+      $("#interactiveAutoRevertToggle").prop("checked", settings.autoRevertEnabled !== false);
+      $("#idleTimeoutMinutes").val(settings.idleTimeoutMinutes || 15);
+      updateIdleTimeoutState();
+    }
 
     function setTimerProfileStatus(message, type) {
       const classes = "text-muted text-success text-danger text-warning";
@@ -1646,6 +1819,9 @@
         if (!$row.length) return;
         $row.find(".timer-minutes").val(String(minutes).padStart(2, "0"));
         $row.find(".timer-seconds").val(String(seconds).padStart(2, "0"));
+        if (timer.background_animation) {
+          $row.find(".timer-animation-select").val(timer.background_animation);
+        }
         updateSecondsDisplay($row);
       });
     }
@@ -1657,7 +1833,8 @@
         rows.push({
           page_number: Number($row.data("page-number")),
           page_name: String($row.find(".timer-page-name").text() || "").trim(),
-          duration_seconds: getTimerSeconds($row)
+          duration_seconds: getTimerSeconds($row),
+          background_animation: getTimerAnimation($row)
         });
       });
       return rows;
@@ -1680,6 +1857,76 @@
       }
       return json;
     }
+
+    $("#loadDefaultDashboardSettingsBtn").on("click", async function() {
+      if (!confirm("Load protected default dashboard settings?")) return;
+      try {
+        const json = await postJson("/admin/dashboard-settings/default", {});
+        const profile = (dashboardSettingsProfilesState || []).find(function(item) { return item.id === "default"; });
+        applyDashboardSettingsToUi(profile || { settings: { dashboardMode: "auto", autoSwitchOnActivity: true, autoRevertEnabled: true, idleTimeoutMinutes: 15 } });
+        setDashboardSettingsProfileStatus("Default dashboard settings loaded.", "success");
+      } catch (error) {
+        setDashboardSettingsProfileStatus(error.message, "danger");
+      }
+    });
+
+    $("#saveDashboardSettingsProfileBtn").on("click", async function() {
+      const name = String($("#dashboardSettingsProfileName").val() || "").trim();
+      if (!name) {
+        setDashboardSettingsProfileStatus("Enter a profile name first.", "warning");
+        return;
+      }
+      try {
+        const json = await postJson("/admin/dashboard-settings/profiles", { name, settings: dashboardSettingsPayload() });
+        refreshDashboardSettingsProfileSelect(json.profiles || []);
+        $("#dashboardSettingsProfileSelect").val(json.profile.id);
+        $("#dashboardSettingsProfileName").val("");
+        setDashboardSettingsProfileStatus("Dashboard settings profile saved.", "success");
+      } catch (error) {
+        setDashboardSettingsProfileStatus(error.message, "danger");
+      }
+    });
+
+    $("#loadDashboardSettingsProfileBtn").on("click", async function() {
+      const profileId = $("#dashboardSettingsProfileSelect").val();
+      if (!profileId) {
+        setDashboardSettingsProfileStatus("Select a dashboard settings profile to load.", "warning");
+        return;
+      }
+      try {
+        const json = await postJson("/admin/dashboard-settings/profiles/" + encodeURIComponent(profileId) + "/load", {});
+        applyDashboardSettingsToUi(json.profile || {});
+        setDashboardSettingsProfileStatus("Dashboard settings profile loaded.", "success");
+      } catch (error) {
+        setDashboardSettingsProfileStatus(error.message, "danger");
+      }
+    });
+
+    $("#deleteDashboardSettingsProfileBtn").on("click", async function() {
+      const profileId = $("#dashboardSettingsProfileSelect").val();
+      if (!profileId) {
+        setDashboardSettingsProfileStatus("Select a dashboard settings profile to delete.", "warning");
+        return;
+      }
+      const selectedOption = $("#dashboardSettingsProfileSelect option:selected");
+      if (selectedOption.data("protected") === 1 || selectedOption.attr("data-protected") === "1") {
+        setDashboardSettingsProfileStatus("Default dashboard settings cannot be deleted.", "warning");
+        return;
+      }
+      if (!confirm("Delete this dashboard settings profile?")) return;
+      try {
+        const response = await fetch("/admin/dashboard-settings/profiles/" + encodeURIComponent(profileId), {
+          method: "DELETE",
+          credentials: "same-origin"
+        });
+        const json = await response.json().catch(function() { return {}; });
+        if (!response.ok || json.ok === false) throw new Error(json.error || "Delete failed");
+        refreshDashboardSettingsProfileSelect(json.profiles || []);
+        setDashboardSettingsProfileStatus("Dashboard settings profile deleted.", "success");
+      } catch (error) {
+        setDashboardSettingsProfileStatus(error.message, "danger");
+      }
+    });
 
     $(".automation-toggle").on("change", async function() {
       const toggle = this;
@@ -1773,7 +2020,34 @@
     function renderHealth(snapshot) {
       const health = snapshot && snapshot.status ? snapshot : {};
       $("#healthStatusBadge").text(health.status || "unknown");
-      $("#healthDetails").text(JSON.stringify(health, null, 2));
+      const checks = health.checks || {};
+      const hardware = checks.hardware || {};
+      const dashboard = checks.dashboard || {};
+      const database = checks.database || {};
+      const backend = checks.backend || {};
+      const process = checks.process || {};
+      const pcOk = hardware.ok !== false;
+      const appOk = dashboard.ok !== false && database.ok !== false && backend.ok !== false && process.ok !== false;
+      const pcLines = [
+        "Status: " + (pcOk ? "OK" : "Needs attention"),
+        "Memory: " + (hardware.memoryUsedPercent != null ? hardware.memoryUsedPercent + "% used" : "Unknown"),
+        "Disk: " + (hardware.diskFreePercent != null ? hardware.diskFreePercent + "% free" : "Unknown"),
+        "Battery: " + (hardware.battery && hardware.battery.EstimatedChargeRemaining != null ? hardware.battery.EstimatedChargeRemaining + "%" : "Not available"),
+        "Uptime: " + (hardware.uptimeHours != null ? hardware.uptimeHours + " hours" : "Unknown")
+      ];
+      const appLines = [
+        "Status: " + (appOk ? "OK" : "Needs attention"),
+        "Dashboard: " + (dashboard.message || "Unknown"),
+        "Database: " + (database.message || "Unknown"),
+        "Server: " + (backend.message || process.message || "Unknown")
+      ];
+      $("#healthDetails").html(
+        '<div class="p-2 border border-secondary rounded mb-2"><strong>PC Health</strong><br>' +
+        pcLines.map(function(line) { return $("<div>").text(line).prop("outerHTML"); }).join("") +
+        '</div><div class="p-2 border border-secondary rounded"><strong>Application Health</strong><br>' +
+        appLines.map(function(line) { return $("<div>").text(line).prop("outerHTML"); }).join("") +
+        '</div>'
+      );
     }
 
     $("#refreshHealthBtn").on("click", async function() {
@@ -1781,8 +2055,28 @@
         const response = await fetch("/admin/health/json", { headers: { "Accept": "application/json" } });
         const json = await response.json();
         renderHealth(json.health || {});
+        if (json.processes) {
+          $("#processControlStatus").text("App: " + (json.processes.app || "unknown") + " Database: " + (json.processes.database || "unknown"));
+        }
       } catch (error) {
         renderHealth({ status: "degraded", checkedAt: new Date().toISOString(), checks: { ui: { ok: false, message: error.message } } });
+      }
+    });
+
+    $(".process-control-btn").on("click", async function() {
+      const $btn = $(this);
+      const target = $btn.data("target");
+      const action = $btn.data("action");
+      if ((action === "stop" || action === "restart") && !confirm("Continue with " + action + " for " + target + "?")) return;
+      const original = $btn.text();
+      $btn.prop("disabled", true).text("Working...");
+      try {
+        const json = await postJson("/admin/process-control", { target, action });
+        $("#processControlStatus").removeClass("text-danger").addClass("text-success").text(json.output || (action + " requested."));
+      } catch (error) {
+        $("#processControlStatus").removeClass("text-success").addClass("text-danger").text(error.message);
+      } finally {
+        $btn.prop("disabled", false).text(original);
       }
     });
 
@@ -1794,6 +2088,64 @@
         $("#healthStatusBadge").text("Scheduled " + json.automation.healthCheckTime);
       } catch (error) {
         alert(error.message);
+      }
+    });
+
+    function wakeSchedulePayload() {
+      return {
+        enabled: $("#autoWakeToggle").prop("checked"),
+        wakeTime: $("#hibernateEndTime").val()
+      };
+    }
+
+    $("#saveWakeSettingsBtn").on("click", async function() {
+      try {
+        const json = await postJson("/admin/automation/wake-settings", wakeSchedulePayload());
+        $("#wakeTaskStatus").removeClass("text-danger").addClass("text-success").text("Wake settings saved for " + json.automation.autoWakeSchedule.wakeTime + ". This should match the Wake at time.");
+      } catch (error) {
+        $("#wakeTaskStatus").removeClass("text-success").addClass("text-danger").text(error.message);
+      }
+    });
+
+    $("#wakeDryRunBtn").on("click", async function() {
+      try {
+        await postJson("/admin/automation/wake-settings", wakeSchedulePayload());
+        const json = await postJson("/admin/automation/wake-dry-run", {});
+        $("#wakeTaskStatus").removeClass("text-danger").addClass("text-success").text((json.message || "Wake dry run successful.") + " " + (json.scriptOutput || ""));
+      } catch (error) {
+        $("#wakeTaskStatus").removeClass("text-success").addClass("text-danger").text(error.message);
+      }
+    });
+
+    $("#registerWakeTaskBtn").on("click", async function() {
+      if (!$("#autoWakeToggle").prop("checked")) {
+        alert("Turn on Auto-Wake before registering the Windows wake task.");
+        return;
+      }
+      if (!confirm("Register a Windows Scheduled Task that can wake this laptop and start the dashboard?")) return;
+      try {
+        await postJson("/admin/automation/wake-settings", wakeSchedulePayload());
+        const json = await postJson("/admin/automation/wake-register", {});
+        $("#wakeTaskStatus").removeClass("text-danger").addClass("text-success").text((json.message || "Wake task registered.") + " " + (json.scriptOutput || ""));
+      } catch (error) {
+        $("#wakeTaskStatus").removeClass("text-success").addClass("text-danger").text(error.message);
+      }
+    });
+
+    $("#shutdownCapabilityBtn").on("click", async function() {
+      try {
+        const response = await fetch("/admin/automation/shutdown-start-capability", {
+          headers: { "Accept": "application/json" },
+          credentials: "same-origin"
+        });
+        const json = await response.json();
+        if (!response.ok || json.ok === false) throw new Error(json.error || "Capability check failed");
+        $("#wakeTaskStatus")
+          .removeClass("text-danger")
+          .addClass("text-warning")
+          .text(json.summary + " Options: " + (json.options || []).join(" "));
+      } catch (error) {
+        $("#wakeTaskStatus").removeClass("text-success").addClass("text-danger").text(error.message);
       }
     });
 
@@ -1855,7 +2207,7 @@
           $("#hibernateDryRunStatus")
             .removeClass("text-danger")
             .addClass("text-muted")
-            .text("Hibernate schedule saved: " + json.automation.autoHibernateSchedule.startTime + " to " + json.automation.autoHibernateSchedule.endTime + ". Last dry run: " + (json.automation.lastHibernateDryRunAt || "Never"));
+            .text("Hibernate schedule saved: hibernate at " + json.automation.autoHibernateSchedule.startTime + ", wake at " + json.automation.autoHibernateSchedule.endTime + ". Last test: " + (json.automation.lastHibernateDryRunAt || "Never"));
         } catch (error) {
           $("#hibernateDryRunStatus")
             .removeClass("text-success")
@@ -1957,6 +2309,26 @@
       }
     });
 
+    $("#hibernateNowBtn").on("click", async function() {
+      if (!$("#autoHibernateToggle").prop("checked")) {
+        alert("Turn on Auto-Hibernate before using Hibernate Now.");
+        return;
+      }
+      if (!confirm("Hibernate this laptop now for a live demo? The dashboard will disconnect until the laptop wakes again.")) return;
+      try {
+        const json = await postJson("/admin/automation/hibernate-now", {});
+        $("#hibernateDryRunStatus")
+          .removeClass("text-danger")
+          .addClass("text-success")
+          .text(json.message || "Hibernate requested.");
+      } catch (error) {
+        $("#hibernateDryRunStatus")
+          .removeClass("text-success")
+          .addClass("text-danger")
+          .text(error.message);
+      }
+    });
+
     // ============================================================
     // TIMER SETTINGS: AUTO-SAVE WITH MM:SS INPUT
     // ============================================================
@@ -2002,20 +2374,25 @@
       }, 1500);
     }
 
+    function getTimerAnimation($row) {
+      return $row.find(".timer-animation-select").val() || "particles";
+    }
+
     async function saveTimer($row) {
       const timerId = $row.data("timer-id");
       const totalSeconds = getTimerSeconds($row);
-      
+      const backgroundAnimation = getTimerAnimation($row);
+
       $row.removeClass("saved error").addClass("saving");
       setTimerChip("saving");
-      
+
       try {
         const response = await fetch("/admin/timers/" + timerId, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ duration_seconds: totalSeconds })
+          body: JSON.stringify({ duration_seconds: totalSeconds, background_animation: backgroundAnimation })
         });
         
         if (!response.ok) {
@@ -2051,6 +2428,11 @@
         saveTimer($row);
       }, 800);
     }
+
+    $(document).on("change", ".timer-animation-select", function() {
+      const $row = $(this).closest(".timer-row");
+      saveTimer($row);
+    });
 
     $(document).on("focus", ".timer-minutes, .timer-seconds", function() {
       const input = this;

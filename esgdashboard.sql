@@ -160,24 +160,25 @@ CREATE TABLE `timers` (
   `account_id` int(11) NOT NULL DEFAULT 1,
   `page_number` int(11) NOT NULL,
   `page_name` varchar(100) NOT NULL,
-  `duration_seconds` int(11) NOT NULL DEFAULT 15
+  `duration_seconds` int(11) NOT NULL DEFAULT 15,
+  `background_animation` varchar(20) NOT NULL DEFAULT 'particles'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `timers`
 --
 
-INSERT INTO `timers` (`timer_id`, `account_id`, `page_number`, `page_name`, `duration_seconds`) VALUES
-(1, 1, 1, 'Welcome / Intro', 3),
-(2, 1, 2, 'Campus Overview', 30),
-(3, 1, 3, 'Electricity Usage', 30),
-(4, 1, 4, 'Water Usage', 30),
-(5, 1, 5, 'Building Comparison', 30),
-(6, 1, 6, 'Solar Energy', 30),
-(7, 1, 7, 'Waste Management', 30),
-(8, 1, 8, 'Media / Video Playback', 1),
-(9, 1, 9, 'Sustainability Highlights', 15),
-(10, 1, 10, 'Thank You / Loop Restart', 5);
+INSERT INTO `timers` (`timer_id`, `account_id`, `page_number`, `page_name`, `duration_seconds`, `background_animation`) VALUES
+(1, 1, 1, 'Welcome / Intro', 3, 'rain'),
+(2, 1, 2, 'Campus Overview', 30, 'particles'),
+(3, 1, 3, 'Electricity Usage', 30, 'sparks'),
+(4, 1, 4, 'Water Usage', 30, 'particles'),
+(5, 1, 5, 'Building Comparison', 30, 'particles'),
+(6, 1, 6, 'Solar Energy', 30, 'particles'),
+(7, 1, 7, 'Waste Management', 30, 'particles'),
+(8, 1, 8, 'Media / Video Playback', 1, 'particles'),
+(9, 1, 9, 'Sustainability Highlights', 15, 'particles'),
+(10, 1, 10, 'Thank You / Loop Restart', 5, 'particles');
 
 -- --------------------------------------------------------
 
