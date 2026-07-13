@@ -845,19 +845,6 @@
       -webkit-text-fill-color:transparent; color:transparent;
       font-weight:800;
     }
-    .ai-chips{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
-    .ai-chip{
-      background:var(--aiGlassSoft);
-      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
-      border:var(--aiGlassBorder);
-      color:var(--text); padding:9px 14px; border-radius:999px; font-size:13px; cursor:pointer;
-      transition:transform .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
-    }
-    .ai-chip:hover{
-      border-color:var(--aiAccent); color:var(--aiAccent);
-      transform:translateY(-2px); box-shadow:0 6px 16px rgba(52,211,153,0.18);
-    }
-
     .ai-foot{
       flex:0 0 auto; border-top:var(--aiGlassBorder); padding:12px 14px;
       background:var(--aiGlassPanel);
@@ -884,27 +871,12 @@
     #aiSend:disabled{ opacity:0.45; cursor:not-allowed; box-shadow:none; }
     .ai-note{ text-align:center; color:var(--muted); font-size:10px; margin-top:8px; }
 
-    /* ── Quick-question panel (touch-only, no-keyboard friendly) ── */
-    #aiQuickToggle{
-      flex:0 0 auto; width:48px; height:48px;
-      display:flex; align-items:center; justify-content:center;
-      background:var(--aiGlassSoft);
-      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
-      border:var(--aiGlassBorder); border-radius:14px;
-      font-size:19px; cursor:pointer;
-      transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-    }
-    #aiQuickToggle.active{ border-color:var(--aiAccent); box-shadow:0 0 0 3px rgba(52,211,153,0.18); }
-    #aiQuickToggle:hover{ transform:translateY(-2px); }
+    /* ── Quick questions are the default view; "type your own" swaps to
+       the text input + on-screen keyboard (touch-only, no-keyboard
+       friendly kiosk use). ── */
+    #aiQuickView.hidden,
+    #aiTypeView.hidden{ display:none; }
 
-    #aiQuickPanel{
-      background:var(--aiGlassSoft);
-      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
-      border:var(--aiGlassBorder); border-radius:16px;
-      padding:12px; margin-bottom:10px;
-      max-height:34vh; overflow-y:auto;
-    }
-    #aiQuickPanel.hidden{ display:none; }
     .ai-quickTabs{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
     .ai-quickTab{
       background:rgba(255,255,255,0.05);
@@ -2305,23 +2277,25 @@
     <div class="ai-messages" id="aiMessages">
       <div class="ai-welcome" id="aiWelcome">
         Ask me anything about <b>RP's sustainability</b> &mdash; ESG, electricity, water, solar, or waste.
-        <div class="ai-chips">
-          <span class="ai-chip">What is ESG?</span>
-          <span class="ai-chip">Why does saving electricity matter?</span>
-          <span class="ai-chip">3 simple ways to reduce waste</span>
-        </div>
+        Pick a question below, or tap "Ask something else" to type your own.
       </div>
     </div>
     <div class="ai-foot">
-      <div id="aiQuickPanel" class="hidden">
+      <div id="aiQuickView">
         <div class="ai-quickTabs" id="aiQuickTabs"></div>
         <div class="ai-quickList" id="aiQuickList"></div>
+        <button id="aiTypeToggle" class="ai-typeToggle" type="button">⌨️ Ask something else</button>
       </div>
-      <div class="ai-inputRow">
-        <button id="aiQuickToggle" type="button" title="Quick questions">💡</button>
-        <textarea id="aiInput" placeholder="Type your question..." rows="1"></textarea>
-        <button id="aiSend" type="button">Send</button>
+
+      <div id="aiTypeView" class="hidden">
+        <div class="ai-inputRow">
+          <button id="aiBackToQuick" class="ai-backBtn" type="button" title="Back to quick questions">&lsaquo;</button>
+          <textarea id="aiInput" placeholder="Type your question..." rows="1"></textarea>
+          <button id="aiSend" type="button">Send</button>
+        </div>
+        <div class="ai-keyboard" id="aiKeyboard"></div>
       </div>
+
       <div class="ai-note">Your conversation stays on this machine. Nothing is sent to the internet.</div>
     </div>
   </aside>
@@ -2387,10 +2361,13 @@
     const welcome   = document.getElementById("aiWelcome");
     const input     = document.getElementById("aiInput");
     const sendBtn   = document.getElementById("aiSend");
-    const quickToggle = document.getElementById("aiQuickToggle");
-    const quickPanel  = document.getElementById("aiQuickPanel");
+    const quickView   = document.getElementById("aiQuickView");
+    const typeView    = document.getElementById("aiTypeView");
+    const typeToggle  = document.getElementById("aiTypeToggle");
+    const backToQuick = document.getElementById("aiBackToQuick");
     const quickTabs   = document.getElementById("aiQuickTabs");
     const quickList   = document.getElementById("aiQuickList");
+    const keyboardEl  = document.getElementById("aiKeyboard");
 
     const history = [];
     let busy = false;
@@ -2460,14 +2437,106 @@
       const q = e.target.closest(".ai-quickQ");
       if (!q) return;
       input.value = q.textContent;
-      quickPanel.classList.add("hidden");
-      quickToggle.classList.remove("active");
       send();
     });
 
-    quickToggle.addEventListener("click", () => {
-      quickPanel.classList.toggle("hidden");
-      quickToggle.classList.toggle("active");
+    // Default view is the quick-question list; "Ask something else" swaps
+    // to a free-text box with an on-screen keyboard for touch-only kiosks.
+    function showTypeView(){
+      quickView.classList.add("hidden");
+      typeView.classList.remove("hidden");
+      setTimeout(() => input.focus(), 50);
+    }
+    function showQuickView(){
+      typeView.classList.add("hidden");
+      quickView.classList.remove("hidden");
+    }
+    typeToggle.addEventListener("click", showTypeView);
+    backToQuick.addEventListener("click", showQuickView);
+
+    // ── On-screen keyboard ──
+    const KB_LAYERS = {
+      letters: [
+        ["q","w","e","r","t","y","u","i","o","p"],
+        ["a","s","d","f","g","h","j","k","l"],
+        ["⇧","z","x","c","v","b","n","m","⌫"],
+        ["123",",","space",".","↵"]
+      ],
+      numbers: [
+        ["1","2","3","4","5","6","7","8","9","0"],
+        ["-","/",":",";","(",")","$","&","@","\""],
+        [".",",","?","!","'","⌫"],
+        ["ABC","space","↵"]
+      ]
+    };
+    const KEY_LABELS = { "space": "", "⌫": "⌫", "↵": "Send ↵" };
+    const WIDE_KEYS = new Set(["⇧","⌫","↵","123","ABC"]);
+    let kbLayer = "letters";
+    let kbShift = false;
+
+    function renderKeyboard(){
+      keyboardEl.innerHTML = "";
+      KB_LAYERS[kbLayer].forEach(row => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "ai-kbRow";
+        row.forEach(key => {
+          const keyEl = document.createElement("button");
+          keyEl.type = "button";
+          keyEl.dataset.key = key;
+          let label = key in KEY_LABELS ? KEY_LABELS[key] : key;
+          if (kbLayer === "letters" && key.length === 1 && kbShift) label = key.toUpperCase();
+
+          let cls = "ai-key";
+          if (key === "space") cls += " ai-key-space";
+          else if (WIDE_KEYS.has(key)) cls += " ai-key-wide";
+          if (key === "↵") cls += " ai-key-accent";
+          if (key === "⇧" && kbShift) cls += " active";
+          keyEl.className = cls;
+          keyEl.textContent = label;
+          rowEl.appendChild(keyEl);
+        });
+        keyboardEl.appendChild(rowEl);
+      });
+    }
+    renderKeyboard();
+
+    function insertAtCursor(text){
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      input.value = input.value.slice(0, start) + text + input.value.slice(end);
+      const pos = start + text.length;
+      input.setSelectionRange(pos, pos);
+      input.focus();
+      autoGrow();
+    }
+
+    keyboardEl.addEventListener("click", e => {
+      const keyEl = e.target.closest(".ai-key");
+      if (!keyEl) return;
+      const key = keyEl.dataset.key;
+
+      if (key === "⇧"){ kbShift = !kbShift; renderKeyboard(); return; }
+      if (key === "123"){ kbLayer = "numbers"; renderKeyboard(); return; }
+      if (key === "ABC"){ kbLayer = "letters"; kbShift = false; renderKeyboard(); return; }
+      if (key === "space"){ insertAtCursor(" "); return; }
+      if (key === "↵"){ send(); return; }
+      if (key === "⌫"){
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? input.value.length;
+        if (start === end && start > 0){
+          input.value = input.value.slice(0, start - 1) + input.value.slice(end);
+          input.setSelectionRange(start - 1, start - 1);
+        } else {
+          input.value = input.value.slice(0, start) + input.value.slice(end);
+          input.setSelectionRange(start, start);
+        }
+        autoGrow(); input.focus();
+        return;
+      }
+
+      const ch = (kbLayer === "letters" && kbShift) ? key.toUpperCase() : key;
+      insertAtCursor(ch);
+      if (kbShift){ kbShift = false; renderKeyboard(); } // one-shot shift, like mobile keyboards
     });
 
     function openPanel(){
@@ -2557,9 +2626,6 @@
     sendBtn.addEventListener("click", send);
     input.addEventListener("keydown", e => {
       if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); }
-    });
-    messages.addEventListener("click", e => {
-      if (e.target.classList.contains("ai-chip")){ input.value = e.target.textContent; send(); }
     });
   })();
   </script>
