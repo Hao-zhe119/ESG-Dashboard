@@ -58,6 +58,21 @@
   --panel-ratio-mid: 1.5;
   --panel-ratio-right: 0.75;
   --panel-ratio-total: 3; 
+  --graphSurface: #f7f9fc;
+  --graphSurfaceDark: #101827;
+  --graphCardSurface: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,249,253,0.94) 100%);
+  --graphCardBorder: rgba(148,163,184,0.22);
+  --graphCardShadow: 0 24px 58px rgba(2,6,23,0.26), 0 2px 10px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.92);
+  --graphPlotSurface: rgba(248,250,252,0.58);
+  --graphBorder: rgba(30,41,59,0.08);
+  --graphShadow: none;
+  --graphRadius: 18px;
+  --metricElectricity: #2563eb;
+  --metricWater: #0891b2;
+  --metricSolar: #d97706;
+  --metricWaste: #64748b;
+  --metricRecyclable: #16a34a;
+  --metricCarbon: #ea580c;
 }
 
 
@@ -530,18 +545,20 @@ body.mode-interactive #progressBarContainer { display: none; }
 }
 
 .multi-building-title {
-  font-size: clamp(22px, 2.2vw, 36px);
-  margin: 0 0 10px 0;
+  font-size: clamp(26px, 2.6vw, 46px);
+  margin: 0 0 8px 0;
   color: var(--text);
   text-align: center;
-  font-weight: 700;
+  font-weight: 850;
+  line-height: 1.06;
 }
 
 .multi-building-subtitle {
-  font-size: clamp(14px, 1.2vw, 18px);
-  margin: 0 0 12px 0;
+  font-size: clamp(15px, 1.25vw, 22px);
+  margin: 0 0 10px 0;
   color: var(--muted);
   text-align: center;
+  font-weight: 650;
 }
 
 #page2 .page2-body {
@@ -824,13 +841,14 @@ body.mode-interactive #page7 .three-panel {
    THREE-PANEL CONTENT STYLES
    ======================================== */
 .three-building-title {
-  font-size: clamp(16px, 1.4vw, 22px);
-  margin: 0 0 6px 0;
+  font-size: clamp(18px, 1.65vw, 30px);
+  margin: 0 0 8px 0;
   color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 700;
+  font-weight: 850;
+  line-height: 1.08;
 }
 
 #page5 .three-building-title,
@@ -911,25 +929,227 @@ body.mode-interactive #page7 .three-panel {
   text-overflow: ellipsis;
 }
 
+.analytics-card {
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 1.4vh, 22px);
+  padding: clamp(18px, 1.45vw, 32px);
+  border-radius: var(--graphRadius);
+  border: 1px solid var(--graphCardBorder);
+  background: var(--graphCardSurface);
+  box-shadow: var(--graphCardShadow);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  overflow: hidden;
+  color: #111827;
+}
+
+.analytics-card-full {
+  flex: 1;
+  max-width: min(92vw, 2440px);
+}
+
+.panel-mid .analytics-card {
+  height: 100%;
+}
+
+.analytics-card-header {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: clamp(12px, 1.2vw, 24px);
+  padding-bottom: clamp(10px, 1vh, 16px);
+  border-bottom: 1px solid rgba(148,163,184,0.20);
+}
+
+.chart-title-stack {
+  min-width: 0;
+  text-align: left;
+}
+
+.analytics-card .multi-building-title {
+  margin: 0;
+  color: #111827 !important;
+  text-align: left;
+  font-size: clamp(26px, 2vw, 46px);
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: 0;
+  text-shadow: none !important;
+  animation: none !important;
+}
+
+.analytics-card .three-building-title {
+  margin: 0;
+  color: #111827 !important;
+  text-align: left;
+  font-size: clamp(21px, 1.48vw, 34px);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  text-shadow: none !important;
+  animation: none !important;
+}
+
+.analytics-card .multi-building-subtitle {
+  margin: clamp(6px, 0.55vh, 10px) 0 0;
+  color: #64748b;
+  text-align: left;
+  font-size: clamp(15px, 1.05vw, 22px);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.chart-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  color: #64748b;
+  font-size: clamp(11px, 0.72vw, 15px);
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chart-kicker::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chartAccent, #2563eb);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--chartAccent, #2563eb) 16%, transparent);
+}
+
+.analytics-card-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
 .three-chart-wrap {
   flex: 1;
-  min-height: 240px;
-  margin-top: 8px;
+  min-height: 280px;
+  margin-top: 0;
+  padding: clamp(8px, 0.7vw, 14px);
+  border-radius: calc(var(--graphRadius) - 6px);
+  background: var(--graphPlotSurface);
 }
 
 .three-chart-wrap canvas {
   width: 100% !important;
   height: 100% !important;
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid rgba(17,24,39,0.10);
+  background: transparent;
+  border-radius: calc(var(--graphRadius) - 8px);
+  border: 0;
+  box-shadow: none;
+}
+
+.premium-chart-tooltip {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  min-width: 190px;
+  max-width: min(360px, 82vw);
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(15,23,42,0.95);
+  box-shadow: 0 18px 44px rgba(2,6,23,0.32), inset 0 1px 0 rgba(255,255,255,0.08);
+  color: #f8fafc;
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 14px)) scale(0.97);
+  transform-origin: 50% 100%;
+  transition: opacity .16s ease, transform .16s ease;
+  -webkit-backdrop-filter: blur(18px) saturate(155%);
+  backdrop-filter: blur(18px) saturate(155%);
+}
+
+.pct-title {
+  margin-bottom: 9px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(226,232,240,0.16);
+  color: #ffffff;
+  font-size: clamp(14px, 0.82vw, 18px);
+  font-weight: 850;
+  line-height: 1.15;
+}
+
+.pct-body {
+  display: grid;
+  gap: 7px;
+}
+
+.pct-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  font-size: clamp(13px, 0.76vw, 17px);
+  line-height: 1.2;
+}
+
+.pct-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.10);
+}
+
+.pct-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #cbd5e1;
+  font-weight: 650;
+}
+
+.pct-value {
+  color: #f8fafc;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+body.graph-bg-dark {
+  --graphCardSurface: linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(17,24,39,0.94) 100%);
+  --graphCardBorder: rgba(226,232,240,0.18);
+  --graphCardShadow: 0 26px 64px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08);
+  --graphPlotSurface: rgba(2,6,23,0.22);
+}
+
+body.graph-bg-dark .analytics-card,
+body.graph-bg-dark .analytics-card .multi-building-title,
+body.graph-bg-dark .analytics-card .three-building-title {
+  color: #f8fafc !important;
+}
+
+body.graph-bg-dark .analytics-card .multi-building-subtitle,
+body.graph-bg-dark .chart-kicker {
+  color: #cbd5e1;
+}
+
+body.graph-bg-transparent {
+  --graphCardSurface: rgba(255,255,255,0.74);
+  --graphCardBorder: rgba(255,255,255,0.30);
+  --graphCardShadow: 0 20px 46px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.7);
+  --graphPlotSurface: rgba(255,255,255,0.22);
 }
 
 /* Compare pages (Electricity / Water by building): bars on top, trend line below */
 .three-chart-wrap.compare-split {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: clamp(14px, 1.35vh, 22px);
 }
 .three-chart-wrap.compare-split .compare-bars {
   flex: 1 1 62%;
@@ -1521,20 +1741,46 @@ body.mode-interactive #page7 .three-panel {
 
   <style>
     .compare-color-controls{
-      display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:16px;
-      margin:6px auto 8px; padding:6px 14px; width:fit-content; max-width:92vw;
-      background:rgba(255,255,255,0.94); border-radius:999px;
-      box-shadow:0 2px 10px rgba(0,0,0,.18);
+      display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:8px;
+      margin:0; padding:0; width:auto; max-width:min(46vw, 980px);
+      background:transparent; border:0;
+      border-radius:0;
+      box-shadow:none;
+      -webkit-backdrop-filter:none;
+      backdrop-filter:none;
     }
     .compare-color-controls:empty{ display:none; }
-    .ccc-chip{ display:flex; align-items:center; gap:7px; }
-    .ccc-year{ display:inline-flex; align-items:center; gap:5px; font-weight:700; font-size:13px;
-      color:#374151; background:none; border:none; cursor:pointer; padding:2px 5px; border-radius:6px; }
-    .ccc-year:hover{ background:rgba(0,0,0,.07); }
-    .ccc-year.off{ opacity:.4; text-decoration:line-through; }
-    .ccc-color{ width:18px; height:18px; border-radius:5px; border:2px solid #fff; outline:1px solid #cbd5e1;
-      cursor:pointer; padding:0; transition:transform .1s ease; }
-    .ccc-color:hover{ transform:scale(1.18); }
+    .ccc-chip{
+      display:flex; align-items:center; gap:8px;
+      padding:7px 9px 7px 8px;
+      border:1px solid rgba(148,163,184,0.24);
+      border-radius:999px;
+      background:rgba(255,255,255,0.64);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.82), 0 2px 8px rgba(15,23,42,0.05);
+      transition:transform .16s ease, border-color .16s ease, background .16s ease, opacity .16s ease;
+    }
+    .ccc-chip:hover{ transform:translateY(-1px); border-color:rgba(71,85,105,0.28); background:rgba(255,255,255,0.82); }
+    .ccc-year{
+      display:inline-flex; align-items:center; gap:5px; font-weight:850; font-size:clamp(12px, 0.72vw, 16px);
+      color:#1e293b; background:transparent; border:none; cursor:pointer; padding:0; border-radius:0;
+      line-height:1.1; transition:color .16s ease, opacity .16s ease; white-space:nowrap;
+    }
+    .ccc-year:hover{ color:#0f172a; background:transparent; }
+    .ccc-year.off{ opacity:.42; text-decoration:line-through; }
+    .ccc-color{
+      width:15px; height:15px; border-radius:999px; border:2px solid rgba(255,255,255,0.95); outline:1px solid rgba(30,41,59,0.18);
+      cursor:pointer; padding:0; transition:transform .14s ease, box-shadow .14s ease; flex:0 0 auto;
+    }
+    .ccc-color:hover{ transform:scale(1.18); box-shadow:0 0 0 5px rgba(15,23,42,0.07); }
+
+    body.graph-bg-dark .ccc-chip{ background:rgba(15,23,42,0.72); border-color:rgba(226,232,240,0.16); box-shadow:inset 0 1px 0 rgba(255,255,255,0.06); }
+    body.graph-bg-dark .ccc-year{ color:#e2e8f0; }
+    body.graph-bg-dark .ccc-year:hover{ color:#ffffff; }
+
+    @media (max-width: 1100px){
+      .analytics-card-header{ grid-template-columns:1fr; }
+      .compare-color-controls{ justify-content:flex-start; max-width:100%; }
+    }
 
     /* Pop-up colour grid picker */
     .color-popup{ position:fixed; z-index:1200; width:204px; background:#1f2733;
@@ -1551,6 +1797,57 @@ body.mode-interactive #page7 .three-panel {
     .cpop-reset{ width:100%; margin-top:12px; background:#374151; color:#e5e7eb; border:none;
       border-radius:9px; padding:8px; cursor:pointer; font-size:13px; }
     .cpop-reset:hover{ background:#4b5563; }
+
+    .graph-background-controls{
+      position:fixed; top:calc(var(--navH) + 8px); right:18px; z-index:60;
+      display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:8px;
+      margin:0; padding:6px 10px; width:fit-content; max-width:92vw;
+      background:rgba(244,247,251,0.92); border:1px solid rgba(17,24,39,0.10);
+      border-radius:var(--graphRadius); box-shadow:0 8px 24px rgba(0,0,0,.16);
+      -webkit-backdrop-filter:blur(14px) saturate(150%);
+      backdrop-filter:blur(14px) saturate(150%);
+    }
+    .graph-background-controls[hidden]{ display:none; }
+    .gbg-label{ font-size:12px; font-weight:800; color:#374151; padding:0 3px; }
+    .gbg-btn{
+      border:1px solid rgba(17,24,39,0.12); background:#ffffff; color:#374151;
+      border-radius:999px; padding:4px 10px; font-size:12px; font-weight:700;
+      line-height:1.2; cursor:pointer; transition:background .12s ease, color .12s ease, border-color .12s ease;
+    }
+    .gbg-btn:hover{ background:rgba(37,99,235,0.08); border-color:rgba(37,99,235,0.22); }
+    .gbg-btn.active{ background:#111827; border-color:#111827; color:#ffffff; }
+    .analytics-card-header .graph-background-controls {
+      position: static;
+      grid-column: 2;
+      grid-row: 2;
+      justify-self: end;
+      margin-top: 2px;
+      z-index: auto;
+      box-shadow: none;
+      background: rgba(255,255,255,0.54);
+    }
+    body.graph-bg-dark .analytics-card-header .graph-background-controls {
+      background: rgba(15,23,42,0.70);
+      border-color: rgba(226,232,240,0.16);
+    }
+    body.graph-bg-dark .analytics-card-header .gbg-label { color:#cbd5e1; }
+    body.graph-bg-dark .analytics-card-header .gbg-btn {
+      background: rgba(15,23,42,0.72);
+      color: #e2e8f0;
+      border-color: rgba(226,232,240,0.16);
+    }
+    body.graph-bg-dark .analytics-card-header .gbg-btn.active {
+      background: #f8fafc;
+      color: #0f172a;
+      border-color: #f8fafc;
+    }
+    @media (max-width: 1100px){
+      .analytics-card-header .graph-background-controls {
+        grid-column: 1;
+        grid-row: auto;
+        justify-self: start;
+      }
+    }
   </style>
 
   <!-- NAVBAR -->
@@ -1589,6 +1886,13 @@ body.mode-interactive #page7 .three-panel {
     </div>
   </nav>
 
+  <div id="graphBackgroundControls" class="graph-background-controls" aria-label="Graph background mode">
+    <span class="gbg-label">Graph background</span>
+    <button type="button" class="gbg-btn" data-graph-bg-mode="light">Light</button>
+    <button type="button" class="gbg-btn" data-graph-bg-mode="dark">Dark</button>
+    <button type="button" class="gbg-btn" data-graph-bg-mode="transparent">Transparent</button>
+  </div>
+
   <!-- PAGE 1: WELCOME -->
   <!-- <div id="page1" class="page active-page">
     <img src="/images/RPlogo.png" class="welcome-logo" alt="RP Logo">
@@ -1609,12 +1913,12 @@ body.mode-interactive #page7 .three-panel {
     </h1>
     <div class="welcome-kpis" id="welcomeKpis">
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(250,204,21,0.18);">⚡</div>
+        <div class="kpi-icon" style="background:rgba(37,99,235,0.18);">⚡</div>
         <div class="kpi-value" id="kpiElec">—</div>
         <div class="kpi-label">Avg Monthly Electricity (kWh)</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(59,130,246,0.18);">💧</div>
+        <div class="kpi-icon" style="background:rgba(8,145,178,0.18);">💧</div>
         <div class="kpi-value" id="kpiWater">—</div>
         <div class="kpi-label">Avg Monthly Water (m³)</div>
       </div>
@@ -1624,7 +1928,7 @@ body.mode-interactive #page7 .three-panel {
         <div class="kpi-label">Avg Monthly Solar (kWh)</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(239,68,68,0.18);">♻️</div>
+        <div class="kpi-icon" style="background:rgba(100,116,139,0.20);">♻️</div>
         <div class="kpi-value" id="kpiWaste">—</div>
         <div class="kpi-label">Avg Monthly Waste (kg)</div>
       </div>
@@ -1653,27 +1957,41 @@ body.mode-interactive #page7 .three-panel {
 
   <!-- PAGE 3: ELECTRICITY COMPARISON -->
   <div id="page3" class="page">
-    <h2 class="multi-building-title animate__animated animate__heartBeat animate__infinite" style="--animate-duration: 3s;">
-       <span style="color: #fbbf24;">Electricity</span> Use by Building
-    </h2>
-    <p class="multi-building-subtitle">Electricity (kWh) usage — <span id="elecCompareSubtitleYears"></span></p>
-    <div id="elecColorControls" class="compare-color-controls"></div>
-    <div class="three-chart-wrap compare-split" style="width:100%;height:100%;max-width: 92vw;">
-      <div class="compare-bars"><canvas id="electricityCompareChart"></canvas></div>
-      <div class="compare-line"><canvas id="electricityCompareLineChart"></canvas></div>
+    <div class="analytics-card analytics-card-full" style="--chartAccent: var(--metricElectricity);">
+      <div class="analytics-card-header">
+        <div class="chart-title-stack">
+          <div class="chart-kicker">Energy Analytics</div>
+          <h2 class="multi-building-title">Electricity Use by Building</h2>
+          <p class="multi-building-subtitle">Electricity (kWh) usage — <span id="elecCompareSubtitleYears"></span></p>
+        </div>
+        <div id="elecColorControls" class="compare-color-controls"></div>
+      </div>
+      <div class="analytics-card-body">
+        <div class="three-chart-wrap compare-split" style="width:100%;height:100%;">
+          <div class="compare-bars"><canvas id="electricityCompareChart"></canvas></div>
+          <div class="compare-line"><canvas id="electricityCompareLineChart"></canvas></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- PAGE 4: WATER COMPARISON -->
   <div id="page4" class="page">
-    <h2 class="multi-building-title animate__animated animate__heartBeat animate__infinite" style="--animate-duration: 3s;">
-      <span style="color: #60a5fa;">Water</span> Use by Building
-    </h2>
-    <p class="multi-building-subtitle">Water (m³) usage — <span id="waterCompareSubtitleYears"></span></p>
-    <div id="waterColorControls" class="compare-color-controls"></div>
-    <div class="three-chart-wrap compare-split" style="width:100%;height:100%;max-width: 92vw;">
-      <div class="compare-bars"><canvas id="waterCompareChart"></canvas></div>
-      <div class="compare-line"><canvas id="waterCompareLineChart"></canvas></div>
+    <div class="analytics-card analytics-card-full" style="--chartAccent: var(--metricWater);">
+      <div class="analytics-card-header">
+        <div class="chart-title-stack">
+          <div class="chart-kicker">Water Analytics</div>
+          <h2 class="multi-building-title">Water Use by Building</h2>
+          <p class="multi-building-subtitle">Water (m³) usage — <span id="waterCompareSubtitleYears"></span></p>
+        </div>
+        <div id="waterColorControls" class="compare-color-controls"></div>
+      </div>
+      <div class="analytics-card-body">
+        <div class="three-chart-wrap compare-split" style="width:100%;height:100%;">
+          <div class="compare-bars"><canvas id="waterCompareChart"></canvas></div>
+          <div class="compare-line"><canvas id="waterCompareLineChart"></canvas></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1688,13 +2006,22 @@ body.mode-interactive #page7 .three-panel {
         </div>
       </div>
       <div class="panel panel-mid">
-        <div class="three-building-title animate__animated animate__pulse animate__infinite" style="--animate-duration: 3s;" id="threeChartTitle">
-          Monthly Trend (Jan–Dec)
-        </div>
-        <div id="buildingColorControls" class="compare-color-controls"></div>
-        <div class="three-chart-wrap compare-split">
-          <div class="compare-bars"><canvas id="threeBuildingBarChart"></canvas></div>
-          <div class="compare-line"><canvas id="threeBuildingLineChart"></canvas></div>
+        <div class="analytics-card" style="--chartAccent: var(--metricElectricity);">
+          <div class="analytics-card-header">
+            <div class="chart-title-stack">
+              <div class="chart-kicker">Building Monthly Trend</div>
+              <div class="three-building-title" id="threeChartTitle">
+                Monthly Trend (Jan-Dec)
+              </div>
+            </div>
+            <div id="buildingColorControls" class="compare-color-controls"></div>
+          </div>
+          <div class="analytics-card-body">
+            <div class="three-chart-wrap compare-split">
+              <div class="compare-bars"><canvas id="threeBuildingBarChart"></canvas></div>
+              <div class="compare-line"><canvas id="threeBuildingLineChart"></canvas></div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="panel panel-right">
@@ -1714,13 +2041,22 @@ body.mode-interactive #page7 .three-panel {
         <div class="three-info-body" id="solarLeftBody">Loading solar info...</div>
       </div>
       <div class="panel panel-mid">
-        <div class="three-building-title animate__animated animate__pulse animate__infinite" style="--animate-duration: 3s;" id="solarChartTitle">
-          Solar (Urban Renewables &amp; Green House)
-        </div>
-        <div id="solarColorControls" class="compare-color-controls"></div>
-        <div class="three-chart-wrap compare-split">
-          <div class="compare-bars"><canvas id="solarBarChart"></canvas></div>
-          <div class="compare-line"><canvas id="solarLineChart"></canvas></div>
+        <div class="analytics-card" style="--chartAccent: var(--metricSolar);">
+          <div class="analytics-card-header">
+            <div class="chart-title-stack">
+              <div class="chart-kicker">Renewable Generation</div>
+              <div class="three-building-title" id="solarChartTitle">
+                Solar (Urban Renewables &amp; Green House)
+              </div>
+            </div>
+            <div id="solarColorControls" class="compare-color-controls"></div>
+          </div>
+          <div class="analytics-card-body">
+            <div class="three-chart-wrap compare-split">
+              <div class="compare-bars"><canvas id="solarBarChart"></canvas></div>
+              <div class="compare-line"><canvas id="solarLineChart"></canvas></div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="panel panel-right">
@@ -1737,13 +2073,22 @@ body.mode-interactive #page7 .three-panel {
         <div class="three-info-body" id="wasteLeftBody">Loading waste info...</div>
       </div>
       <div class="panel panel-mid">
-        <div class="three-building-title animate__animated animate__pulse animate__infinite" style="--animate-duration: 3s;" id="wasteChartTitle">
-          Waste (General &amp; Recyclable)
-        </div>
-        <div id="wasteColorControls" class="compare-color-controls"></div>
-        <div class="three-chart-wrap compare-split">
-          <div class="compare-bars"><canvas id="wasteBarChart"></canvas></div>
-          <div class="compare-line"><canvas id="wasteLineChart"></canvas></div>
+        <div class="analytics-card" style="--chartAccent: var(--metricWaste);">
+          <div class="analytics-card-header">
+            <div class="chart-title-stack">
+              <div class="chart-kicker">Waste Analytics</div>
+              <div class="three-building-title" id="wasteChartTitle">
+                Waste (General &amp; Recyclable)
+              </div>
+            </div>
+            <div id="wasteColorControls" class="compare-color-controls"></div>
+          </div>
+          <div class="analytics-card-body">
+            <div class="three-chart-wrap compare-split">
+              <div class="compare-bars"><canvas id="wasteBarChart"></canvas></div>
+              <div class="compare-line"><canvas id="wasteLineChart"></canvas></div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="panel panel-right">
@@ -2079,6 +2424,81 @@ body.mode-interactive #page7 .three-panel {
     // ============================================================
     // CHART.JS PLUGINS
     // ============================================================
+    const GRAPH_BACKGROUND_STORAGE_KEY = "esgGraphBackgroundMode";
+    const ESG_CHART_COLORS = {
+      electricity: "#2f6fdd",
+      water: "#0e8ba6",
+      solar: "#d8901f",
+      waste: "#66758a",
+      recyclable: "#2fa65a",
+      carbon: "#dc6b2a",
+      text: "#1f2937",
+      muted: "#64748b",
+      grid: "rgba(71,85,105,0.095)",
+      surface: "transparent",
+      surfaceDark: "#101827"
+    };
+    const GRAPH_BACKGROUND_MODES = {
+      light: {
+        canvas: ESG_CHART_COLORS.surface,
+        text: ESG_CHART_COLORS.text,
+        grid: ESG_CHART_COLORS.grid,
+        label: ESG_CHART_COLORS.text,
+        axisTitle: ESG_CHART_COLORS.muted,
+        electricityTitle: ESG_CHART_COLORS.electricity,
+        waterTitle: ESG_CHART_COLORS.water
+      },
+      dark: {
+        canvas: "transparent",
+        text: "#e5e7eb",
+        grid: "rgba(226,232,240,0.105)",
+        label: "#f8fafc",
+        axisTitle: "#e5e7eb",
+        electricityTitle: "#93c5fd",
+        waterTitle: "#67e8f9"
+      },
+      transparent: {
+        canvas: "transparent",
+        text: ESG_CHART_COLORS.text,
+        grid: "rgba(71,85,105,0.12)",
+        label: ESG_CHART_COLORS.text,
+        axisTitle: ESG_CHART_COLORS.muted,
+        electricityTitle: ESG_CHART_COLORS.electricity,
+        waterTitle: ESG_CHART_COLORS.water
+      }
+    };
+
+    function normalizeGraphBackgroundMode(mode) {
+      const normalized = String(mode || "light").toLowerCase();
+      return GRAPH_BACKGROUND_MODES[normalized] ? normalized : "light";
+    }
+
+    let graphBackgroundMode = normalizeGraphBackgroundMode((function loadGraphBackgroundMode() {
+      try { return localStorage.getItem(GRAPH_BACKGROUND_STORAGE_KEY); } catch (error) { return "light"; }
+    })());
+
+    function graphBackgroundTheme() {
+      return GRAPH_BACKGROUND_MODES[normalizeGraphBackgroundMode(graphBackgroundMode)];
+    }
+
+    const chartCanvasBackgroundPlugin = {
+      id: "chartCanvasBackground",
+      beforeDraw(chart) {
+        try {
+          const theme = graphBackgroundTheme();
+          if (!theme || theme.canvas === "transparent") return;
+          const context = chart.ctx;
+          context.save();
+          context.globalCompositeOperation = "destination-over";
+          context.fillStyle = theme.canvas;
+          context.fillRect(0, 0, chart.width, chart.height);
+          context.restore();
+        } catch (error) {}
+      }
+    };
+
+    try { Chart.register(chartCanvasBackgroundPlugin); } catch (error) {}
+
     const barValueLabelPlugin = {
       id: "barValueLabel",
       afterDatasetsDraw(chart, args, pluginOptions) {
@@ -2123,8 +2543,8 @@ body.mode-interactive #page7 .three-panel {
           context.save();
           context.textAlign = "center";
           context.textBaseline = "bottom";
-          context.font = "700 12px Arial";
-          context.fillStyle = "#111827";
+          context.font = "800 14px Arial";
+          context.fillStyle = graphBackgroundTheme().label;
 
           datasets.forEach((dataset, datasetIndex) => {
             if (!dataset) return;
@@ -2197,6 +2617,11 @@ body.mode-interactive #page7 .three-panel {
     // ============================================================
     // CHART OPTIONS + HELPERS
     // ============================================================
+    try {
+      Chart.defaults.font.family = 'Inter, "Segoe UI", Arial, sans-serif';
+      Chart.defaults.color = ESG_CHART_COLORS.text;
+    } catch (error) {}
+
     function createLegendClickHandler() {
       return function(event, legendItem, legend) {
         const chart = legend.chart;
@@ -2220,46 +2645,270 @@ body.mode-interactive #page7 .three-panel {
       };
     }
 
+    function chartTextSize(kind) {
+      const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
+      const isLarge = window.innerWidth >= 1800 || window.innerHeight >= 1000;
+      if (kind === "axisTitle") return isUltra ? 28 : (isLarge ? 18 : 15);
+      if (kind === "legend") return isUltra ? 24 : (isLarge ? 16 : 13);
+      if (kind === "tooltipTitle") return isUltra ? 26 : (isLarge ? 17 : 15);
+      if (kind === "tooltipBody") return isUltra ? 23 : (isLarge ? 16 : 14);
+      return isUltra ? 22 : (isLarge ? 16 : 14);
+    }
+
+    function formatAxisNumber(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return "";
+      const absolute = Math.abs(number);
+      if (absolute >= 1000000) return (number / 1000000).toLocaleString(undefined, { maximumFractionDigits: 1 }) + "M";
+      if (absolute >= 1000) return (number / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 }) + "K";
+      return number.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
+    function wrapChartLabel(value, maxChars) {
+      const rawLabel = Array.isArray(value) ? value.join(" ") : String(value || "");
+      if (!rawLabel || rawLabel.length <= maxChars) return rawLabel;
+      const words = rawLabel.split(/\s+/);
+      const lines = [];
+      let currentLine = "";
+      words.forEach((word) => {
+        const nextLine = currentLine ? currentLine + " " + word : word;
+        if (nextLine.length > maxChars && currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = nextLine;
+        }
+      });
+      if (currentLine) lines.push(currentLine);
+      return lines.length ? lines.slice(0, 3) : rawLabel;
+    }
+
+    function displayDatasetLabel(label) {
+      return String(label || "").replace(/^_Line/, "");
+    }
+
+    function formatTooltipValue(value, unit) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return String(value || "");
+      return number.toLocaleString(undefined, { maximumFractionDigits: 1 }) + (unit ? " " + unit : "");
+    }
+
+    function inferDatasetUnit(dataset, chart) {
+      const label = String(dataset && dataset.label || "").toLowerCase();
+      const yAxisId = String(dataset && dataset.yAxisID || "y");
+      const axisTitle = chart && chart.options && chart.options.scales && chart.options.scales[yAxisId] && chart.options.scales[yAxisId].title
+        ? String(chart.options.scales[yAxisId].title.text || "")
+        : "";
+      const source = (label + " " + axisTitle).toLowerCase();
+      if (source.indexOf("kwh") !== -1 || source.indexOf("electricity") !== -1 || source.indexOf("solar") !== -1) return "kWh";
+      if (source.indexOf("m³") !== -1 || source.indexOf("m3") !== -1 || source.indexOf("water") !== -1) return "m³";
+      if (source.indexOf("kg") !== -1 || source.indexOf("waste") !== -1 || source.indexOf("recyclable") !== -1) return "kg";
+      return "";
+    }
+
+    function getChartTooltipElement(chart) {
+      let tooltipElement = chart.canvas && chart.canvas.parentNode
+        ? chart.canvas.parentNode.querySelector(".premium-chart-tooltip")
+        : null;
+      if (!tooltipElement && chart.canvas && chart.canvas.parentNode) {
+        tooltipElement = document.createElement("div");
+        tooltipElement.className = "premium-chart-tooltip";
+        tooltipElement.innerHTML = '<div class="pct-title"></div><div class="pct-body"></div>';
+        chart.canvas.parentNode.appendChild(tooltipElement);
+      }
+      return tooltipElement;
+    }
+
+    function externalChartTooltip(context) {
+      const chart = context.chart;
+      const tooltip = context.tooltip;
+      const tooltipElement = getChartTooltipElement(chart);
+      if (!tooltipElement) return;
+
+      if (!tooltip || tooltip.opacity === 0) {
+        tooltipElement.style.opacity = "0";
+        tooltipElement.style.transform = "translate(-50%, calc(-100% - 14px)) scale(0.97)";
+        return;
+      }
+
+      const title = (tooltip.title || []).join(" ");
+      tooltipElement.querySelector(".pct-title").textContent = title;
+      const body = tooltipElement.querySelector(".pct-body");
+      body.innerHTML = "";
+
+      (tooltip.dataPoints || []).forEach((point) => {
+        const dataset = point.dataset || {};
+        const row = document.createElement("div");
+        row.className = "pct-row";
+        const color = dataset.borderColor || dataset.backgroundColor || "#64748b";
+        const numericValue = point.parsed && Number.isFinite(Number(point.parsed.y)) ? point.parsed.y : point.raw;
+        row.innerHTML =
+          '<span class="pct-dot"></span>' +
+          '<span class="pct-label"></span>' +
+          '<span class="pct-value"></span>';
+        row.querySelector(".pct-dot").style.background = typeof color === "string" ? color : "#64748b";
+        row.querySelector(".pct-label").textContent = displayDatasetLabel(dataset.label);
+        row.querySelector(".pct-value").textContent = formatTooltipValue(numericValue, inferDatasetUnit(dataset, chart));
+        body.appendChild(row);
+      });
+
+      const canvasRect = chart.canvas.getBoundingClientRect();
+      const parentRect = chart.canvas.parentNode.getBoundingClientRect();
+      let left = tooltip.caretX + (canvasRect.left - parentRect.left);
+      let top = tooltip.caretY + (canvasRect.top - parentRect.top);
+      const maxLeft = parentRect.width - 12;
+      left = Math.max(12, Math.min(maxLeft, left));
+      top = Math.max(64, top);
+      tooltipElement.style.left = left + "px";
+      tooltipElement.style.top = top + "px";
+      tooltipElement.style.opacity = "1";
+      tooltipElement.style.transform = "translate(-50%, calc(-100% - 14px)) scale(1)";
+    }
+
+    function applyGraphBackgroundToChartOptions(options) {
+      const theme = graphBackgroundTheme();
+      if (!options || !theme) return options;
+
+      if (options.plugins && options.plugins.legend && options.plugins.legend.labels) {
+        options.plugins.legend.labels.color = theme.text;
+      }
+
+      const scales = options.scales || {};
+      Object.keys(scales).forEach((scaleKey) => {
+        const scale = scales[scaleKey];
+        if (!scale) return;
+        if (!scale.ticks) scale.ticks = {};
+        scale.ticks.color = theme.text;
+        if (!scale.grid) scale.grid = {};
+        if (scaleKey !== "y1" || scale.grid.drawOnChartArea !== false) scale.grid.color = theme.grid;
+        if (scale.title && scale.title.display) {
+          const titleText = String(scale.title.text || "").toLowerCase();
+          if (titleText.indexOf("electricity") !== -1) scale.title.color = theme.electricityTitle;
+          else if (titleText.indexOf("water") !== -1) scale.title.color = theme.waterTitle;
+          else scale.title.color = theme.axisTitle;
+        }
+      });
+
+      return options;
+    }
+
     function baseChartOptions() {
-      return {
+      return applyGraphBackgroundToChartOptions({
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 900, easing: "easeOutBack" },
+        layout: { padding: { top: 26, right: 30, bottom: 20, left: 24 } },
+        animation: { duration: 980, easing: "easeOutQuart" },
         animations: {
           y: {
             from: 0,
+            duration: 980,
+            easing: "easeOutQuart",
             delay(context) {
-              if (context.type === "data" && context.mode === "default") return context.dataIndex * 70;
+              if (context.type === "data" && context.mode === "default") return Math.min(context.dataIndex * 22, 360);
               return 0;
             }
+          },
+          tension: {
+            duration: 680,
+            easing: "easeOutQuart",
+            from: 0.22,
+            to: 0.34
           }
         },
+        interaction: { mode: "nearest", intersect: false },
+        hover: { mode: "nearest", intersect: false, animationDuration: 180 },
         plugins: {
           barValueLabel: { enabled: false, mode: "max-per-dataset" },
           legend: {
+            display: false,
             onClick: createLegendClickHandler(),
             labels: {
               color: "#111827",
+              boxWidth: 12,
+              boxHeight: 12,
+              borderRadius: 4,
+              padding: 12,
+              usePointStyle: true,
+              font: { size: chartTextSize("legend"), weight: "800" },
               filter: (legendItem) => !String(legendItem.text || "").startsWith("_")
             }
           },
-          tooltip: { enabled: true }
+          tooltip: {
+            enabled: false,
+            external: externalChartTooltip,
+            backgroundColor: "rgba(15,23,42,0.94)",
+            titleColor: "#ffffff",
+            bodyColor: "#e5e7eb",
+            borderColor: "rgba(255,255,255,0.16)",
+            borderWidth: 1,
+            cornerRadius: 10,
+            displayColors: true,
+            padding: 12,
+            titleFont: { size: chartTextSize("tooltipTitle"), weight: "800" },
+            bodyFont: { size: chartTextSize("tooltipBody"), weight: "650" },
+            callbacks: {
+              label(context) {
+                const label = context.dataset && context.dataset.label ? String(context.dataset.label).replace(/^_Line/, "") : "";
+                const value = Number(context.parsed && context.parsed.y);
+                return `${label}: ${Number.isFinite(value) ? value.toLocaleString(undefined, { maximumFractionDigits: 0 }) : context.formattedValue}`;
+              }
+            }
+          }
         },
         scales: {
-          x: { ticks: { color: "#111827" }, grid: { color: "rgba(17,24,39,0.10)" } },
-          y: { ticks: { color: "#111827" }, grid: { color: "rgba(17,24,39,0.10)" }, position: "left", beginAtZero: true },
-          y1: { ticks: { color: "#111827" }, grid: { drawOnChartArea: false }, position: "right", beginAtZero: true }
+          x: {
+            ticks: {
+              color: "#111827",
+              padding: 12,
+              maxRotation: 0,
+              minRotation: 0,
+              autoSkip: false,
+              font: { size: chartTextSize("tick"), weight: "700" },
+              callback(value) {
+                const label = this.getLabelForValue ? this.getLabelForValue(value) : value;
+                return wrapChartLabel(label, 8);
+              }
+            },
+            grid: { display: false, color: "rgba(17,24,39,0.05)", drawBorder: false },
+            border: { display: false }
+          },
+          y: {
+            ticks: {
+              color: "#111827",
+              padding: 14,
+              font: { size: chartTextSize("tick"), weight: "700" },
+              callback: formatAxisNumber
+            },
+            grid: { color: "rgba(17,24,39,0.075)", drawBorder: false, lineWidth: 1, tickLength: 0 },
+            border: { display: false },
+            position: "left",
+            beginAtZero: true,
+            grace: "8%"
+          },
+          y1: {
+            ticks: {
+              color: "#111827",
+              padding: 14,
+              font: { size: chartTextSize("tick"), weight: "700" },
+              callback: formatAxisNumber
+            },
+            grid: { drawOnChartArea: false, tickLength: 0 },
+            border: { display: false },
+            position: "right",
+            beginAtZero: true,
+            grace: "8%"
+          }
         }
-      };
+      });
     }
 
     const month_labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const color_electricity = "#facc15";
-    const color_water = "#3b82f6";
-    const color_solar_urban = "#f59e0b";
-    const color_solar_gh = "#22c55e";
-    const color_waste_gen = "#ef4444";
-    const color_waste_rec = "#3ead8a";
+    const color_electricity = ESG_CHART_COLORS.electricity;
+    const color_water = ESG_CHART_COLORS.water;
+    const color_solar_urban = ESG_CHART_COLORS.solar;
+    const color_solar_gh = "#65a30d";
+    const color_waste_gen = ESG_CHART_COLORS.waste;
+    const color_waste_rec = ESG_CHART_COLORS.recyclable;
 
     function hideZeroMonths(labels, ...series) {
       const keep = labels.map((_, index) => series.some(arr => Number(arr[index] || 0) !== 0));
@@ -2369,9 +3018,10 @@ body.mode-interactive #page7 .three-panel {
     // MULTI-YEAR COLOR PALETTE
     // ============================================================
     const yearColorPalette = [
-      "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16", "#22c55e",
-      "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6",
-      "#a855f7", "#d946ef", "#ec4899", "#f43f5e"
+      "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa",
+      "#0891b2", "#06b6d4", "#22d3ee", "#0f766e",
+      "#64748b", "#475569", "#16a34a", "#65a30d",
+      "#d97706", "#ea580c", "#7c3aed", "#8b5cf6"
     ];
 
     function getColorForYear(yearIndex, totalYears) {
@@ -2379,6 +3029,19 @@ body.mode-interactive #page7 .three-panel {
       const step = Math.floor(yearColorPalette.length / Math.min(totalYears, yearColorPalette.length));
       const colorIndex = (yearIndex * step) % yearColorPalette.length;
       return yearColorPalette[colorIndex];
+    }
+
+    const METRIC_YEAR_PALETTES = {
+      electricity: ["#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#1e40af", "#0f5bd8"],
+      water: ["#0e7490", "#0891b2", "#06b6d4", "#22d3ee", "#155e75", "#67e8f9"],
+      solar: ["#b45309", "#d97706", "#f59e0b", "#ea580c", "#92400e", "#fbbf24"],
+      waste: ["#475569", "#64748b", "#94a3b8", "#334155", "#71717a", "#a1a1aa"]
+    };
+
+    function getMetricYearColor(metric, yearIndex, totalYears) {
+      const palette = METRIC_YEAR_PALETTES[metric] || yearColorPalette;
+      if (totalYears <= 1) return palette[0];
+      return palette[yearIndex % palette.length];
     }
 
     // ============================================================
@@ -2391,11 +3054,11 @@ body.mode-interactive #page7 .three-panel {
     const CHART_COLOR_STORAGE_KEY = "esgChartColorPrefs";
     // Colour choices shown in the pop-up grid picker (4 per row).
     const COLOR_GRID = [
-      "#ef4444", "#f97316", "#f59e0b", "#eab308",
-      "#84cc16", "#22c55e", "#14b8a6", "#06b6d4",
-      "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6",
-      "#a855f7", "#d946ef", "#ec4899", "#f43f5e",
-      "#0f172a", "#64748b", "#ffffff"
+      "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa",
+      "#0891b2", "#06b6d4", "#22d3ee", "#0f766e",
+      "#64748b", "#475569", "#94a3b8", "#16a34a",
+      "#65a30d", "#d97706", "#ea580c", "#7c3aed",
+      "#0f172a", "#f4f7fb", "#ffffff"
     ];
 
     // Colours are stored PER CHART ("electricity" / "water") so each one keeps
@@ -2444,6 +3107,62 @@ body.mode-interactive #page7 .three-panel {
       const to2 = (n) => Math.round(n * f).toString(16).padStart(2, "0");
       return `#${to2(r)}${to2(g)}${to2(b)}`;
     }
+    function lightenHex(hex, amount) {
+      if (!isHex6(hex)) return hex;
+      const { r, g, b } = hexToRgb(hex);
+      const f = Math.max(0, Math.min(1, amount));
+      const to2 = (n) => Math.round(n + (255 - n) * f).toString(16).padStart(2, "0");
+      return `#${to2(r)}${to2(g)}${to2(b)}`;
+    }
+    function makeBarGradient(hex) {
+      const base = normalizeHex(hex);
+      return function(context) {
+        try {
+          const chart = context.chart;
+          const area = chart.chartArea;
+          if (!area) return base;
+          const gradient = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+          gradient.addColorStop(0, lightenHex(base, 0.24));
+          gradient.addColorStop(0.54, base);
+          gradient.addColorStop(1, darkenHex(base, 0.10));
+          return gradient;
+        } catch (error) {
+          return base;
+        }
+      };
+    }
+    function styleBarDataset(dataset, color, options) {
+      const cfg = options || {};
+      dataset.backgroundColor = makeBarGradient(color);
+      dataset.borderColor = lightenHex(color, 0.06);
+      dataset.hoverBackgroundColor = lightenHex(color, 0.15);
+      dataset.hoverBorderColor = lightenHex(color, 0.26);
+      dataset.borderWidth = 1;
+      dataset.borderRadius = cfg.radius || 11;
+      dataset.borderSkipped = false;
+      dataset.categoryPercentage = cfg.categoryPercentage || 0.78;
+      dataset.barPercentage = cfg.barPercentage || 0.88;
+      dataset.maxBarThickness = cfg.maxBarThickness || 46;
+      return dataset;
+    }
+    function styleLineDataset(dataset, color, options) {
+      const cfg = options || {};
+      dataset.borderColor = color;
+      dataset.backgroundColor = hexToRgba(color, 0.10);
+      dataset.pointBackgroundColor = "#ffffff";
+      dataset.pointBorderColor = color;
+      dataset.pointBorderWidth = cfg.pointBorderWidth || 3;
+      dataset.pointRadius = cfg.pointRadius || 4.8;
+      dataset.pointHoverRadius = cfg.pointHoverRadius || 8;
+      dataset.pointHoverBorderWidth = 4;
+      dataset.pointHoverBackgroundColor = "#ffffff";
+      dataset.pointHoverBorderColor = lightenHex(color, 0.18);
+      dataset.borderWidth = cfg.borderWidth || 4;
+      dataset.hoverBorderWidth = (cfg.borderWidth || 4) + 1;
+      dataset.tension = cfg.tension == null ? 0.34 : cfg.tension;
+      dataset.fill = false;
+      return dataset;
+    }
 
     // Resolve a year's colour for a SPECIFIC chart ("electricity" or "water").
     // Bars and the trend line of that year share this one colour.
@@ -2451,7 +3170,7 @@ body.mode-interactive #page7 .three-panel {
       const map = chartColorPrefs[chartKey] || {};
       const override = map[String(year)];
       if (isHex6(override)) return normalizeHex(override);
-      return getColorForYear(yearIndex, totalYears);
+      return getMetricYearColor(chartKey, yearIndex, totalYears);
     }
 
     // Set one year's colour for one chart, persist, re-skin the chart, refresh swatches.
@@ -2481,12 +3200,9 @@ body.mode-interactive #page7 .three-panel {
         const yearIndex = idx < 0 ? 0 : idx;
         const color = getYearColor(chartKey, year, yearIndex, total);
         if (isLine) {
-          ds.borderColor = color;
-          ds.pointBackgroundColor = color;
-          ds.pointBorderColor = "#ffffff";
+          styleLineDataset(ds, color);
         } else {
-          ds.backgroundColor = color;
-          ds.borderColor = color;
+          styleBarDataset(ds, color);
         }
       });
       chart.update();
@@ -3089,6 +3805,7 @@ body.mode-interactive #page7 .three-panel {
       nextElement.style.opacity = "1";
 
       currentPageNumber = next;
+      updateGraphBackgroundControlVisibility();
       hardResetProgressBar();
       onEnterPage(next);
       sendControlPageUpdate();
@@ -3141,6 +3858,65 @@ body.mode-interactive #page7 .three-panel {
     let waterCompareChart = null;
     let electricityCompareLineChart = null;   // bottom "trend line" panel for the electricity page
     let waterCompareLineChart = null;          // bottom "trend line" panel for the water page
+
+    function dashboardCharts() {
+      return [
+        electricityCompareChart,
+        electricityCompareLineChart,
+        waterCompareChart,
+        waterCompareLineChart,
+        threeBuildingBarChart,
+        threeBuildingLineChart,
+        solarBarChart,
+        solarLineChart,
+        wasteBarChart,
+        wasteLineChart
+      ].filter(Boolean);
+    }
+
+    function applyGraphBackgroundMode(options) {
+      const shouldUpdateCharts = !options || options.updateCharts !== false;
+      const mode = normalizeGraphBackgroundMode(graphBackgroundMode);
+      document.body.classList.toggle("graph-bg-dark", mode === "dark");
+      document.body.classList.toggle("graph-bg-transparent", mode === "transparent");
+      document.querySelectorAll("[data-graph-bg-mode]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.graphBgMode === mode);
+      });
+      if (!shouldUpdateCharts) return;
+      dashboardCharts().forEach((chart) => {
+        if (!chart || !chart.options) return;
+        applyGraphBackgroundToChartOptions(chart.options);
+        chart.update("none");
+      });
+    }
+
+    function updateGraphBackgroundControlVisibility() {
+      const controls = document.getElementById("graphBackgroundControls");
+      if (!controls) return;
+      const isGraphPage = [3, 4, 5, 6, 7].includes(Number(currentPageNumber || 1));
+      controls.hidden = !isGraphPage;
+      if (!isGraphPage) return;
+      const activeHeader = document.querySelector(".active-page .analytics-card-header");
+      if (activeHeader && controls.parentElement !== activeHeader) {
+        activeHeader.appendChild(controls);
+      }
+    }
+
+    function setGraphBackgroundMode(mode) {
+      graphBackgroundMode = normalizeGraphBackgroundMode(mode);
+      try { localStorage.setItem(GRAPH_BACKGROUND_STORAGE_KEY, graphBackgroundMode); } catch (error) {}
+      applyGraphBackgroundMode({ updateCharts: true });
+    }
+
+    function setupGraphBackgroundControls() {
+      document.querySelectorAll("[data-graph-bg-mode]").forEach((button) => {
+        button.addEventListener("click", () => setGraphBackgroundMode(button.dataset.graphBgMode));
+      });
+      applyGraphBackgroundMode({ updateCharts: false });
+      updateGraphBackgroundControlVisibility();
+    }
+
+    setupGraphBackgroundControls();
 
     function clearThreeCycleTimer() {
       if (threeCycleTimeoutId) clearTimeout(threeCycleTimeoutId);
@@ -3623,29 +4399,16 @@ body.mode-interactive #page7 .three-panel {
         const color = buildingYearColor(metric, year, yearIndex, total);
         const meta  = { _metric: metric, _year: year, _yearIndex: yearIndex, _yearTotal: total };
         const label = (metric === "electricity" ? "Electricity " : "Water ") + year + " (" + unit + ")";
-        barDatasets.push(Object.assign({
+        barDatasets.push(styleBarDataset(Object.assign({
           label: label,
           data: data,
-          backgroundColor: color,
-          borderColor: color,
-          borderWidth: 1,
           yAxisID: axisId
-        }, meta));
-        lineDatasets.push(Object.assign({
+        }, meta), color, { maxBarThickness: 42, categoryPercentage: 0.76, barPercentage: 0.86 }));
+        lineDatasets.push(styleLineDataset(Object.assign({
           label: label,
           data: data,
-          borderColor: color,
-          backgroundColor: "transparent",
-          pointBackgroundColor: color,
-          pointBorderColor: "#ffffff",
-          pointBorderWidth: 1.5,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          borderWidth: 3,
-          tension: 0,
-          fill: false,
           yAxisID: axisId
-        }, meta));
+        }, meta), color, { pointRadius: 4.4, borderWidth: 3.8 }));
       }
 
       elecYearsForChart.forEach((year, index) =>
@@ -3720,27 +4483,49 @@ body.mode-interactive #page7 .three-panel {
       const barCtx = document.getElementById(cfg.barCanvasId);
       const lineCtx = document.getElementById(cfg.lineCanvasId);
       const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
-      const tickSize = isUltra ? 20 : 12;
+      const tickSize = isUltra ? 22 : 14;
 
       function compareOptions(showXLabels, showLegend) {
         const options = baseChartOptions();
         options.plugins.legend.display = showLegend;
-        options.plugins.legend.labels.font = { size: isUltra ? 20 : 12 };
-        options.plugins.tooltip.titleFont = { size: isUltra ? 22 : 14 };
-        options.plugins.tooltip.bodyFont = { size: tickSize };
-        options.scales.x.ticks.font = { size: tickSize };
+        options.plugins.legend.labels.font = { size: isUltra ? 22 : 13, weight: "800" };
+        options.plugins.tooltip.titleFont = { size: isUltra ? 24 : 15, weight: "800" };
+        options.plugins.tooltip.bodyFont = { size: tickSize, weight: "650" };
+        options.scales.x.ticks.font = { size: tickSize, weight: "750" };
         options.scales.x.ticks.display = showXLabels;
-        options.scales.y.ticks.font = { size: tickSize };
+        options.scales.y.ticks.font = { size: tickSize, weight: "750" };
+        if (cfg.yTitle) {
+          options.scales.y.title = {
+            display: true,
+            text: cfg.yTitle,
+            color: cfg.metric === "water" ? ESG_CHART_COLORS.water : ESG_CHART_COLORS.electricity,
+            font: { size: isUltra ? 24 : 15, weight: "850" },
+            padding: { bottom: 10 }
+          };
+        }
+        if (cfg.scaleType === "logarithmic") {
+          options.scales.y.type = "logarithmic";
+          options.scales.y.beginAtZero = false;
+          options.scales.y.min = cfg.minPositiveValue || 1;
+          options.scales.y.ticks.callback = function(value) {
+            const number = Number(value);
+            if (!Number.isFinite(number) || number <= 0) return "";
+            return formatAxisNumber(number);
+          };
+        }
         options.scales.y1.display = true;
         options.scales.y1.grid.drawOnChartArea = false;
-        options.scales.y1.ticks.font = { size: tickSize };
+        options.scales.y1.type = options.scales.y.type;
+        options.scales.y1.beginAtZero = options.scales.y.beginAtZero;
+        if (options.scales.y.min) options.scales.y1.min = options.scales.y.min;
+        options.scales.y1.ticks.font = { size: tickSize, weight: "750" };
         options.scales.y1.afterBuildTicks = (scale) => {
           try {
             const yScale = scale?.chart?.scales?.y;
             if (yScale) { scale.ticks = yScale.ticks; scale.min = yScale.min; scale.max = yScale.max; }
           } catch (error) {}
         };
-        return options;
+        return applyGraphBackgroundToChartOptions(options);
       }
 
       // Top panel: bars. Hide X labels (shown under the line panel) AND the
@@ -3768,21 +4553,21 @@ body.mode-interactive #page7 .three-panel {
       const barCtx  = document.getElementById(cfg.barCanvasId);
       const lineCtx = document.getElementById(cfg.lineCanvasId);
       const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
-      const tickSize = isUltra ? 20 : 12;
+      const tickSize = isUltra ? 22 : 14;
 
       function panelOptions(showXLabels) {
         const options = baseChartOptions();
         options.plugins.legend.display = false;        // on-page swatch row is the legend
         options.plugins.barValueLabel = { enabled: false };
-        options.scales.x.ticks.font = { size: tickSize };
+        options.scales.x.ticks.font = { size: tickSize, weight: "750" };
         options.scales.x.ticks.display = showXLabels;
-        options.scales.y.ticks.font = { size: tickSize };
-        options.scales.y.title = { display: true, text: "Electricity (kWh)", color: "#92400e", font: { size: tickSize } };
+        options.scales.y.ticks.font = { size: tickSize, weight: "750" };
+        options.scales.y.title = { display: true, text: "Electricity (kWh)", color: ESG_CHART_COLORS.electricity, font: { size: isUltra ? 24 : 15, weight: "850" }, padding: { bottom: 10 } };
         options.scales.y1.display = true;
         options.scales.y1.grid.drawOnChartArea = false;
-        options.scales.y1.ticks.font = { size: tickSize };
-        options.scales.y1.title = { display: true, text: "Water (m³)", color: "#1e40af", font: { size: tickSize } };
-        return options;
+        options.scales.y1.ticks.font = { size: tickSize, weight: "750" };
+        options.scales.y1.title = { display: true, text: "Water (m³)", color: ESG_CHART_COLORS.water, font: { size: isUltra ? 24 : 15, weight: "850" }, padding: { bottom: 10 } };
+        return applyGraphBackgroundToChartOptions(options);
       }
 
       const barChart = barCtx ? new Chart(barCtx, {
@@ -3803,8 +4588,8 @@ body.mode-interactive #page7 .three-panel {
     // Colour for a building-page series. Honours a saved per-year override
     // (shared with the compare pages), else falls back to a metric-specific
     // default palette so electricity (warm) and water (cool) never collide.
-    const BUILDING_ELEC_DEFAULTS  = ["#facc15", "#f59e0b", "#d97706", "#b45309", "#92400e", "#fbbf24"];
-    const BUILDING_WATER_DEFAULTS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e40af", "#1e3a8a", "#60a5fa"];
+    const BUILDING_ELEC_DEFAULTS  = METRIC_YEAR_PALETTES.electricity;
+    const BUILDING_WATER_DEFAULTS = METRIC_YEAR_PALETTES.water;
     function buildingYearColor(metric, year, yearIndex, total) {
       const map = chartColorPrefs[metric] || {};
       const override = map[String(year)];
@@ -3852,12 +4637,9 @@ body.mode-interactive #page7 .three-panel {
         chart.data.datasets.forEach(function (ds) {
           const color = buildingYearColor(ds._metric, ds._year, ds._yearIndex, ds._yearTotal);
           if (isLine) {
-            ds.borderColor = color;
-            ds.pointBackgroundColor = color;
-            ds.pointBorderColor = "#ffffff";
+            styleLineDataset(ds, color);
           } else {
-            ds.backgroundColor = color;
-            ds.borderColor = color;
+            styleBarDataset(ds, color);
           }
         });
         chart.update();
@@ -3943,17 +4725,17 @@ body.mode-interactive #page7 .three-panel {
       const barCtx  = document.getElementById(cfg.barCanvasId);
       const lineCtx = document.getElementById(cfg.lineCanvasId);
       const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
-      const tickSize = isUltra ? 20 : 12;
+      const tickSize = isUltra ? 22 : 14;
       function panelOptions(showXLabels) {
         const options = baseChartOptions();
         options.plugins.legend.display = false;
         options.plugins.barValueLabel = { enabled: false };
-        options.scales.x.ticks.font = { size: tickSize };
+        options.scales.x.ticks.font = { size: tickSize, weight: "750" };
         options.scales.x.ticks.display = showXLabels;
-        options.scales.y.ticks.font = { size: tickSize };
-        if (cfg.yTitle) options.scales.y.title = { display: true, text: cfg.yTitle, color: "#374151", font: { size: tickSize } };
+        options.scales.y.ticks.font = { size: tickSize, weight: "750" };
+        if (cfg.yTitle) options.scales.y.title = { display: true, text: cfg.yTitle, color: "#475569", font: { size: isUltra ? 24 : 15, weight: "850" }, padding: { bottom: 10 } };
         options.scales.y1.display = false;
-        return options;
+        return applyGraphBackgroundToChartOptions(options);
       }
       const barChart = barCtx ? new Chart(barCtx, {
         type: "bar", data: { labels: cfg.labels, datasets: cfg.barDatasets }, options: panelOptions(false)
@@ -3972,14 +4754,12 @@ body.mode-interactive #page7 .three-panel {
         const color = categoryColor(groupKey, cat.id, cat.def);
         const data  = seriesByCat[cat.id] || [];
         const meta  = { _group: groupKey, _cat: cat.id };
-        barDatasets.push(Object.assign({
-          label: cat.label, data: data, backgroundColor: color, borderColor: color, borderWidth: 1, yAxisID: "y"
-        }, meta));
-        lineDatasets.push(Object.assign({
-          label: cat.label, data: data, borderColor: color, backgroundColor: "transparent",
-          pointBackgroundColor: color, pointBorderColor: "#ffffff", pointBorderWidth: 1.5,
-          pointRadius: 4, pointHoverRadius: 6, borderWidth: 3, tension: 0, fill: false, yAxisID: "y"
-        }, meta));
+        barDatasets.push(styleBarDataset(Object.assign({
+          label: cat.label, data: data, yAxisID: "y"
+        }, meta), color, { maxBarThickness: 44, categoryPercentage: 0.76, barPercentage: 0.88 }));
+        lineDatasets.push(styleLineDataset(Object.assign({
+          label: cat.label, data: data, yAxisID: "y"
+        }, meta), color));
       });
       return { barDatasets: barDatasets, lineDatasets: lineDatasets };
     }
@@ -4017,8 +4797,8 @@ body.mode-interactive #page7 .three-panel {
           const cat = cats.find(function (c) { return c.id === ds._cat; });
           if (!cat) return;
           const color = categoryColor(ds._group, ds._cat, cat.def);
-          if (isLine) { ds.borderColor = color; ds.pointBackgroundColor = color; ds.pointBorderColor = "#ffffff"; }
-          else { ds.backgroundColor = color; ds.borderColor = color; }
+          if (isLine) styleLineDataset(ds, color);
+          else styleBarDataset(ds, color);
         });
         chart.update();
       });
@@ -4113,32 +4893,18 @@ body.mode-interactive #page7 .three-panel {
         const yearMap = dataByYear[year] || {};
         const data = buildingKeys.map(keyItem => Number((yearMap[keyItem] && yearMap[keyItem].electricity) || 0));
         const barColor = getYearColor("electricity", year, yearIndex, sortedYears.length);
-        const lineColor = barColor;
 
         // Bars go in the TOP panel (solid year colour).
-        barDatasets.push({
+        barDatasets.push(styleBarDataset({
           label: String(year),
-          data: data,
-          backgroundColor: barColor,
-          borderColor: barColor,
-          borderWidth: 1
-        });
+          data: data
+        }, barColor, { maxBarThickness: 42, categoryPercentage: 0.76, barPercentage: 0.86 }));
 
         // Trend line goes in the SEPARATE BOTTOM panel (no longer drawn over the bars).
-        lineDatasets.push({
+        lineDatasets.push(styleLineDataset({
           label: `_Line${year}`,
-          data: data,
-          borderColor: lineColor,
-          backgroundColor: "transparent",
-          pointBackgroundColor: lineColor,
-          pointBorderColor: "#ffffff",
-          pointBorderWidth: 1.5,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          borderWidth: 3,
-          tension: 0,
-          fill: false
-        });
+          data: data
+        }, barColor));
       });
 
       const built = makeComparePanels({
@@ -4146,7 +4912,11 @@ body.mode-interactive #page7 .three-panel {
         lineCanvasId: "electricityCompareLineChart",
         labels: labels,
         barDatasets: barDatasets,
-        lineDatasets: lineDatasets
+        lineDatasets: lineDatasets,
+        metric: "electricity",
+        yTitle: "Electricity (kWh)",
+        scaleType: "logarithmic",
+        minPositiveValue: 1
       });
       electricityCompareChart = built.barChart;
       electricityCompareLineChart = built.lineChart;
@@ -4199,32 +4969,18 @@ body.mode-interactive #page7 .three-panel {
         const yearMap = dataByYear[year] || {};
         const data = buildingKeys.map(keyItem => Number((yearMap[keyItem] && yearMap[keyItem].water) || 0));
         const barColor = getYearColor("water", year, yearIndex, sortedYears.length);
-        const lineColor = barColor;
 
         // Bars go in the TOP panel (solid year colour).
-        barDatasets.push({
+        barDatasets.push(styleBarDataset({
           label: String(year),
-          data: data,
-          backgroundColor: barColor,
-          borderColor: barColor,
-          borderWidth: 1
-        });
+          data: data
+        }, barColor, { maxBarThickness: 42, categoryPercentage: 0.76, barPercentage: 0.86 }));
 
         // Trend line goes in the SEPARATE BOTTOM panel (no longer drawn over the bars).
-        lineDatasets.push({
+        lineDatasets.push(styleLineDataset({
           label: `_Line${year}`,
-          data: data,
-          borderColor: lineColor,
-          backgroundColor: "transparent",
-          pointBackgroundColor: lineColor,
-          pointBorderColor: "#ffffff",
-          pointBorderWidth: 1.5,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          borderWidth: 3,
-          tension: 0,
-          fill: false
-        });
+          data: data
+        }, barColor));
       });
 
       const built = makeComparePanels({
@@ -4232,7 +4988,9 @@ body.mode-interactive #page7 .three-panel {
         lineCanvasId: "waterCompareLineChart",
         labels: labels,
         barDatasets: barDatasets,
-        lineDatasets: lineDatasets
+        lineDatasets: lineDatasets,
+        metric: "water",
+        yTitle: "Water (m³)"
       });
       waterCompareChart = built.barChart;
       waterCompareLineChart = built.lineChart;
@@ -5965,11 +6723,16 @@ body.mode-interactive #page7 .three-panel {
   })();
 
   // ============================================================
-  // ELECTRIC SPARKS — flickering gold specks with an occasional
-  // mini lightning-bolt glint, for pages configured with the
-  // "sparks" animation (e.g. Electricity Usage). Sparks flicker
-  // in/out and jitter in place rather than drifting, unlike the
-  // rising particles.
+  // ELECTRIC SPARKS — flickering gold lightning bolts, for pages
+  // configured with the "sparks" animation (e.g. Electricity Usage).
+  // Bolts are sized big and bright (with a bloom-y white core) so
+  // the handful visible around a chart panel still read clearly,
+  // rather than being lost as faint pinpricks. Each bolt holds a
+  // fixed orientation and only drifts a couple of pixels — no
+  // continuous spin or fast circular buzz — so a screen full of them
+  // flickering at once reads as electrical crackle rather than making
+  // the page feel dizzying. A small subset are "surge" bolts — extra
+  // large and extra bright — for an occasional bolder jolt.
   // ============================================================
   (function setupSparkParticles(){
     var pages = Array.prototype.slice.call(document.querySelectorAll(".page")).filter(function (pg) {
@@ -5999,21 +6762,24 @@ body.mode-interactive #page7 .three-panel {
     resize();
     window.addEventListener("resize", resize);
 
-    var COUNT = Math.max(45, Math.min(100, Math.round((W * H) / 22000)));
+    // Fewer, bigger sparks read better than a lot of tiny ones.
+    var COUNT = Math.max(22, Math.min(48, Math.round((W * H) / 55000)));
     var sparks = [];
     function rand(a, b) { return a + Math.random() * (b - a); }
 
     function makeSpark() {
+      var surge = Math.random() < 0.18; // occasional oversized, extra-bright bolt
       return {
         x: rand(0, W),
         y: rand(0, H),
-        r: rand(1.4, 3.2),           // radius
+        r: surge ? rand(6, 9) : rand(3, 6),   // base size driving the bolt silhouette
         life: 0,
-        maxLife: rand(400, 1200),    // flicker duration in ms
-        jitter: rand(6, 16),         // buzz radius
-        angle: rand(0, Math.PI * 2),
-        angleSpeed: rand(-0.0025, 0.0025),
-        glint: Math.random() < 0.35  // some sparks render as a tiny lightning-bolt glint
+        maxLife: rand(450, 1300),             // flicker duration in ms
+        jitter: rand(1.5, 4),                 // tiny settle drift, not a fast buzz
+        jitterSpeed: rand(0.0012, 0.002),
+        angle: rand(-0.25, 0.25),             // fixed tilt for the whole flicker — no spin
+        glint: Math.random() < 0.55,          // most sparks render as a lightning-bolt glint
+        surge: surge
       };
     }
     for (var i = 0; i < COUNT; i++) {
@@ -6046,15 +6812,15 @@ body.mode-interactive #page7 .three-panel {
         ctx.save();
         ctx.translate(xs[i], ys[i]);
         ctx.rotate(s.angle);
-        // Warm gold/white, matching the electricity KPI icon color.
-        ctx.fillStyle = "rgba(255, 244, 190, " + a + ")";
         ctx.shadowColor = "rgba(250, 204, 21, 0.95)";
-        ctx.shadowBlur = s.r * 4;
+        ctx.shadowBlur = s.r * (s.surge ? 7 : 5.5);
 
         if (s.glint) {
-          // Tiny jagged lightning-bolt silhouette, scaled off the spark radius.
-          var bh = s.r * 3.2;
+          // Bold jagged lightning-bolt silhouette, scaled off the spark radius —
+          // roughly 3-6x larger than the old glint so it stays legible.
+          var bh = s.r * 6;
           var bw = bh * 0.55;
+          ctx.fillStyle = "rgba(255, 244, 190, " + a + ")";
           ctx.beginPath();
           ctx.moveTo(0.15 * bw, -1.0 * bh);
           ctx.lineTo(0.55 * bw, -1.0 * bh);
@@ -6065,7 +6831,18 @@ body.mode-interactive #page7 .three-panel {
           ctx.lineTo(-0.5 * bw, 0.15 * bh);
           ctx.closePath();
           ctx.fill();
+          // Slim bright-white core stroke down the middle so the bolt pops
+          // even against busy chart backgrounds.
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = "rgba(255, 255, 255, " + (a * 0.8) + ")";
+          ctx.lineWidth = Math.max(1, s.r * 0.18);
+          ctx.beginPath();
+          ctx.moveTo(0.35 * bw, -0.85 * bh);
+          ctx.lineTo(0.02 * bw, -0.05 * bh);
+          ctx.lineTo(-0.1 * bw, 0.85 * bh);
+          ctx.stroke();
         } else {
+          ctx.fillStyle = "rgba(255, 244, 190, " + a + ")";
           ctx.beginPath();
           ctx.arc(0, 0, s.r, 0, Math.PI * 2);
           ctx.fill();
@@ -6083,7 +6860,6 @@ body.mode-interactive #page7 .three-panel {
       for (var i = 0; i < sparks.length; i++) {
         var s = sparks[i];
         s.life += dt;
-        s.angle += s.angleSpeed * dt;
         if (s.life >= s.maxLife) {
           sparks[i] = makeSpark();
           s = sparks[i];
@@ -6093,9 +6869,10 @@ body.mode-interactive #page7 .three-panel {
         var t = s.life / s.maxLife;
         alphas[i] = t < 0.15 ? (t / 0.15) : (t > 0.75 ? Math.max(0, (1 - t) / 0.25) : 1);
 
-        // Buzz in place instead of drifting.
-        xs[i] = s.x + Math.sin(now * 0.006 + i) * s.jitter;
-        ys[i] = s.y + Math.cos(now * 0.007 + i * 1.3) * s.jitter;
+        // A small, slow settle drift — enough to feel alive without the
+        // fast circular buzz that made a screen full of bolts feel dizzying.
+        xs[i] = s.x + Math.sin(now * s.jitterSpeed + i) * s.jitter;
+        ys[i] = s.y + Math.cos(now * s.jitterSpeed * 0.8 + i * 1.3) * s.jitter;
       }
 
       var active = getActiveCanvases();
@@ -6107,10 +6884,12 @@ body.mode-interactive #page7 .three-panel {
   })();
 
   // ============================================================
-  // SUN GLOW — soft, warm orbs that drift upward slowly, used for
-  // pages configured with the "sun" animation (e.g. Solar Energy).
-  // Bigger, slower and warmer-toned than the rising particles, with
-  // a gentle pulsing "breathing" glow.
+  // SUN GLOW — small drifting sun icons (a round core plus radiating
+  // rays), used for pages configured with the "sun" animation (e.g.
+  // Solar Energy). Each one reads as an actual little sun rather than
+  // a formless light particle: the rays rotate slowly and breathe in
+  // length, the core has a warm gradient, and the whole thing drifts
+  // upward with a gentle sway.
   // ============================================================
   (function setupSunGlowParticles(){
     var pages = Array.prototype.slice.call(document.querySelectorAll(".page")).filter(function (pg) {
@@ -6140,25 +6919,36 @@ body.mode-interactive #page7 .three-panel {
     resize();
     window.addEventListener("resize", resize);
 
-    var COUNT = Math.max(50, Math.min(100, Math.round((W * H) / 22000)));
-    var orbs = [];
+    // Many small suns rather than a few big ones — reads as a lively
+    // scattered field instead of a handful of isolated icons.
+    var COUNT = Math.max(32, Math.min(70, Math.round((W * H) / 32000)));
+    var RAY_COUNT = 10;
+    var suns = [];
     function rand(a, b) { return a + Math.random() * (b - a); }
 
-    function makeOrb(atBottom) {
+    function makeSun(atBottom) {
+      // Per-ray length variance, fixed for this sun's lifetime, so the
+      // burst looks like an irregular natural flare rather than a
+      // perfectly even gear/star shape.
+      var rayVar = [];
+      for (var k = 0; k < RAY_COUNT; k++) rayVar.push(rand(0.55, 1));
       return {
         x: rand(0, W),
-        y: atBottom ? rand(H, H + 60) : rand(0, H),
-        r: rand(5, 12),               // radius
-        speed: rand(0.1, 0.32),      // slow upward drift
+        y: atBottom ? rand(H, H + 80) : rand(0, H),
+        r: rand(4, 8),                   // core radius
+        speed: rand(0.08, 0.22),        // slow upward drift
         sway: rand(8, 22),
-        swaySpeed: rand(0.0004, 0.0012),
+        swaySpeed: rand(0.0003, 0.0009),
         phase: rand(0, Math.PI * 2),
+        rotation: rand(0, Math.PI * 2),
+        rotationSpeed: rand(0.0003, 0.0009) * (Math.random() < 0.5 ? -1 : 1),
         pulsePhase: rand(0, Math.PI * 2),
-        pulseSpeed: rand(0.0015, 0.003),
-        opacity: rand(0.55, 0.95)
+        pulseSpeed: rand(0.0012, 0.0022),
+        opacity: rand(0.65, 0.95),
+        rayVar: rayVar
       };
     }
-    for (var i = 0; i < COUNT; i++) orbs.push(makeOrb(false));
+    for (var i = 0; i < COUNT; i++) suns.push(makeSun(false));
 
     function getActiveCanvases() {
       var out = [];
@@ -6168,24 +6958,77 @@ body.mode-interactive #page7 .three-panel {
       return out;
     }
 
-    var xs = new Array(orbs.length);
-    var scales = new Array(orbs.length);
+    var xs = new Array(suns.length);
+    var rayScales = new Array(suns.length);
 
     function renderTo(canvas) {
       var ctx = canvas.getContext("2d");
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
-      for (var i = 0; i < orbs.length; i++) {
-        var o = orbs[i];
-        if (o.y < -20) continue;
-        var r = o.r * scales[i];
+      for (var i = 0; i < suns.length; i++) {
+        var s = suns[i];
+        if (s.y < -30) continue;
+
+        ctx.save();
+        ctx.translate(xs[i], s.y);
+
+        // Soft outer halo — a wide, faint glow behind everything else,
+        // like atmospheric bloom around a real light source.
+        var haloR = s.r * 3.4;
+        var haloGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, haloR);
+        haloGrad.addColorStop(0, "rgba(255, 205, 120, " + (s.opacity * 0.32) + ")");
+        haloGrad.addColorStop(1, "rgba(255, 205, 120, 0)");
+        ctx.fillStyle = haloGrad;
         ctx.beginPath();
-        ctx.arc(xs[i], o.y, r, 0, Math.PI * 2);
-        // Warm amber/gold glow, matching the solar theme.
-        ctx.fillStyle = "rgba(255, 214, 140, " + o.opacity + ")";
-        ctx.shadowColor = "rgba(251, 191, 36, 0.95)";
-        ctx.shadowBlur = r * 4.5;
+        ctx.arc(0, 0, haloR, 0, Math.PI * 2);
         ctx.fill();
+
+        ctx.rotate(s.rotation);
+
+        // Rays — tapered flare wedges (wide at the core, pointed at the
+        // tip) with per-ray length variance so the burst reads as an
+        // organic flare instead of an even gear/star.
+        var baseLen = s.r * (1.3 + Math.sin(s.pulsePhase) * 0.2) * rayScales[i];
+        var innerR = s.r * 1.05;
+        var baseHalfWidth = s.r * 0.16;
+        ctx.shadowColor = "rgba(251, 191, 36, 0.85)";
+        ctx.shadowBlur = s.r * 1.4;
+        for (var k = 0; k < RAY_COUNT; k++) {
+          var ang = (Math.PI * 2 / RAY_COUNT) * k;
+          var rayLen = baseLen * s.rayVar[k];
+          var dirX = Math.cos(ang), dirY = Math.sin(ang);
+          var perpX = -dirY, perpY = dirX;
+          var shimmer = 0.75 + Math.sin(s.pulsePhase * 1.3 + k * 1.7) * 0.25;
+          ctx.fillStyle = "rgba(255, 210, 130, " + (s.opacity * shimmer) + ")";
+          ctx.beginPath();
+          ctx.moveTo(dirX * innerR + perpX * baseHalfWidth, dirY * innerR + perpY * baseHalfWidth);
+          ctx.lineTo(dirX * (innerR + rayLen), dirY * (innerR + rayLen));
+          ctx.lineTo(dirX * innerR - perpX * baseHalfWidth, dirY * innerR - perpY * baseHalfWidth);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Core — hot white-gold center fading to a deeper amber limb,
+        // so it reads as a bright light source rather than a flat disc.
+        ctx.shadowBlur = s.r * 2.2;
+        var grad = ctx.createRadialGradient(-s.r * 0.2, -s.r * 0.2, s.r * 0.1, 0, 0, s.r);
+        grad.addColorStop(0, "rgba(255, 253, 235, " + s.opacity + ")");
+        grad.addColorStop(0.55, "rgba(255, 214, 120, " + s.opacity + ")");
+        grad.addColorStop(1, "rgba(240, 158, 42, " + (s.opacity * 0.92) + ")");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, s.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Thin warm limb rim for a touch of definition against the glow.
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(214, 122, 30, " + (s.opacity * 0.5) + ")";
+        ctx.lineWidth = Math.max(0.5, s.r * 0.08);
+        ctx.beginPath();
+        ctx.arc(0, 0, s.r * 0.98, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
       }
       ctx.shadowBlur = 0;
     }
@@ -6195,17 +7038,18 @@ body.mode-interactive #page7 .three-panel {
       var dt = Math.min(now - lastT, 50);
       lastT = now;
 
-      for (var i = 0; i < orbs.length; i++) {
-        var o = orbs[i];
-        o.y -= o.speed * (dt / 16.6);
-        o.phase += o.swaySpeed * dt;
-        o.pulsePhase += o.pulseSpeed * dt;
-        if (o.y < -20) {
-          orbs[i] = makeOrb(true);
-          o = orbs[i];
+      for (var i = 0; i < suns.length; i++) {
+        var s = suns[i];
+        s.y -= s.speed * (dt / 16.6);
+        s.phase += s.swaySpeed * dt;
+        s.rotation += s.rotationSpeed * dt;
+        s.pulsePhase += s.pulseSpeed * dt;
+        if (s.y < -30) {
+          suns[i] = makeSun(true);
+          s = suns[i];
         }
-        xs[i] = o.x + Math.sin(o.phase) * o.sway;
-        scales[i] = 0.85 + Math.sin(o.pulsePhase) * 0.15; // gentle breathing glow
+        xs[i] = s.x + Math.sin(s.phase) * s.sway;
+        rayScales[i] = 0.9 + Math.sin(s.pulsePhase * 0.7) * 0.1;
       }
 
       var active = getActiveCanvases();
@@ -6217,9 +7061,13 @@ body.mode-interactive #page7 .three-panel {
   })();
 
   // ============================================================
-  // DRIFTING LEAVES — small green leaf shapes that fall, sway, and
-  // slowly rotate, for pages configured with the "leaves" animation
-  // (e.g. Waste Management).
+  // FOOD WASTE — small half-eaten food shapes (an apple with a bite
+  // out of it, or a cookie with a bite and choc chips) that fall,
+  // sway, and slowly rotate, for pages configured with the "leaves"
+  // animation (e.g. Waste Management). The bite is painted as a pale
+  // "flesh" crescent clipped to the body (not punched through to
+  // transparent), so it reads as exposed fruit/cookie interior
+  // instead of a hole showing whatever is behind the canvas.
   // ============================================================
   (function setupLeafParticles(){
     var pages = Array.prototype.slice.call(document.querySelectorAll(".page")).filter(function (pg) {
@@ -6249,22 +7097,35 @@ body.mode-interactive #page7 .three-panel {
     resize();
     window.addEventListener("resize", resize);
 
-    var COUNT = Math.max(35, Math.min(75, Math.round((W * H) / 28000)));
+    // Plenty of small food pieces so the screen doesn't read empty.
+    var COUNT = Math.max(34, Math.min(70, Math.round((W * H) / 26000)));
     var leaves = [];
     function rand(a, b) { return a + Math.random() * (b - a); }
 
+    var APPLE_COLORS = [
+      { light: "rgba(255, 138, 128, OPA)", body: "rgba(214, 58, 58, OPA)", glow: "rgba(239, 68, 68, 0.85)" },   // red apple
+      { light: "rgba(190, 230, 140, OPA)", body: "rgba(112, 168, 76, OPA)", glow: "rgba(132, 204, 22, 0.85)" }  // green apple
+    ];
+
     function makeLeaf(atTop) {
+      var kind = Math.random() < 0.55 ? "apple" : "cookie";
+      var palette = kind === "apple" ? APPLE_COLORS[Math.floor(rand(0, APPLE_COLORS.length))] : null;
       return {
+        kind: kind,
+        palette: palette,
         x: rand(0, W),
         y: atTop ? rand(-60, -10) : rand(0, H),
-        r: rand(6, 11),
-        speed: rand(0.12, 0.32),     // downward drift
+        r: rand(8, 15),
+        speed: rand(0.1, 0.28),      // downward drift
         sway: rand(15, 40),
-        swaySpeed: rand(0.0008, 0.002),
+        swaySpeed: rand(0.0006, 0.0016),
         phase: rand(0, Math.PI * 2),
         rotation: rand(0, Math.PI * 2),
-        rotationSpeed: rand(-0.0015, 0.0015),
-        opacity: rand(0.55, 0.9)
+        rotationSpeed: rand(-0.0012, 0.0012),
+        opacity: rand(0.6, 0.92),
+        // Bite notch position is randomized once per item and stays fixed.
+        biteAngle: rand(-0.5, 0.5),
+        chips: kind === "cookie" ? [rand(0, Math.PI * 2), rand(0, Math.PI * 2), rand(0, Math.PI * 2), rand(0, Math.PI * 2)] : null
       };
     }
     for (var i = 0; i < COUNT; i++) leaves.push(makeLeaf(false));
@@ -6280,6 +7141,113 @@ body.mode-interactive #page7 .three-panel {
     var xs = new Array(leaves.length);
     var rotations = new Array(leaves.length);
 
+    // Shared bite geometry: a smaller circle offset toward the edge, so once
+    // it's clipped to the body only a believable edge-crescent is visible —
+    // never more than roughly a third of the body.
+    function biteGeometry(r) {
+      return { bx: r * 0.82, by: -r * 0.08, br: r * 0.48 };
+    }
+
+    function drawApple(ctx, l) {
+      var op = l.opacity;
+      var r = l.r;
+
+      // Body — a soft highlight-to-shadow gradient so it reads as a round
+      // fruit rather than a flat colored disc.
+      ctx.shadowColor = l.palette.glow;
+      ctx.shadowBlur = r * 2.2;
+      var bodyGrad = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.15, 0, 0, r);
+      bodyGrad.addColorStop(0, l.palette.light.replace("OPA", op));
+      bodyGrad.addColorStop(1, l.palette.body.replace("OPA", op));
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Bite: pale flesh-colored crescent, clipped to the body outline so
+      // it reads as exposed apple flesh rather than a hole or a sticker.
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.clip();
+      var bite = biteGeometry(r);
+      var fleshGrad = ctx.createRadialGradient(
+        bite.bx - bite.br * 0.2, bite.by - bite.br * 0.2, bite.br * 0.1,
+        bite.bx, bite.by, bite.br
+      );
+      fleshGrad.addColorStop(0, "rgba(250, 244, 217, " + op + ")");
+      fleshGrad.addColorStop(1, "rgba(230, 208, 158, " + op + ")");
+      ctx.fillStyle = fleshGrad;
+      ctx.beginPath();
+      ctx.arc(bite.bx, bite.by, bite.br, 0, Math.PI * 2);
+      ctx.fill();
+      // Faint rim where the flesh meets the skin, for a bit of depth.
+      ctx.strokeStyle = "rgba(140, 84, 40, " + (op * 0.4) + ")";
+      ctx.lineWidth = Math.max(0.6, r * 0.07);
+      ctx.stroke();
+      ctx.restore();
+
+      // Stem + leaf on top.
+      ctx.strokeStyle = "rgba(107, 68, 35, " + op + ")";
+      ctx.lineWidth = Math.max(1, r * 0.16);
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.95);
+      ctx.lineTo(r * 0.18, -r * 1.35);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(120, 200, 120, " + op + ")";
+      ctx.beginPath();
+      ctx.ellipse(r * 0.45, -r * 1.25, r * 0.38, r * 0.18, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawCookie(ctx, l) {
+      var op = l.opacity;
+      var r = l.r;
+
+      // Body — warm toasted-biscuit gradient.
+      ctx.shadowColor = "rgba(180, 130, 70, 0.85)";
+      ctx.shadowBlur = r * 2.2;
+      var bodyGrad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.2, 0, 0, r);
+      bodyGrad.addColorStop(0, "rgba(216, 172, 116, " + op + ")");
+      bodyGrad.addColorStop(1, "rgba(178, 130, 76, " + op + ")");
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Bite: darker toasted-interior crescent, clipped to the cookie.
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.clip();
+      var bite = biteGeometry(r);
+      ctx.fillStyle = "rgba(152, 110, 64, " + op + ")";
+      ctx.beginPath();
+      ctx.arc(bite.bx, bite.by, bite.br, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(96, 64, 32, " + (op * 0.45) + ")";
+      ctx.lineWidth = Math.max(0.6, r * 0.07);
+      ctx.stroke();
+      ctx.restore();
+
+      // Chocolate chip specks, skipping any that would land in the bite.
+      ctx.fillStyle = "rgba(70, 42, 20, " + op + ")";
+      for (var c = 0; c < l.chips.length; c++) {
+        var ang = l.chips[c];
+        var rr = r * 0.55;
+        var cx = Math.cos(ang) * rr;
+        var cy = Math.sin(ang) * rr;
+        var dx = cx - bite.bx, dy = cy - bite.by;
+        if (Math.sqrt(dx * dx + dy * dy) < bite.br * 1.05) continue;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     function renderTo(canvas) {
       var ctx = canvas.getContext("2d");
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -6290,27 +7258,13 @@ body.mode-interactive #page7 .three-panel {
 
         ctx.save();
         ctx.translate(xs[i], l.y);
-        ctx.rotate(rotations[i]);
-        // Soft emerald green, matching the recycling/ESG accent.
-        ctx.fillStyle = "rgba(134, 224, 172, " + l.opacity + ")";
-        ctx.shadowColor = "rgba(52, 211, 153, 0.95)";
-        ctx.shadowBlur = l.r * 3.2;
-
-        ctx.beginPath();
-        ctx.ellipse(0, 0, l.r * 1.6, l.r * 0.85, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Center vein line for a bit of leaf detail.
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = "rgba(20, 90, 60, " + (l.opacity * 0.6) + ")";
-        ctx.lineWidth = Math.max(0.6, l.r * 0.12);
-        ctx.beginPath();
-        ctx.moveTo(-l.r * 1.4, 0);
-        ctx.lineTo(l.r * 1.4, 0);
-        ctx.stroke();
-
+        ctx.rotate(rotations[i] + l.biteAngle);
+        if (l.kind === "apple") drawApple(ctx, l);
+        else drawCookie(ctx, l);
         ctx.restore();
       }
+      ctx.shadowBlur = 0;
+      ctx.globalCompositeOperation = "source-over";
     }
 
     var lastT = performance.now();
@@ -6341,4 +7295,3 @@ body.mode-interactive #page7 .three-panel {
   </script>
 </body>
 </html>
-

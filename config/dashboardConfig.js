@@ -38,10 +38,40 @@ const DEFAULT_CONFIG = {
     idleTimeoutMinutes: 15,
     lastActivityAt: null
   },
+  dashboardSettingsProfiles: [
+    {
+      id: "default",
+      name: "Default Dashboard Settings",
+      isDefault: true,
+      isProtected: true,
+      createdAt: null,
+      settings: {
+        dashboardMode: "auto",
+        autoSwitchOnActivity: true,
+        autoRevertEnabled: true,
+        idleTimeoutMinutes: 15
+      }
+    }
+  ],
   automation: {
     applyDefaultTimingEnabled: false,
     autoHibernateEnabled: false,
     autoHibernateDryRun: true,
+    autoWakeEnabled: false,
+    autoWakeSchedule: {
+      wakeTime: "07:00",
+      activeProfileId: "default",
+      days: {
+        monday: { enabled: true, wakeTime: "07:00" },
+        tuesday: { enabled: true, wakeTime: "07:00" },
+        wednesday: { enabled: true, wakeTime: "07:00" },
+        thursday: { enabled: true, wakeTime: "07:00" },
+        friday: { enabled: true, wakeTime: "07:00" },
+        saturday: { enabled: false, wakeTime: "07:00" },
+        sunday: { enabled: false, wakeTime: "07:00" }
+      }
+    },
+    lastWakeTaskDryRunAt: null,
     autoHibernateSchedule: {
       startTime: "22:00",
       endTime: "07:00",
