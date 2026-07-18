@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "devStart": "nodemon app.js"
+    "test": "node scripts/check.js",
+    "devstart": "PORT=3000 node ./node_modules/nodemon/bin/nodemon.js --legacy-watch --watch app.js --watch config --watch views --ext js,ejs,json app.js",
+    "devStart": "PORT=3000 node ./node_modules/nodemon/bin/nodemon.js --legacy-watch --watch app.js --watch config --watch views --ext js,ejs,json app.js"
   },
   "nodemonConfig": {
     "ignore": [

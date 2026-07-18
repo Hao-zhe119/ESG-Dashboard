@@ -60,13 +60,22 @@
   --panel-ratio-total: 3; 
   --graphSurface: #f7f9fc;
   --graphSurfaceDark: #101827;
-  --graphCardSurface: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,249,253,0.94) 100%);
-  --graphCardBorder: rgba(148,163,184,0.22);
-  --graphCardShadow: 0 24px 58px rgba(2,6,23,0.26), 0 2px 10px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.92);
-  --graphPlotSurface: rgba(248,250,252,0.58);
+  --graphCardSurface: linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(246,249,253,0.90) 100%);
+  --graphCardBorder: rgba(148,163,184,0.24);
+  --graphCardShadow: 0 22px 54px rgba(2,6,23,0.24), 0 2px 10px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.88);
+  --graphPlotSurface: rgba(248,250,252,0.50);
   --graphBorder: rgba(30,41,59,0.08);
   --graphShadow: none;
-  --graphRadius: 18px;
+  --graphRadius: 16px;
+  --chartFont: Inter, "IBM Plex Sans", Geist, "Segoe UI", Arial, sans-serif;
+  --chartEase: cubic-bezier(0.22, 1, 0.36, 1);
+  --chartControlBg: rgba(255,255,255,0.72);
+  --chartControlBorder: rgba(148,163,184,0.28);
+  --chartControlText: #334155;
+  --chartControlActive: #111827;
+  --chartFocus: rgba(37,99,235,0.32);
+  --chartPanelSubtle: rgba(255,255,255,0.52);
+  --chartGlassBlur: blur(20px) saturate(160%);
   --metricElectricity: #2563eb;
   --metricWater: #0891b2;
   --metricSolar: #d97706;
@@ -367,12 +376,12 @@ html, body {
 /* ========================================
    PAGE BACKGROUNDS
    ======================================== */
-#page1, #page2, #page3, #page4, #page5, #page6, #page7, #page8, #page9, #page10 {
+#page1, #page2, #page3, #page4, #page5, #page6, #page7, #page8, #page9, #page10, #page11 {
   background: url("/images/rp-main.jpg") no-repeat center center / cover;
 }
 
 #page1::before, #page2::before, #page3::before, #page4::before, #page5::before,
-#page6::before, #page7::before, #page8::before, #page9::before, #page10::before {
+#page6::before, #page7::before, #page8::before, #page9::before, #page10::before, #page11::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -414,7 +423,7 @@ html, body {
   display: block;
 }
 
-#page1 > *, #page2 > *, #page3 > *, #page4 > *, #page8 > *, #page9 > *, #page10 > * {
+#page1 > *, #page2 > *, #page3 > *, #page4 > *, #page8 > *, #page9 > *, #page10 > *, #page11 > * {
   position: relative;
   z-index: 1;
   color: var(--text);
@@ -934,8 +943,8 @@ body.mode-interactive #page7 .three-panel {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: clamp(14px, 1.4vh, 22px);
-  padding: clamp(18px, 1.45vw, 32px);
+  gap: 16px;
+  padding: clamp(18px, 1.5vw, 24px);
   border-radius: var(--graphRadius);
   border: 1px solid var(--graphCardBorder);
   background: var(--graphCardSurface);
@@ -944,11 +953,13 @@ body.mode-interactive #page7 .three-panel {
   backdrop-filter: blur(20px) saturate(160%);
   overflow: hidden;
   color: #111827;
+  font-family: var(--chartFont);
 }
 
 .analytics-card-full {
   flex: 1;
-  max-width: min(92vw, 2440px);
+  max-width: min(88vw, 2240px);
+  max-height: min(84vh, 980px);
 }
 
 .panel-mid .analytics-card {
@@ -958,10 +969,10 @@ body.mode-interactive #page7 .three-panel {
 .analytics-card-header {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(260px, 1fr) minmax(320px, auto);
   align-items: start;
-  gap: clamp(12px, 1.2vw, 24px);
-  padding-bottom: clamp(10px, 1vh, 16px);
+  gap: 16px;
+  padding-bottom: 16px;
   border-bottom: 1px solid rgba(148,163,184,0.20);
 }
 
@@ -974,9 +985,9 @@ body.mode-interactive #page7 .three-panel {
   margin: 0;
   color: #111827 !important;
   text-align: left;
-  font-size: clamp(26px, 2vw, 46px);
-  font-weight: 900;
-  line-height: 1.02;
+  font-size: clamp(22px, 1.55vw, 28px);
+  font-weight: 650;
+  line-height: 1.12;
   letter-spacing: 0;
   text-shadow: none !important;
   animation: none !important;
@@ -986,9 +997,9 @@ body.mode-interactive #page7 .three-panel {
   margin: 0;
   color: #111827 !important;
   text-align: left;
-  font-size: clamp(21px, 1.48vw, 34px);
-  font-weight: 900;
-  line-height: 1.08;
+  font-size: clamp(18px, 1.25vw, 24px);
+  font-weight: 650;
+  line-height: 1.14;
   letter-spacing: 0;
   white-space: normal;
   overflow: hidden;
@@ -1001,11 +1012,11 @@ body.mode-interactive #page7 .three-panel {
 }
 
 .analytics-card .multi-building-subtitle {
-  margin: clamp(6px, 0.55vh, 10px) 0 0;
+  margin: 8px 0 0;
   color: #64748b;
   text-align: left;
-  font-size: clamp(15px, 1.05vw, 22px);
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.25;
 }
 
@@ -1013,11 +1024,11 @@ body.mode-interactive #page7 .three-panel {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
   color: #64748b;
-  font-size: clamp(11px, 0.72vw, 15px);
-  font-weight: 850;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -1034,15 +1045,22 @@ body.mode-interactive #page7 .three-panel {
   flex: 1;
   min-height: 0;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .three-chart-wrap {
+  position: relative;
   flex: 1;
-  min-height: 280px;
+  min-height: 248px;
   margin-top: 0;
-  padding: clamp(8px, 0.7vw, 14px);
+  padding: 16px 18px 18px;
   border-radius: calc(var(--graphRadius) - 6px);
   background: var(--graphPlotSurface);
+  border: 1px solid rgba(148,163,184,0.16);
+  font-family: var(--chartFont);
+  overflow: hidden;
+  transition: background .24s var(--chartEase), border-color .24s var(--chartEase), box-shadow .24s var(--chartEase);
 }
 
 .three-chart-wrap canvas {
@@ -1052,20 +1070,610 @@ body.mode-interactive #page7 .three-panel {
   border-radius: calc(var(--graphRadius) - 8px);
   border: 0;
   box-shadow: none;
+  cursor: crosshair;
+}
+
+.analytics-toolbar {
+  justify-self: end;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  max-width: min(58vw, 920px);
+}
+
+.analytics-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 3px;
+  border: 1px solid var(--chartControlBorder);
+  border-radius: 8px;
+  background: var(--chartControlBg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.70);
+  -webkit-backdrop-filter: var(--chartGlassBlur);
+  backdrop-filter: var(--chartGlassBlur);
+}
+
+.analytics-tool-btn,
+.analytics-segment {
+  appearance: none;
+  border: 0;
+  min-height: 26px;
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: transparent;
+  color: var(--chartControlText);
+  font: 650 12px/1 var(--chartFont);
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background .16s var(--chartEase), color .16s var(--chartEase), box-shadow .16s var(--chartEase), transform .16s var(--chartEase), opacity .16s var(--chartEase);
+}
+
+.analytics-tool-btn:hover,
+.analytics-segment:hover {
+  background: rgba(37,99,235,0.08);
+  color: #0f172a;
+}
+
+.analytics-tool-btn:focus-visible,
+.analytics-segment:focus-visible,
+.analytics-range-input:focus-visible {
+  outline: 2px solid var(--chartFocus);
+  outline-offset: 2px;
+}
+
+.analytics-tool-btn.active,
+.analytics-segment.active {
+  background: var(--chartControlActive);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(15,23,42,0.18);
+}
+
+.analytics-tool-btn.is-playing {
+  background: #166534;
+  color: #ffffff;
+}
+
+.analytics-toolbar-label {
+  padding: 0 5px;
+  color: #64748b;
+  font: 750 10px/1 var(--chartFont);
+  text-transform: uppercase;
+}
+
+.analytics-view-mode-bar .compare-bars,
+.analytics-view-mode-line .compare-line {
+  flex: 1 1 100%;
+}
+
+.analytics-view-mode-bar .compare-line,
+.analytics-view-mode-line .compare-bars {
+  flex: 0 0 0;
+  min-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+}
+
+.analytics-view-mode-combined {
+  position: relative;
+}
+
+.analytics-view-mode-combined .compare-bars,
+.analytics-view-mode-combined .compare-line {
+  position: absolute;
+  inset: 16px 18px 18px;
+  flex: none;
+  min-height: 0;
+}
+
+.analytics-view-mode-combined .compare-bars { z-index: 1; }
+.analytics-view-mode-combined .compare-line {
+  z-index: 2;
+  pointer-events: none;
+}
+
+.analytics-view-mode-bar .compare-bars,
+.analytics-view-mode-line .compare-line,
+.analytics-view-mode-combined .compare-bars,
+.analytics-view-mode-combined .compare-line {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.analytics-navigator {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(100px, auto) minmax(180px, 1fr) minmax(100px, auto);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 8px;
+  background: var(--chartPanelSubtle);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
+.analytics-range-label,
+.analytics-range-value {
+  color: #475569;
+  font: 650 12px/1.2 var(--chartFont);
+  white-space: nowrap;
+}
+
+.analytics-range-track {
+  position: relative;
+  height: 24px;
+}
+
+.analytics-range-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  accent-color: var(--chartAccent, #2563eb);
+  background: transparent;
+  cursor: pointer;
+}
+
+.analytics-range-input + .analytics-range-input {
+  pointer-events: none;
+}
+
+.analytics-range-input + .analytics-range-input::-webkit-slider-thumb {
+  pointer-events: auto;
+}
+
+.analytics-range-input + .analytics-range-input::-moz-range-thumb {
+  pointer-events: auto;
+}
+
+.analytics-intelligence {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(220px, .75fr);
+  gap: 12px;
+}
+
+.analytics-insights,
+.analytics-stats {
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 8px;
+  background: var(--chartPanelSubtle);
+  color: #334155;
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
+.analytics-insights-title,
+.analytics-stats-title {
+  margin-bottom: 6px;
+  color: #64748b;
+  font: 750 10px/1 var(--chartFont);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.analytics-insights-body {
+  color: #1e293b;
+  font: 500 12px/1.45 var(--chartFont);
+}
+
+.analytics-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.analytics-stat {
+  min-width: 0;
+}
+
+.analytics-stat-label {
+  display: block;
+  color: #64748b;
+  font: 650 10px/1 var(--chartFont);
+}
+
+.analytics-stat-value {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #0f172a;
+  font: 750 12px/1 var(--chartFont);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ========================================
+   PAGE 11: CAMPUS ANALYTICS
+   ======================================== */
+#page11 {
+  padding-top: calc(var(--navH) + var(--pad));
+  padding-inline: clamp(16px, 2vw, 34px);
+  padding-bottom: calc(var(--progH) + var(--pad) + 8px);
+}
+
+.campus-analytics-shell {
+  width: min(1680px, 96vw);
+  height: min(860px, calc((var(--vh) * 100) - var(--navH) - var(--progH) - 32px));
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 14px;
+  margin: 0 auto;
+}
+
+.campus-selector-panel,
+.campus-forecast-panel {
+  min-height: 0;
+  border: 1px solid var(--graphCardBorder);
+  border-radius: 10px;
+  background: var(--chartPanelSubtle);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.54);
+  -webkit-backdrop-filter: blur(18px) saturate(155%);
+  backdrop-filter: blur(18px) saturate(155%);
+}
+
+.campus-selector-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  color: #1e293b;
+}
+
+.campus-selector-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.campus-selector-title {
+  margin: 0;
+  color: #0f172a;
+  font: 750 14px/1.1 var(--chartFont);
+}
+
+.campus-selector-count {
+  color: #64748b;
+  font: 650 11px/1.2 var(--chartFont);
+  white-space: nowrap;
+}
+
+.campus-search {
+  width: 100%;
+  height: 34px;
+  border: 1px solid var(--chartControlBorder);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(255,255,255,0.74);
+  color: #0f172a;
+  font: 500 13px/1 var(--chartFont);
+  outline: none;
+}
+
+.campus-search:focus {
+  border-color: rgba(37,99,235,0.42);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+
+.campus-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 10px 0;
+}
+
+.campus-action-btn,
+.campus-mode-btn {
+  min-height: 30px;
+  border: 1px solid var(--chartControlBorder);
+  border-radius: 7px;
+  background: rgba(255,255,255,0.70);
+  color: #334155;
+  font: 700 11px/1.1 var(--chartFont);
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background .16s var(--chartEase), color .16s var(--chartEase), border-color .16s var(--chartEase), box-shadow .16s var(--chartEase);
+}
+
+.campus-action-btn:hover,
+.campus-mode-btn:hover {
+  background: rgba(37,99,235,0.08);
+  border-color: rgba(37,99,235,0.28);
+  color: #0f172a;
+}
+
+.campus-mode-btn.active {
+  background: #111827;
+  border-color: #111827;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(15,23,42,0.18);
+}
+
+.campus-building-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 6px;
+  padding-right: 2px;
+}
+
+.campus-building-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 7px 8px;
+  border: 1px solid rgba(148,163,184,0.16);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.48);
+  cursor: pointer;
+  user-select: none;
+  transition: background .16s var(--chartEase), border-color .16s var(--chartEase), opacity .16s var(--chartEase);
+}
+
+.campus-building-row:hover {
+  background: rgba(37,99,235,0.08);
+  border-color: rgba(37,99,235,0.22);
+}
+
+.campus-building-row.is-selected {
+  background: rgba(16,185,129,0.12);
+  border-color: rgba(16,185,129,0.32);
+}
+
+.campus-building-row.is-muted {
+  opacity: .44;
+}
+
+.campus-building-check {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(100,116,139,0.42);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.80);
+}
+
+.campus-building-row.is-selected .campus-building-check {
+  background: #10b981;
+  border-color: #059669;
+  box-shadow: inset 0 0 0 3px #ffffff;
+}
+
+.campus-building-name {
+  min-width: 0;
+  color: #0f172a;
+  font: 700 12px/1.18 var(--chartFont);
+}
+
+.campus-building-meta {
+  margin-top: 2px;
+  color: #64748b;
+  font: 600 10px/1.15 var(--chartFont);
+  font-variant-numeric: tabular-nums;
+}
+
+.campus-building-swatch {
+  width: 12px;
+  height: 28px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.50);
+}
+
+.campus-main-grid {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.campus-analytics-card {
+  min-height: 0;
+}
+
+.campus-chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.campus-chart-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 3px;
+  border: 1px solid var(--chartControlBorder);
+  border-radius: 8px;
+  background: var(--chartControlBg);
+}
+
+.campus-forecast-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 9px;
+  border: 1px solid var(--chartControlBorder);
+  border-radius: 8px;
+  background: var(--chartControlBg);
+  color: var(--chartControlText);
+  font: 700 12px/1 var(--chartFont);
+  cursor: pointer;
+}
+
+.campus-forecast-toggle input {
+  accent-color: #2563eb;
+}
+
+.campus-chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.campus-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 42px;
+  overflow: hidden;
+  padding-top: 8px;
+}
+
+.campus-legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 168px;
+  min-height: 24px;
+  padding: 4px 7px;
+  border: 1px solid rgba(148,163,184,0.22);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.62);
+  color: #334155;
+  font: 650 11px/1 var(--chartFont);
+}
+
+.campus-legend-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.campus-legend-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campus-legend-more {
+  color: #64748b;
+  font: 700 11px/24px var(--chartFont);
+}
+
+.campus-forecast-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+  gap: 12px;
+  padding: 12px;
+}
+
+.campus-forecast-summary,
+.campus-forecast-stats {
+  min-width: 0;
+}
+
+.campus-panel-title {
+  margin: 0 0 7px;
+  color: #64748b;
+  font: 750 10px/1 var(--chartFont);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.campus-forecast-copy {
+  color: #1e293b;
+  font: 500 12px/1.45 var(--chartFont);
+}
+
+.campus-forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.campus-forecast-stat {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.46);
+}
+
+.campus-forecast-stat span {
+  display: block;
+  color: #64748b;
+  font: 650 10px/1.1 var(--chartFont);
+}
+
+.campus-forecast-stat strong {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #0f172a;
+  font: 760 12px/1.1 var(--chartFont);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+body.graph-bg-dark .campus-selector-panel,
+body.graph-bg-dark .campus-forecast-panel,
+body.graph-bg-dark .campus-selector-title,
+body.graph-bg-dark .campus-building-name,
+body.graph-bg-dark .campus-forecast-copy,
+body.graph-bg-dark .campus-forecast-stat strong {
+  color: #f8fafc;
+}
+
+body.graph-bg-dark .campus-search,
+body.graph-bg-dark .campus-action-btn,
+body.graph-bg-dark .campus-mode-btn,
+body.graph-bg-dark .campus-building-row,
+body.graph-bg-dark .campus-legend-chip,
+body.graph-bg-dark .campus-forecast-stat {
+  background: rgba(15,23,42,0.56);
+  color: #cbd5e1;
+}
+
+@media (max-width: 1100px) {
+  .campus-analytics-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: calc((var(--vh) * 100) - var(--navH) - var(--progH) - 24px);
+  }
+  .campus-selector-panel {
+    max-height: 240px;
+  }
+  .campus-forecast-panel {
+    grid-template-columns: 1fr;
+  }
+  .campus-forecast-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .premium-chart-tooltip {
   position: absolute;
   z-index: 20;
   pointer-events: none;
-  min-width: 190px;
-  max-width: min(360px, 82vw);
-  padding: 13px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(15,23,42,0.95);
-  box-shadow: 0 18px 44px rgba(2,6,23,0.32), inset 0 1px 0 rgba(255,255,255,0.08);
+  min-width: 184px;
+  max-width: min(340px, 82vw);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(15,23,42,0.96);
+  box-shadow: 0 16px 38px rgba(2,6,23,0.28), inset 0 1px 0 rgba(255,255,255,0.07);
   color: #f8fafc;
+  font-family: var(--chartFont);
   opacity: 0;
   transform: translate(-50%, calc(-100% - 14px)) scale(0.97);
   transform-origin: 50% 100%;
@@ -1075,13 +1683,13 @@ body.mode-interactive #page7 .three-panel {
 }
 
 .pct-title {
-  margin-bottom: 9px;
+  margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(226,232,240,0.16);
   color: #ffffff;
-  font-size: clamp(14px, 0.82vw, 18px);
-  font-weight: 850;
-  line-height: 1.15;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.2;
 }
 
 .pct-body {
@@ -1091,18 +1699,18 @@ body.mode-interactive #page7 .three-panel {
 
 .pct-row {
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr) auto;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 9px;
-  font-size: clamp(13px, 0.76vw, 17px);
+  gap: 8px;
+  font-size: 14px;
   line-height: 1.2;
 }
 
 .pct-dot {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.10);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.10);
 }
 
 .pct-label {
@@ -1111,20 +1719,40 @@ body.mode-interactive #page7 .three-panel {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #cbd5e1;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .pct-value {
   color: #f8fafc;
-  font-weight: 850;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
 
+.pct-meta {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(226,232,240,0.14);
+  display: grid;
+  gap: 5px;
+  color: #cbd5e1;
+  font: 500 12px/1.3 var(--chartFont);
+}
+
+.pct-meta strong {
+  color: #ffffff;
+  font-weight: 750;
+}
+
 body.graph-bg-dark {
-  --graphCardSurface: linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(17,24,39,0.94) 100%);
+  --graphCardSurface: linear-gradient(180deg, rgba(15,23,42,0.94) 0%, rgba(17,24,39,0.90) 100%);
   --graphCardBorder: rgba(226,232,240,0.18);
   --graphCardShadow: 0 26px 64px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08);
-  --graphPlotSurface: rgba(2,6,23,0.22);
+  --graphPlotSurface: rgba(2,6,23,0.24);
+  --chartControlBg: rgba(15,23,42,0.74);
+  --chartControlBorder: rgba(226,232,240,0.16);
+  --chartControlText: #cbd5e1;
+  --chartControlActive: #f8fafc;
+  --chartPanelSubtle: rgba(15,23,42,0.58);
 }
 
 body.graph-bg-dark .analytics-card,
@@ -1138,28 +1766,87 @@ body.graph-bg-dark .chart-kicker {
   color: #cbd5e1;
 }
 
+body.graph-bg-dark .analytics-tool-btn.active,
+body.graph-bg-dark .analytics-segment.active {
+  color: #0f172a;
+}
+
+body.graph-bg-dark .analytics-range-label,
+body.graph-bg-dark .analytics-range-value,
+body.graph-bg-dark .analytics-insights-body,
+body.graph-bg-dark .analytics-insights,
+body.graph-bg-dark .analytics-stats {
+  color: #cbd5e1;
+}
+
+body.graph-bg-dark .analytics-stat-value { color: #f8fafc; }
+
 body.graph-bg-transparent {
-  --graphCardSurface: rgba(255,255,255,0.74);
+  --graphCardSurface: rgba(255,255,255,0.18);
   --graphCardBorder: rgba(255,255,255,0.30);
-  --graphCardShadow: 0 20px 46px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.7);
-  --graphPlotSurface: rgba(255,255,255,0.22);
+  --graphCardShadow: 0 20px 46px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.34);
+  --graphPlotSurface: rgba(255,255,255,0.10);
+  --chartControlBg: rgba(255,255,255,0.18);
+  --chartControlBorder: rgba(255,255,255,0.28);
+  --chartPanelSubtle: rgba(255,255,255,0.14);
+}
+
+body.graph-bg-transparent .analytics-card {
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+}
+
+body.graph-bg-transparent .three-chart-wrap {
+  border-color: rgba(255,255,255,0.24);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28);
 }
 
 /* Compare pages (Electricity / Water by building): bars on top, trend line below */
 .three-chart-wrap.compare-split {
   display: flex;
   flex-direction: column;
-  gap: clamp(14px, 1.35vh, 22px);
+  gap: 16px;
 }
 .three-chart-wrap.compare-split .compare-bars {
-  flex: 1 1 62%;
+  flex: 1 1 56%;
   min-height: 0;
   position: relative;
+  transition: opacity .28s var(--chartEase), transform .28s var(--chartEase), flex-basis .28s var(--chartEase);
 }
 .three-chart-wrap.compare-split .compare-line {
-  flex: 1 1 38%;
+  flex: 1 1 44%;
   min-height: 0;
   position: relative;
+  transition: opacity .28s var(--chartEase), transform .28s var(--chartEase), flex-basis .28s var(--chartEase);
+}
+
+.three-chart-wrap.compare-split.analytics-view-mode-combined .compare-bars,
+.three-chart-wrap.compare-split.analytics-view-mode-combined .compare-line {
+  position: absolute;
+  inset: 16px 18px 18px;
+  flex: none;
+  min-height: 0;
+}
+
+.three-chart-wrap.compare-split.analytics-view-mode-combined .compare-bars { z-index: 1; }
+.three-chart-wrap.compare-split.analytics-view-mode-combined .compare-line {
+  z-index: 2;
+  pointer-events: none;
+}
+
+.three-chart-wrap.compare-split.analytics-view-mode-bar .compare-bars,
+.three-chart-wrap.compare-split.analytics-view-mode-line .compare-line {
+  flex: 1 1 100%;
+}
+
+.three-chart-wrap.compare-split.analytics-view-mode-bar .compare-line,
+.three-chart-wrap.compare-split.analytics-view-mode-line .compare-bars {
+  flex: 0 0 0;
+  min-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  overflow: hidden;
 }
 
 /* ========================================
@@ -1742,33 +2429,34 @@ body.graph-bg-transparent {
   <style>
     .compare-color-controls{
       display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:8px;
-      margin:0; padding:0; width:auto; max-width:min(46vw, 980px);
-      background:transparent; border:0;
-      border-radius:0;
-      box-shadow:none;
-      -webkit-backdrop-filter:none;
-      backdrop-filter:none;
+      margin:0; padding:3px; width:auto; max-width:100%;
+      background:var(--chartControlBg); border:1px solid var(--chartControlBorder);
+      border-radius:8px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.60);
+      -webkit-backdrop-filter:var(--chartGlassBlur);
+      backdrop-filter:var(--chartGlassBlur);
+      font-family:var(--chartFont);
     }
     .compare-color-controls:empty{ display:none; }
     .ccc-chip{
       display:flex; align-items:center; gap:8px;
-      padding:7px 9px 7px 8px;
-      border:1px solid rgba(148,163,184,0.24);
-      border-radius:999px;
-      background:rgba(255,255,255,0.64);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,0.82), 0 2px 8px rgba(15,23,42,0.05);
+      padding:4px 7px 4px 6px;
+      border:1px solid rgba(148,163,184,0.20);
+      border-radius:7px;
+      background:rgba(255,255,255,0.42);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.60);
       transition:transform .16s ease, border-color .16s ease, background .16s ease, opacity .16s ease;
     }
     .ccc-chip:hover{ transform:translateY(-1px); border-color:rgba(71,85,105,0.28); background:rgba(255,255,255,0.82); }
     .ccc-year{
-      display:inline-flex; align-items:center; gap:5px; font-weight:850; font-size:clamp(12px, 0.72vw, 16px);
-      color:#1e293b; background:transparent; border:none; cursor:pointer; padding:0; border-radius:0;
+      display:inline-flex; align-items:center; gap:5px; font-weight:650; font-size:13px;
+      color:#1e293b; background:transparent; border:none; cursor:pointer; padding:0 2px; border-radius:5px;
       line-height:1.1; transition:color .16s ease, opacity .16s ease; white-space:nowrap;
     }
     .ccc-year:hover{ color:#0f172a; background:transparent; }
     .ccc-year.off{ opacity:.42; text-decoration:line-through; }
     .ccc-color{
-      width:15px; height:15px; border-radius:999px; border:2px solid rgba(255,255,255,0.95); outline:1px solid rgba(30,41,59,0.18);
+      width:14px; height:14px; border-radius:5px; border:2px solid rgba(255,255,255,0.95); outline:1px solid rgba(30,41,59,0.18);
       cursor:pointer; padding:0; transition:transform .14s ease, box-shadow .14s ease; flex:0 0 auto;
     }
     .ccc-color:hover{ transform:scale(1.18); box-shadow:0 0 0 5px rgba(15,23,42,0.07); }
@@ -1779,7 +2467,10 @@ body.graph-bg-transparent {
 
     @media (max-width: 1100px){
       .analytics-card-header{ grid-template-columns:1fr; }
+      .analytics-toolbar{ justify-content:flex-start; max-width:100%; }
       .compare-color-controls{ justify-content:flex-start; max-width:100%; }
+      .analytics-intelligence{ grid-template-columns:1fr; }
+      .analytics-stats-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
     }
 
     /* Pop-up colour grid picker */
@@ -1870,6 +2561,9 @@ body.graph-bg-transparent {
             <% if (user) { %>
             <a class="btn btn-outline-secondary" href="/admin">Admin Dashboard</a>
             <% } %>
+          </li>
+          <li class="nav-item me-2">
+            <a class="btn btn-outline-secondary" href="/?page=campus-analytics">Campus Analytics</a>
           </li>
           <li class="nav-item me-2">
             <a class="btn btn-outline-secondary" href="/interactivemap">🗺 Campus Map</a>
@@ -1992,6 +2686,80 @@ body.graph-bg-transparent {
           <div class="compare-line"><canvas id="waterCompareLineChart"></canvas></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- PAGE 11: CAMPUS ANALYTICS -->
+  <div id="page11" class="page">
+    <div class="campus-analytics-shell">
+      <aside class="campus-selector-panel" aria-label="Campus building selector">
+        <div class="campus-selector-header">
+          <div>
+            <p class="campus-selector-title">Building Selector</p>
+            <div class="campus-selector-count" id="campusSelectionCount">0 selected</div>
+          </div>
+          <button type="button" class="campus-action-btn" id="campusFocusClearBtn">Focus Off</button>
+        </div>
+        <input id="campusBuildingSearch" class="campus-search" type="search" autocomplete="off" placeholder="Search buildings">
+        <div class="campus-action-grid">
+          <button type="button" class="campus-action-btn" data-campus-action="selectAll">Select All</button>
+          <button type="button" class="campus-action-btn" data-campus-action="clearAll">Clear All</button>
+          <button type="button" class="campus-action-btn" data-campus-action="invert">Invert Selection</button>
+          <button type="button" class="campus-action-btn" data-campus-action="top">Top Consumers</button>
+          <button type="button" class="campus-action-btn" data-campus-action="lowest">Lowest Consumers</button>
+          <button type="button" class="campus-action-btn" data-campus-action="similar">Compare Similar</button>
+        </div>
+        <div id="campusBuildingList" class="campus-building-list"></div>
+      </aside>
+
+      <main class="campus-main-grid">
+        <section class="analytics-card analytics-card-full campus-analytics-card" style="--chartAccent: var(--metricElectricity);">
+          <div class="analytics-card-header">
+            <div class="chart-title-stack">
+              <div class="chart-kicker">Campus Analytics</div>
+              <h2 class="multi-building-title">Comparative Building Performance</h2>
+              <p class="multi-building-subtitle"><span id="campusAnalyticsSubtitle">All buildings across all available periods</span></p>
+            </div>
+            <div class="campus-chart-controls">
+              <div class="campus-chart-control-group" aria-label="Metric">
+                <button type="button" class="campus-mode-btn active" data-campus-metric="electricity">Electricity</button>
+                <button type="button" class="campus-mode-btn" data-campus-metric="water">Water</button>
+              </div>
+              <div class="campus-chart-control-group" aria-label="Chart mode">
+                <button type="button" class="campus-mode-btn active" data-campus-chart-mode="line">Trend</button>
+                <button type="button" class="campus-mode-btn" data-campus-chart-mode="bar">Bar Totals</button>
+              </div>
+              <div class="campus-chart-control-group" aria-label="Time segmentation">
+                <button type="button" class="campus-mode-btn active" data-campus-segment="months">Months</button>
+                <button type="button" class="campus-mode-btn" data-campus-segment="quarters">Quarters</button>
+                <button type="button" class="campus-mode-btn" data-campus-segment="semesters">Semesters</button>
+                <button type="button" class="campus-mode-btn" data-campus-segment="fiscal">Fiscal Years</button>
+              </div>
+              <label class="campus-forecast-toggle">
+                <input id="campusForecastToggle" type="checkbox">
+                Forecast
+              </label>
+            </div>
+          </div>
+          <div class="analytics-card-body">
+            <div class="three-chart-wrap campus-chart-wrap">
+              <canvas id="campusAnalyticsChart"></canvas>
+            </div>
+            <div id="campusAdaptiveLegend" class="campus-legend" aria-label="Selected building legend"></div>
+          </div>
+        </section>
+
+        <section class="campus-forecast-panel" aria-label="Campus forecast summary">
+          <div class="campus-forecast-summary">
+            <p class="campus-panel-title">Forecast Explanation</p>
+            <div id="campusForecastExplanation" class="campus-forecast-copy">Enable forecast mode to extend the selected comparison with projected usage and uncertainty bands.</div>
+          </div>
+          <div class="campus-forecast-stats">
+            <p class="campus-panel-title">Projected Outcomes</p>
+            <div id="campusForecastStats" class="campus-forecast-grid"></div>
+          </div>
+        </section>
+      </main>
     </div>
   </div>
 
@@ -2238,7 +3006,8 @@ body.graph-bg-transparent {
       7: Number(configured_default_timers_seconds[7] || configured_default_timers_seconds["7"] || 60) * 1000,
       8: Number(configured_default_timers_seconds[8] || configured_default_timers_seconds["8"] || 4) * 1000,
       9: Number(configured_default_timers_seconds[9] || configured_default_timers_seconds["9"] || 30) * 1000,
-      10: Number(configured_default_timers_seconds[10] || configured_default_timers_seconds["10"] || 15) * 1000
+      10: Number(configured_default_timers_seconds[10] || configured_default_timers_seconds["10"] || 15) * 1000,
+      11: Number(configured_default_timers_seconds[11] || configured_default_timers_seconds["11"] || 75) * 1000
     };
 
     /**
@@ -2274,6 +3043,12 @@ body.graph-bg-transparent {
     let oldestYear = null;
     let newestYear = null;
     let latestDataYear = null;
+    let latestOverviewYear = null;
+    let oldestOverviewYear = null;
+    let latestSolarYear = null;
+    let oldestSolarYear = null;
+    let latestWasteYear = null;
+    let oldestWasteYear = null;
     let overviewOldestRows = [];
     let overviewNewestRows = [];
     let solarPendingYear = null;
@@ -2302,6 +3077,12 @@ body.graph-bg-transparent {
       oldestYear = data.oldestYear || (allYears.length > 0 ? allYears[allYears.length - 1] : null);
       newestYear = data.newestYear || (allYears.length > 0 ? allYears[0] : null);
       latestDataYear = data.latestYear || newestYear || oldestYear || null;
+      latestOverviewYear = data.latestOverviewYear || null;
+      oldestOverviewYear = data.oldestOverviewYear || null;
+      latestSolarYear = data.latestSolarYear || null;
+      oldestSolarYear = data.oldestSolarYear || null;
+      latestWasteYear = data.latestWasteYear || null;
+      oldestWasteYear = data.oldestWasteYear || null;
       
       // Legacy data
       overviewOldestRows = Array.isArray(data.overviewYear1Rows) ? data.overviewYear1Rows : [];
@@ -2321,6 +3102,47 @@ body.graph-bg-transparent {
       buildingMonthlyByYear = (data.buildingMonthlyByYear && typeof data.buildingMonthlyByYear === "object") ? data.buildingMonthlyByYear : {};
       buildingYearRanges = (data.buildingYearRanges && typeof data.buildingYearRanges === "object") ? data.buildingYearRanges : {};
     }
+
+    function orderedDashboardYears(descending) {
+      const years = [...allYears]
+        .map(yearValue => parseInt(yearValue, 10))
+        .filter(yearValue => !isNaN(yearValue));
+      years.sort((yearA, yearB) => descending ? yearB - yearA : yearA - yearB);
+      return years;
+    }
+
+    function yearWithData(byYear, hasData, descending) {
+      const years = orderedDashboardYears(descending);
+      for (const year of years) {
+        if (hasData(byYear && byYear[year])) return year;
+      }
+      return null;
+    }
+
+    function overviewHasData(rows) {
+      return Array.isArray(rows) && rows.some(rowItem =>
+        Number(rowItem.electricity || 0) > 0 || Number(rowItem.water || 0) > 0
+      );
+    }
+
+    function solarHasData(months) {
+      return Array.isArray(months) && months.some(monthData =>
+        Number(monthData.urban || 0) > 0 || Number(monthData.greenhouse || 0) > 0
+      );
+    }
+
+    function wasteHasData(months) {
+      return Array.isArray(months) && months.some(monthData =>
+        Number(monthData.generalKg || 0) > 0 || Number(monthData.recyclableKg || 0) > 0
+      );
+    }
+
+    latestOverviewYear = latestOverviewYear || yearWithData(overviewByYear, overviewHasData, true) || latestDataYear;
+    oldestOverviewYear = oldestOverviewYear || yearWithData(overviewByYear, overviewHasData, false) || oldestYear;
+    latestSolarYear = latestSolarYear || yearWithData(solarByYear, solarHasData, true) || latestDataYear;
+    oldestSolarYear = oldestSolarYear || yearWithData(solarByYear, solarHasData, false) || oldestYear;
+    latestWasteYear = latestWasteYear || yearWithData(wasteByYear, wasteHasData, true) || latestDataYear;
+    oldestWasteYear = oldestWasteYear || yearWithData(wasteByYear, wasteHasData, false) || oldestYear;
 
     // ============================================================
     // BUILDING YEAR RANGE HELPERS
@@ -2358,7 +3180,7 @@ body.graph-bg-transparent {
 
     function getLatestYearForBuilding(buildingKey, dataType) {
       const range = getBuildingYearRange(buildingKey, dataType);
-      if (!range.years.length) return latestDataYear || newestYear;
+      if (!range.years.length) return null;
       return range.years[range.years.length - 1];
     }
 
@@ -2434,7 +3256,8 @@ body.graph-bg-transparent {
       carbon: "#dc6b2a",
       text: "#1f2937",
       muted: "#64748b",
-      grid: "rgba(71,85,105,0.095)",
+      grid: "rgba(71,85,105,0.12)",
+      axis: "rgba(71,85,105,0.32)",
       surface: "transparent",
       surfaceDark: "#101827"
     };
@@ -2443,6 +3266,7 @@ body.graph-bg-transparent {
         canvas: ESG_CHART_COLORS.surface,
         text: ESG_CHART_COLORS.text,
         grid: ESG_CHART_COLORS.grid,
+        axis: ESG_CHART_COLORS.axis,
         label: ESG_CHART_COLORS.text,
         axisTitle: ESG_CHART_COLORS.muted,
         electricityTitle: ESG_CHART_COLORS.electricity,
@@ -2451,7 +3275,8 @@ body.graph-bg-transparent {
       dark: {
         canvas: "transparent",
         text: "#e5e7eb",
-        grid: "rgba(226,232,240,0.105)",
+        grid: "rgba(226,232,240,0.13)",
+        axis: "rgba(226,232,240,0.32)",
         label: "#f8fafc",
         axisTitle: "#e5e7eb",
         electricityTitle: "#93c5fd",
@@ -2460,7 +3285,8 @@ body.graph-bg-transparent {
       transparent: {
         canvas: "transparent",
         text: ESG_CHART_COLORS.text,
-        grid: "rgba(71,85,105,0.12)",
+        grid: "rgba(71,85,105,0.13)",
+        axis: ESG_CHART_COLORS.axis,
         label: ESG_CHART_COLORS.text,
         axisTitle: ESG_CHART_COLORS.muted,
         electricityTitle: ESG_CHART_COLORS.electricity,
@@ -2543,7 +3369,7 @@ body.graph-bg-transparent {
           context.save();
           context.textAlign = "center";
           context.textBaseline = "bottom";
-          context.font = "800 14px Arial";
+          context.font = "650 13px Inter, IBM Plex Sans, Geist, Segoe UI, Arial, sans-serif";
           context.fillStyle = graphBackgroundTheme().label;
 
           datasets.forEach((dataset, datasetIndex) => {
@@ -2614,11 +3440,351 @@ body.graph-bg-transparent {
 
     try { Chart.register(snapLinePointsToBars); } catch (error) {}
 
+    const enterpriseInteractionPlugin = {
+      id: "enterpriseInteraction",
+      afterEvent(chart, args) {
+        try {
+          const event = args && args.event;
+          if (!event || !chart.chartArea) return;
+          const area = chart.chartArea;
+          const inArea = event.x >= area.left && event.x <= area.right && event.y >= area.top && event.y <= area.bottom;
+          if (event.type === "mouseout" || !inArea) {
+            chart.$crosshair = null;
+          } else {
+            chart.$crosshair = { x: event.x, y: event.y };
+          }
+          args.changed = true;
+        } catch (error) {}
+      },
+      afterDraw(chart) {
+        try {
+          const pointer = chart.$crosshair;
+          if (!pointer || !chart.chartArea) return;
+          const ctx = chart.ctx;
+          const area = chart.chartArea;
+          const theme = graphBackgroundTheme();
+          const xScale = chart.scales && chart.scales.x;
+          const yScale = chart.scales && chart.scales.y;
+          const labels = chart.data && chart.data.labels ? chart.data.labels : [];
+          const xIndex = xScale && typeof xScale.getValueForPixel === "function"
+            ? Math.max(0, Math.min(labels.length - 1, Math.round(Number(xScale.getValueForPixel(pointer.x)))))
+            : -1;
+          const yValue = yScale && typeof yScale.getValueForPixel === "function" ? yScale.getValueForPixel(pointer.y) : null;
+
+          ctx.save();
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = theme.text === "#e5e7eb" ? "rgba(226,232,240,0.48)" : "rgba(15,23,42,0.34)";
+          ctx.beginPath();
+          ctx.moveTo(pointer.x, area.top);
+          ctx.lineTo(pointer.x, area.bottom);
+          ctx.moveTo(area.left, pointer.y);
+          ctx.lineTo(area.right, pointer.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          const xLabel = xIndex >= 0 ? String(labels[xIndex]) : "";
+          const yLabel = Number.isFinite(Number(yValue)) ? formatAxisNumber(yValue) : "";
+          const badge = [xLabel, yLabel].filter(Boolean).join("  |  ");
+          if (badge) {
+            ctx.font = "650 11px " + CHART_FONT_STACK;
+            const width = ctx.measureText(badge).width + 18;
+            const height = 24;
+            let left = Math.min(area.right - width, Math.max(area.left, pointer.x + 10));
+            let top = Math.max(area.top + 6, pointer.y - height - 8);
+            ctx.fillStyle = "rgba(15,23,42,0.90)";
+            ctx.strokeStyle = "rgba(255,255,255,0.18)";
+            ctx.beginPath();
+            ctx.roundRect(left, top, width, height, 7);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = "#f8fafc";
+            ctx.fillText(badge, left + 9, top + 16);
+          }
+          ctx.restore();
+        } catch (error) {}
+      }
+    };
+
+    const enterpriseAnnotationPlugin = {
+      id: "enterpriseAnnotation",
+      afterDatasetsDraw(chart) {
+        try {
+          const annotations = Array.isArray(chart.$analyticsAnnotations) ? chart.$analyticsAnnotations : [];
+          const events = Array.isArray(chart.$analyticsMilestones) ? chart.$analyticsMilestones : [];
+          const overlays = chart.$analyticsOverlays || {};
+          const ctx = chart.ctx;
+          const area = chart.chartArea;
+          const xScale = chart.scales && chart.scales.x;
+          const yScale = chart.scales && chart.scales.y;
+          if (!area || !xScale || !yScale) return;
+          const labels = chart.data && chart.data.labels ? chart.data.labels : [];
+          const pxForIndex = (index) => xScale.getPixelForValue(Math.max(0, Math.min(labels.length - 1, index)));
+          const pyForValue = (value) => yScale.getPixelForValue(Number(value || 0));
+
+          function drawTextPill(text, x, y, color) {
+            const label = String(text || "");
+            if (!label) return;
+            ctx.font = "650 11px " + CHART_FONT_STACK;
+            const w = Math.min(190, ctx.measureText(label).width + 18);
+            const h = 24;
+            const left = Math.max(area.left + 4, Math.min(area.right - w - 4, x + 8));
+            const top = Math.max(area.top + 4, Math.min(area.bottom - h - 4, y - h - 8));
+            ctx.fillStyle = "rgba(15,23,42,0.88)";
+            ctx.strokeStyle = color || "rgba(255,255,255,0.18)";
+            ctx.beginPath();
+            ctx.roundRect(left, top, w, h, 7);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = "#f8fafc";
+            ctx.fillText(label, left + 9, top + 16, w - 16);
+          }
+
+          function drawLineThrough(points, color, dash) {
+            if (!points || points.length < 2) return;
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash(dash || []);
+            ctx.beginPath();
+            points.forEach((point, index) => {
+              const x = pxForIndex(point.index);
+              const y = pyForValue(point.value);
+              if (index === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          if (overlays.benchmark != null) {
+            const y = pyForValue(overlays.benchmark);
+            ctx.save();
+            ctx.strokeStyle = "rgba(15,23,42,0.46)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.moveTo(area.left, y);
+            ctx.lineTo(area.right, y);
+            ctx.stroke();
+            drawTextPill("Benchmark " + formatAxisNumber(overlays.benchmark), area.left + 8, y, "rgba(15,23,42,0.46)");
+            ctx.restore();
+          }
+
+          if (overlays.target != null) {
+            const y = pyForValue(overlays.target);
+            ctx.save();
+            ctx.strokeStyle = "rgba(22,101,52,0.72)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 5]);
+            ctx.beginPath();
+            ctx.moveTo(area.left, y);
+            ctx.lineTo(area.right, y);
+            ctx.stroke();
+            drawTextPill("Target " + formatAxisNumber(overlays.target), area.left + 8, y, "rgba(22,101,52,0.72)");
+            ctx.restore();
+          }
+
+          drawLineThrough(overlays.movingAverage, "rgba(124,58,237,0.72)", [3, 4]);
+          drawLineThrough(overlays.trendLine, "rgba(234,88,12,0.72)", [8, 5]);
+          drawLineThrough(overlays.forecast, "rgba(8,145,178,0.62)", [2, 5]);
+
+          events.forEach((item) => {
+            const index = Number(item.index);
+            if (!Number.isFinite(index)) return;
+            const x = pxForIndex(index);
+            ctx.save();
+            ctx.strokeStyle = item.color || "rgba(37,99,235,0.58)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(x, area.top);
+            ctx.lineTo(x, area.bottom);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = item.color || "rgba(37,99,235,0.82)";
+            ctx.beginPath();
+            ctx.arc(x, area.top + 10, 4, 0, Math.PI * 2);
+            ctx.fill();
+            drawTextPill(item.label, x, area.top + 34, item.color);
+            ctx.restore();
+          });
+
+          annotations.forEach((annotation) => {
+            const x = pxForIndex(Number(annotation.xIndex || 0));
+            const y = pyForValue(annotation.yValue);
+            const color = annotation.color || "rgba(37,99,235,0.82)";
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2;
+            if (annotation.type === "region") {
+              const x2 = pxForIndex(Math.min(labels.length - 1, Number(annotation.xIndex || 0) + Math.max(1, Math.round(labels.length / 8))));
+              ctx.fillStyle = "rgba(37,99,235,0.10)";
+              ctx.fillRect(Math.min(x, x2), area.top, Math.abs(x2 - x), area.bottom - area.top);
+            } else if (annotation.type === "event") {
+              ctx.setLineDash([4, 5]);
+              ctx.beginPath();
+              ctx.moveTo(x, area.top);
+              ctx.lineTo(x, area.bottom);
+              ctx.stroke();
+            } else if (annotation.type === "arrow") {
+              ctx.beginPath();
+              ctx.moveTo(x - 34, y - 28);
+              ctx.lineTo(x, y);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(x, y);
+              ctx.lineTo(x - 8, y - 2);
+              ctx.lineTo(x - 2, y - 9);
+              ctx.closePath();
+              ctx.fill();
+            } else if (annotation.type === "trend") {
+              const x2 = pxForIndex(Math.min(labels.length - 1, Number(annotation.xIndex || 0) + Math.max(2, Math.round(labels.length / 5))));
+              const y2 = pyForValue(Number(annotation.yValue || 0) * 1.08);
+              ctx.beginPath();
+              ctx.moveTo(x, y);
+              ctx.lineTo(x2, y2);
+              ctx.stroke();
+            } else {
+              ctx.beginPath();
+              ctx.arc(x, y, annotation.type === "note" ? 5 : 4, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            drawTextPill(annotation.note || annotation.type, x, y, color);
+            ctx.restore();
+          });
+        } catch (error) {}
+      }
+    };
+
+    try { Chart.register(enterpriseInteractionPlugin, enterpriseAnnotationPlugin); } catch (error) {}
+
+    const campusSegmentationPlugin = {
+      id: "campusSegmentation",
+      beforeDatasetsDraw(chart) {
+        try {
+          const area = chart.chartArea;
+          const xScale = chart.scales && chart.scales.x;
+          const yScale = chart.scales && chart.scales.y;
+          if (!area || !xScale || !yScale) return;
+          const ctx = chart.ctx;
+          const segments = Array.isArray(chart.$timeSegments) ? chart.$timeSegments : [];
+          const labels = chart.data && chart.data.labels ? chart.data.labels : [];
+
+          segments.forEach((segment, segmentIndex) => {
+            const start = Math.max(0, Math.min(labels.length - 1, Number(segment.start || 0)));
+            const end = Math.max(start, Math.min(labels.length - 1, Number(segment.end || start)));
+            const startCenter = xScale.getPixelForValue(start);
+            const endCenter = xScale.getPixelForValue(end);
+            const step = labels.length > 1 ? Math.abs(xScale.getPixelForValue(Math.min(labels.length - 1, start + 1)) - startCenter) : (area.right - area.left);
+            const left = Math.max(area.left, startCenter - step / 2);
+            const right = Math.min(area.right, endCenter + step / 2);
+            if (right <= left) return;
+            ctx.save();
+            ctx.fillStyle = segmentIndex % 2 === 0 ? "rgba(37,99,235,0.045)" : "rgba(15,23,42,0.026)";
+            ctx.fillRect(left, area.top, right - left, area.bottom - area.top);
+            ctx.restore();
+          });
+
+          const bands = Array.isArray(chart.$forecastBands) ? chart.$forecastBands : [];
+          bands.forEach((band) => {
+            const upper = Array.isArray(band.upper) ? band.upper : [];
+            const lower = Array.isArray(band.lower) ? band.lower : [];
+            if (!upper.length || !lower.length) return;
+            const points = [];
+            upper.forEach((value, index) => {
+              if (value == null || lower[index] == null) return;
+              points.push({ index, upper: Number(value), lower: Number(lower[index]) });
+            });
+            if (points.length < 2) return;
+            ctx.save();
+            ctx.fillStyle = band.color || "rgba(37,99,235,0.10)";
+            ctx.beginPath();
+            points.forEach((point, pointIndex) => {
+              const x = xScale.getPixelForValue(point.index);
+              const y = yScale.getPixelForValue(point.upper);
+              if (pointIndex === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+            points.slice().reverse().forEach((point) => {
+              ctx.lineTo(xScale.getPixelForValue(point.index), yScale.getPixelForValue(point.lower));
+            });
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          });
+        } catch (error) {}
+      },
+      afterDraw(chart) {
+        try {
+          const area = chart.chartArea;
+          const xScale = chart.scales && chart.scales.x;
+          if (!area || !xScale) return;
+          const segments = Array.isArray(chart.$timeSegments) ? chart.$timeSegments : [];
+          if (!segments.length) return;
+          const ctx = chart.ctx;
+          const theme = graphBackgroundTheme();
+          ctx.save();
+          ctx.font = "700 10px " + CHART_FONT_STACK;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = theme.text === "#e5e7eb" ? "rgba(226,232,240,0.82)" : "rgba(51,65,85,0.78)";
+          segments.forEach((segment) => {
+            const start = Number(segment.start || 0);
+            const end = Number(segment.end || start);
+            const mid = (xScale.getPixelForValue(start) + xScale.getPixelForValue(end)) / 2;
+            if (mid < area.left + 18 || mid > area.right - 18) return;
+            ctx.fillText(String(segment.label || ""), mid, area.bottom + 24, Math.max(44, Math.abs(xScale.getPixelForValue(end) - xScale.getPixelForValue(start))));
+          });
+          ctx.restore();
+        } catch (error) {}
+      }
+    };
+
+    try { Chart.register(campusSegmentationPlugin); } catch (error) {}
+
     // ============================================================
     // CHART OPTIONS + HELPERS
     // ============================================================
+    const CHART_FONT_STACK = 'Inter, "IBM Plex Sans", Geist, "Segoe UI", Arial, sans-serif';
+    const CHART_TYPOGRAPHY = {
+      title: { size: 26, weight: "650" },
+      subtitle: { size: 16, weight: "500" },
+      axisTitle: { size: 15, weight: "500" },
+      axisLabel: { size: 13, weight: "400" },
+      legend: { size: 13, weight: "500" },
+      tooltip: { size: 14, weight: "400" },
+      tooltipTitle: { size: 14, weight: "650" }
+    };
+    const CHART_LAYOUT = {
+      padding: { top: 18, right: 36, bottom: 26, left: 36 },
+      xTickPadding: 16,
+      yTickPadding: 12,
+      axisTitlePadding: 12,
+      maxLinearTicks: 5
+    };
+    const CHART_STROKES = {
+      gridWidth: 1,
+      axisWidth: 1
+    };
+    const CHART_BAR_STYLE = {
+      radius: 6,
+      categoryPercentage: 0.72,
+      barPercentage: 0.82,
+      maxBarThickness: 38
+    };
+    const CHART_LINE_STYLE = {
+      borderWidth: 3.4,
+      pointRadius: 2.8,
+      pointHoverRadius: 6,
+      pointBorderWidth: 2
+    };
+
     try {
-      Chart.defaults.font.family = 'Inter, "Segoe UI", Arial, sans-serif';
+      Chart.defaults.font.family = CHART_FONT_STACK;
+      Chart.defaults.font.size = CHART_TYPOGRAPHY.axisLabel.size;
+      Chart.defaults.font.weight = CHART_TYPOGRAPHY.axisLabel.weight;
       Chart.defaults.color = ESG_CHART_COLORS.text;
     } catch (error) {}
 
@@ -2646,13 +3812,11 @@ body.graph-bg-transparent {
     }
 
     function chartTextSize(kind) {
-      const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
-      const isLarge = window.innerWidth >= 1800 || window.innerHeight >= 1000;
-      if (kind === "axisTitle") return isUltra ? 28 : (isLarge ? 18 : 15);
-      if (kind === "legend") return isUltra ? 24 : (isLarge ? 16 : 13);
-      if (kind === "tooltipTitle") return isUltra ? 26 : (isLarge ? 17 : 15);
-      if (kind === "tooltipBody") return isUltra ? 23 : (isLarge ? 16 : 14);
-      return isUltra ? 22 : (isLarge ? 16 : 14);
+      if (kind === "axisTitle") return CHART_TYPOGRAPHY.axisTitle.size;
+      if (kind === "legend") return CHART_TYPOGRAPHY.legend.size;
+      if (kind === "tooltipTitle") return CHART_TYPOGRAPHY.tooltipTitle.size;
+      if (kind === "tooltipBody") return CHART_TYPOGRAPHY.tooltip.size;
+      return CHART_TYPOGRAPHY.axisLabel.size;
     }
 
     function formatAxisNumber(value) {
@@ -2664,23 +3828,85 @@ body.graph-bg-transparent {
       return number.toLocaleString(undefined, { maximumFractionDigits: 0 });
     }
 
-    function wrapChartLabel(value, maxChars) {
+    function formatLogAxisNumber(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number) || number <= 0) return "";
+      if (number >= 1000000) return (number / 1000000).toLocaleString(undefined, { maximumFractionDigits: 0 }) + "M";
+      if (number >= 1000) return (number / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 }) + "K";
+      return number.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
+    function compactChartWord(word) {
+      const raw = String(word || "");
+      const upper = raw.toUpperCase();
+      const dictionary = {
+        "REPUBLIC": "Rep.",
+        "POLYTECHNIC": "Poly",
+        "TECHNOLOGY": "Tech",
+        "CENTRE": "Ctr",
+        "CENTER": "Ctr",
+        "COMPLEX": "Complex",
+        "BUILDING": "Bldg",
+        "RENEWABLES": "Renew.",
+        "GREENHOUSE": "Green Hse"
+      };
+      if (dictionary[upper]) return dictionary[upper];
+      if (raw.length <= 12) return raw;
+      return raw.slice(0, 11) + ".";
+    }
+
+    function smartTwoLineChartLabel(value) {
       const rawLabel = Array.isArray(value) ? value.join(" ") : String(value || "");
-      if (!rawLabel || rawLabel.length <= maxChars) return rawLabel;
-      const words = rawLabel.split(/\s+/);
-      const lines = [];
-      let currentLine = "";
-      words.forEach((word) => {
-        const nextLine = currentLine ? currentLine + " " + word : word;
-        if (nextLine.length > maxChars && currentLine) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = nextLine;
+      const normalized = rawLabel.replace(/\s+/g, " ").trim();
+      if (!normalized) return "";
+      const knownLabels = {
+        "GREEN HOUSE": ["Green", "Hse"],
+        "SPORTS COMPLEX": ["Sports", "Cplx"],
+        "SPORTS HALL": ["Sports", "Hall"],
+        "THE ARCH": ["The", "Arch"],
+        "URBAN RENEWABLES": ["Urban", "Renew."],
+        "GENERAL WASTE": ["General", "Waste"],
+        "RECYCLABLE WASTE": ["Recycl.", "Waste"]
+      };
+      const known = knownLabels[normalized.toUpperCase()];
+      if (known) return known;
+      if (normalized.length <= 8) return normalized;
+      const words = normalized.split(" ").map(compactChartWord);
+      if (words.length === 1) return [words[0].slice(0, 12), words[0].slice(12, 24)].filter(Boolean);
+      let bestIndex = 1;
+      let bestScore = Infinity;
+      for (let index = 1; index < words.length; index++) {
+        const left = words.slice(0, index).join(" ");
+        const right = words.slice(index).join(" ");
+        const longest = Math.max(left.length, right.length);
+        const balance = Math.abs(left.length - right.length);
+        const score = longest * 2 + balance;
+        if (score < bestScore) {
+          bestScore = score;
+          bestIndex = index;
         }
-      });
-      if (currentLine) lines.push(currentLine);
-      return lines.length ? lines.slice(0, 3) : rawLabel;
+      }
+      let lineA = words.slice(0, bestIndex).join(" ");
+      let lineB = words.slice(bestIndex).join(" ");
+      if (lineA.length > 14) lineA = lineA.slice(0, 13) + ".";
+      if (lineB.length > 14) lineB = lineB.slice(0, 13) + ".";
+      return [lineA, lineB];
+    }
+
+    function isMonthAxis(labels) {
+      const months = new Set(["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"]);
+      return Array.isArray(labels) && labels.length >= 10 && labels.every(label => months.has(String(label || "").toLowerCase()));
+    }
+
+    function shouldHideIntermediateMonthTick(labels, index, chart) {
+      if (!isMonthAxis(labels)) return false;
+      const width = chart && chart.chartArea ? chart.chartArea.right - chart.chartArea.left : 0;
+      if (width >= 520) return false;
+      return index % 2 !== 0;
+    }
+
+    function wrapChartLabel(value) {
+      return smartTwoLineChartLabel(value);
     }
 
     function displayDatasetLabel(label) {
@@ -2704,6 +3930,179 @@ body.graph-bg-transparent {
       if (source.indexOf("m³") !== -1 || source.indexOf("m3") !== -1 || source.indexOf("water") !== -1) return "m³";
       if (source.indexOf("kg") !== -1 || source.indexOf("waste") !== -1 || source.indexOf("recyclable") !== -1) return "kg";
       return "";
+    }
+
+    function pctChange(current, previous) {
+      const now = Number(current);
+      const before = Number(previous);
+      if (!Number.isFinite(now) || !Number.isFinite(before) || before === 0) return null;
+      return ((now - before) / Math.abs(before)) * 100;
+    }
+
+    function formatPercent(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return "n/a";
+      const sign = number > 0 ? "+" : "";
+      return sign + number.toLocaleString(undefined, { maximumFractionDigits: 1 }) + "%";
+    }
+
+    function visibleDatasetValues(chart, datasetIndex, startIndex, endIndex) {
+      if (!chart || !chart.data || !chart.data.datasets) return [];
+      if (!chart.isDatasetVisible(datasetIndex)) return [];
+      const dataset = chart.data.datasets[datasetIndex];
+      const values = Array.isArray(dataset && dataset.data) ? dataset.data : [];
+      const start = Math.max(0, Number.isFinite(startIndex) ? startIndex : 0);
+      const end = Math.min(values.length - 1, Number.isFinite(endIndex) ? endIndex : values.length - 1);
+      const output = [];
+      for (let index = start; index <= end; index++) {
+        const value = Number(values[index]);
+        if (Number.isFinite(value)) output.push(value);
+      }
+      return output;
+    }
+
+    function getVisibleRange(chart) {
+      const labels = (chart && chart.data && chart.data.labels) || [];
+      if (!labels.length) return { start: 0, end: 0 };
+      const xOptions = chart.options && chart.options.scales && chart.options.scales.x ? chart.options.scales.x : {};
+      const minRaw = xOptions.min;
+      const maxRaw = xOptions.max;
+      const indexFor = (value, fallback) => {
+        if (value == null || value === "") return fallback;
+        const numeric = Number(value);
+        if (Number.isFinite(numeric)) return Math.max(0, Math.min(labels.length - 1, Math.round(numeric)));
+        const found = labels.findIndex(label => String(label) === String(value));
+        return found >= 0 ? found : fallback;
+      };
+      return {
+        start: indexFor(minRaw, 0),
+        end: indexFor(maxRaw, labels.length - 1)
+      };
+    }
+
+    function summarizeValues(values) {
+      const clean = (values || []).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+      if (!clean.length) return null;
+      const total = clean.reduce((sum, value) => sum + value, 0);
+      const average = total / clean.length;
+      const mid = Math.floor(clean.length / 2);
+      const median = clean.length % 2 ? clean[mid] : (clean[mid - 1] + clean[mid]) / 2;
+      const variance = clean.reduce((sum, value) => sum + Math.pow(value - average, 2), 0) / clean.length;
+      return {
+        min: clean[0],
+        max: clean[clean.length - 1],
+        average,
+        median,
+        total,
+        variance,
+        count: clean.length
+      };
+    }
+
+    function primaryVisibleDataset(chart) {
+      if (!chart || !chart.data || !Array.isArray(chart.data.datasets)) return null;
+      for (let index = 0; index < chart.data.datasets.length; index++) {
+        const dataset = chart.data.datasets[index];
+        if (!dataset || String(dataset.label || "").startsWith("_")) continue;
+        if (chart.isDatasetVisible && !chart.isDatasetVisible(index)) continue;
+        return { dataset, index };
+      }
+      return null;
+    }
+
+    function computeDatasetAverage(chart, datasetIndex) {
+      const values = visibleDatasetValues(chart, datasetIndex);
+      if (!values.length) return null;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function computeRankAtIndex(chart, datasetIndex, dataIndex) {
+      if (!chart || !chart.data || !Array.isArray(chart.data.datasets)) return null;
+      const target = Number(chart.data.datasets[datasetIndex] && chart.data.datasets[datasetIndex].data ? chart.data.datasets[datasetIndex].data[dataIndex] : NaN);
+      if (!Number.isFinite(target)) return null;
+      const values = chart.data.datasets
+        .map((dataset, index) => ({ index, value: Number(dataset && dataset.data ? dataset.data[dataIndex] : NaN) }))
+        .filter(item => Number.isFinite(item.value) && (!chart.isDatasetVisible || chart.isDatasetVisible(item.index)))
+        .sort((a, b) => b.value - a.value);
+      const rank = values.findIndex(item => item.index === datasetIndex);
+      return rank >= 0 ? { rank: rank + 1, total: values.length } : null;
+    }
+
+    function makeAxisFont(kind) {
+      const spec = CHART_TYPOGRAPHY[kind] || CHART_TYPOGRAPHY.axisLabel;
+      return { family: CHART_FONT_STACK, size: spec.size, weight: spec.weight };
+    }
+
+    function makeAxisTitle(text, color) {
+      return {
+        display: true,
+        text: text,
+        color: color || graphBackgroundTheme().axisTitle,
+        font: makeAxisFont("axisTitle"),
+        padding: { bottom: CHART_LAYOUT.axisTitlePadding }
+      };
+    }
+
+    function buildLinearTicks(min, max, count) {
+      const tickCount = Math.max(2, Number(count || CHART_LAYOUT.maxLinearTicks));
+      const low = Number.isFinite(Number(min)) ? Number(min) : 0;
+      const highRaw = Number.isFinite(Number(max)) ? Number(max) : 1;
+      const high = highRaw <= low ? low + 1 : highRaw;
+      const step = (high - low) / (tickCount - 1);
+      const ticks = [];
+      for (let index = 0; index < tickCount; index++) {
+        ticks.push({ value: low + (step * index) });
+      }
+      return ticks;
+    }
+
+    function syncSecondaryAxisTicks(scale) {
+      try {
+        const primary = scale && scale.chart && scale.chart.scales && scale.chart.scales.y;
+        if (!primary || !Array.isArray(primary.ticks) || primary.ticks.length < 2) return;
+        const count = primary.ticks.length;
+        if (scale.type === "logarithmic") {
+          scale.ticks = primary.ticks.map(tick => ({ value: tick.value }));
+          scale.min = primary.min;
+          scale.max = primary.max;
+          return;
+        }
+        scale.ticks = buildLinearTicks(scale.min, scale.max, count);
+      } catch (error) {}
+    }
+
+    function mirrorPrimaryAxisTicks(scale) {
+      try {
+        const primary = scale && scale.chart && scale.chart.scales && scale.chart.scales.y;
+        if (!primary || !Array.isArray(primary.ticks) || primary.ticks.length < 2) return;
+        scale.ticks = primary.ticks.map(tick => ({ value: tick.value }));
+        scale.min = primary.min;
+        scale.max = primary.max;
+      } catch (error) {}
+    }
+
+    function buildLogTicksForRange(min, max) {
+      const low = Math.max(1, Number.isFinite(Number(min)) ? Number(min) : 1);
+      const high = Math.max(low, Number.isFinite(Number(max)) ? Number(max) : 10);
+      const ticks = [];
+      let value = 1;
+      while (value < low && value < 10000000) value *= 10;
+      if (value > low && value > 1) value /= 10;
+      while (value <= Math.max(high, 10) && value <= 10000000) {
+        ticks.push({ value: value });
+        value *= 10;
+      }
+      if (!ticks.some(tick => tick.value >= high) && value <= 100000000) ticks.push({ value: value });
+      return ticks.length ? ticks : [{ value: 1 }, { value: 10 }];
+    }
+
+    function enforceLogScaleTicks(scale) {
+      try {
+        const ticks = buildLogTicksForRange(scale.min, scale.max);
+        scale.ticks = ticks;
+        scale.min = Math.min(scale.min || ticks[0].value, ticks[0].value);
+        scale.max = Math.max(scale.max || ticks[ticks.length - 1].value, ticks[ticks.length - 1].value);
+      } catch (error) {}
     }
 
     function getChartTooltipElement(chart) {
@@ -2738,6 +4137,8 @@ body.graph-bg-transparent {
 
       (tooltip.dataPoints || []).forEach((point) => {
         const dataset = point.dataset || {};
+        const datasetIndex = Number(point.datasetIndex);
+        const dataIndex = Number(point.dataIndex);
         const row = document.createElement("div");
         row.className = "pct-row";
         const color = dataset.borderColor || dataset.backgroundColor || "#64748b";
@@ -2750,6 +4151,21 @@ body.graph-bg-transparent {
         row.querySelector(".pct-label").textContent = displayDatasetLabel(dataset.label);
         row.querySelector(".pct-value").textContent = formatTooltipValue(numericValue, inferDatasetUnit(dataset, chart));
         body.appendChild(row);
+
+        const previous = Array.isArray(dataset.data) && dataIndex > 0 ? Number(dataset.data[dataIndex - 1]) : NaN;
+        const currentAverage = computeDatasetAverage(chart, datasetIndex);
+        const periodChange = pctChange(numericValue, previous);
+        const deviation = Number.isFinite(Number(currentAverage)) && currentAverage !== 0
+          ? ((Number(numericValue) - currentAverage) / Math.abs(currentAverage)) * 100
+          : null;
+        const rank = computeRankAtIndex(chart, datasetIndex, dataIndex);
+        const meta = document.createElement("div");
+        meta.className = "pct-meta";
+        meta.innerHTML =
+          '<span><strong>Period change</strong> ' + formatPercent(periodChange) + '</span>' +
+          '<span><strong>Vs average</strong> ' + formatPercent(deviation) + '</span>' +
+          (rank ? '<span><strong>Visible rank</strong> ' + rank.rank + ' of ' + rank.total + '</span>' : "");
+        body.appendChild(meta);
       });
 
       const canvasRect = chart.canvas.getBoundingClientRect();
@@ -2781,6 +4197,9 @@ body.graph-bg-transparent {
         scale.ticks.color = theme.text;
         if (!scale.grid) scale.grid = {};
         if (scaleKey !== "y1" || scale.grid.drawOnChartArea !== false) scale.grid.color = theme.grid;
+        if (!scale.border) scale.border = {};
+        scale.border.color = theme.axis;
+        scale.border.width = CHART_STROKES.axisWidth;
         if (scale.title && scale.title.display) {
           const titleText = String(scale.title.text || "").toLowerCase();
           if (titleText.indexOf("electricity") !== -1) scale.title.color = theme.electricityTitle;
@@ -2796,27 +4215,27 @@ body.graph-bg-transparent {
       return applyGraphBackgroundToChartOptions({
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 26, right: 30, bottom: 20, left: 24 } },
-        animation: { duration: 980, easing: "easeOutQuart" },
+        layout: { padding: CHART_LAYOUT.padding },
+        animation: { duration: 720, easing: "easeOutQuart" },
         animations: {
           y: {
             from: 0,
-            duration: 980,
+            duration: 720,
             easing: "easeOutQuart",
             delay(context) {
-              if (context.type === "data" && context.mode === "default") return Math.min(context.dataIndex * 22, 360);
+              if (context.type === "data" && context.mode === "default") return Math.min(context.dataIndex * 14, 220);
               return 0;
             }
           },
           tension: {
-            duration: 680,
+            duration: 520,
             easing: "easeOutQuart",
-            from: 0.22,
-            to: 0.34
+            from: 0.28,
+            to: 0.38
           }
         },
-        interaction: { mode: "nearest", intersect: false },
-        hover: { mode: "nearest", intersect: false, animationDuration: 180 },
+        interaction: { mode: "index", intersect: false },
+        hover: { mode: "nearest", intersect: false, animationDuration: 160 },
         plugins: {
           barValueLabel: { enabled: false, mode: "max-per-dataset" },
           legend: {
@@ -2824,12 +4243,13 @@ body.graph-bg-transparent {
             onClick: createLegendClickHandler(),
             labels: {
               color: "#111827",
-              boxWidth: 12,
-              boxHeight: 12,
-              borderRadius: 4,
-              padding: 12,
+              boxWidth: 10,
+              boxHeight: 10,
+              borderRadius: 3,
+              padding: 14,
               usePointStyle: true,
-              font: { size: chartTextSize("legend"), weight: "800" },
+              pointStyle: "rectRounded",
+              font: makeAxisFont("legend"),
               filter: (legendItem) => !String(legendItem.text || "").startsWith("_")
             }
           },
@@ -2844,8 +4264,8 @@ body.graph-bg-transparent {
             cornerRadius: 10,
             displayColors: true,
             padding: 12,
-            titleFont: { size: chartTextSize("tooltipTitle"), weight: "800" },
-            bodyFont: { size: chartTextSize("tooltipBody"), weight: "650" },
+            titleFont: makeAxisFont("tooltipTitle"),
+            bodyFont: makeAxisFont("tooltip"),
             callbacks: {
               label(context) {
                 const label = context.dataset && context.dataset.label ? String(context.dataset.label).replace(/^_Line/, "") : "";
@@ -2859,28 +4279,39 @@ body.graph-bg-transparent {
           x: {
             ticks: {
               color: "#111827",
-              padding: 12,
+              padding: CHART_LAYOUT.xTickPadding,
               maxRotation: 0,
               minRotation: 0,
               autoSkip: false,
-              font: { size: chartTextSize("tick"), weight: "700" },
+              align: "center",
+              crossAlign: "center",
+              font: makeAxisFont("axisLabel"),
               callback(value) {
                 const label = this.getLabelForValue ? this.getLabelForValue(value) : value;
-                return wrapChartLabel(label, 8);
+                if (shouldHideIntermediateMonthTick(this.chart && this.chart.data ? this.chart.data.labels : [], Number(value), this.chart)) return "";
+                return wrapChartLabel(label);
               }
             },
-            grid: { display: false, color: "rgba(17,24,39,0.05)", drawBorder: false },
-            border: { display: false }
+            grid: { display: false, drawTicks: false, tickLength: 0, color: "rgba(17,24,39,0.05)", lineWidth: CHART_STROKES.gridWidth },
+            border: { display: true, color: ESG_CHART_COLORS.axis, width: CHART_STROKES.axisWidth }
           },
           y: {
             ticks: {
               color: "#111827",
-              padding: 14,
-              font: { size: chartTextSize("tick"), weight: "700" },
+              padding: CHART_LAYOUT.yTickPadding,
+              maxTicksLimit: CHART_LAYOUT.maxLinearTicks,
+              count: CHART_LAYOUT.maxLinearTicks,
+              font: makeAxisFont("axisLabel"),
               callback: formatAxisNumber
             },
-            grid: { color: "rgba(17,24,39,0.075)", drawBorder: false, lineWidth: 1, tickLength: 0 },
-            border: { display: false },
+            grid: {
+              color: ESG_CHART_COLORS.grid,
+              drawBorder: false,
+              drawTicks: false,
+              lineWidth: CHART_STROKES.gridWidth,
+              tickLength: 0
+            },
+            border: { display: true, color: ESG_CHART_COLORS.axis, width: CHART_STROKES.axisWidth },
             position: "left",
             beginAtZero: true,
             grace: "8%"
@@ -2888,15 +4319,24 @@ body.graph-bg-transparent {
           y1: {
             ticks: {
               color: "#111827",
-              padding: 14,
-              font: { size: chartTextSize("tick"), weight: "700" },
+              padding: CHART_LAYOUT.yTickPadding,
+              maxTicksLimit: CHART_LAYOUT.maxLinearTicks,
+              count: CHART_LAYOUT.maxLinearTicks,
+              font: makeAxisFont("axisLabel"),
               callback: formatAxisNumber
             },
-            grid: { drawOnChartArea: false, tickLength: 0 },
-            border: { display: false },
+            grid: {
+              drawOnChartArea: false,
+              drawTicks: false,
+              tickLength: 0,
+              lineWidth: CHART_STROKES.gridWidth,
+              color: ESG_CHART_COLORS.grid
+            },
+            border: { display: true, color: ESG_CHART_COLORS.axis, width: CHART_STROKES.axisWidth },
             position: "right",
             beginAtZero: true,
-            grace: "8%"
+            grace: "8%",
+            afterBuildTicks: syncSecondaryAxisTicks
           }
         }
       });
@@ -3138,11 +4578,11 @@ body.graph-bg-transparent {
       dataset.hoverBackgroundColor = lightenHex(color, 0.15);
       dataset.hoverBorderColor = lightenHex(color, 0.26);
       dataset.borderWidth = 1;
-      dataset.borderRadius = cfg.radius || 11;
+      dataset.borderRadius = cfg.radius || CHART_BAR_STYLE.radius;
       dataset.borderSkipped = false;
-      dataset.categoryPercentage = cfg.categoryPercentage || 0.78;
-      dataset.barPercentage = cfg.barPercentage || 0.88;
-      dataset.maxBarThickness = cfg.maxBarThickness || 46;
+      dataset.categoryPercentage = cfg.categoryPercentage || CHART_BAR_STYLE.categoryPercentage;
+      dataset.barPercentage = cfg.barPercentage || CHART_BAR_STYLE.barPercentage;
+      dataset.maxBarThickness = cfg.maxBarThickness || CHART_BAR_STYLE.maxBarThickness;
       return dataset;
     }
     function styleLineDataset(dataset, color, options) {
@@ -3151,15 +4591,17 @@ body.graph-bg-transparent {
       dataset.backgroundColor = hexToRgba(color, 0.10);
       dataset.pointBackgroundColor = "#ffffff";
       dataset.pointBorderColor = color;
-      dataset.pointBorderWidth = cfg.pointBorderWidth || 3;
-      dataset.pointRadius = cfg.pointRadius || 4.8;
-      dataset.pointHoverRadius = cfg.pointHoverRadius || 8;
-      dataset.pointHoverBorderWidth = 4;
+      dataset.pointBorderWidth = cfg.pointBorderWidth || CHART_LINE_STYLE.pointBorderWidth;
+      dataset.pointRadius = cfg.pointRadius || CHART_LINE_STYLE.pointRadius;
+      dataset.pointHoverRadius = cfg.pointHoverRadius || CHART_LINE_STYLE.pointHoverRadius;
+      dataset.pointHoverBorderWidth = 3;
       dataset.pointHoverBackgroundColor = "#ffffff";
       dataset.pointHoverBorderColor = lightenHex(color, 0.18);
-      dataset.borderWidth = cfg.borderWidth || 4;
-      dataset.hoverBorderWidth = (cfg.borderWidth || 4) + 1;
-      dataset.tension = cfg.tension == null ? 0.34 : cfg.tension;
+      dataset.borderWidth = cfg.borderWidth || CHART_LINE_STYLE.borderWidth;
+      dataset.hoverBorderWidth = (cfg.borderWidth || CHART_LINE_STYLE.borderWidth) + 0.6;
+      dataset.tension = cfg.tension == null ? 0.38 : cfg.tension;
+      dataset.cubicInterpolationMode = "monotone";
+      dataset.capBezierPoints = true;
       dataset.fill = false;
       return dataset;
     }
@@ -3171,6 +4613,28 @@ body.graph-bg-transparent {
       const override = map[String(year)];
       if (isHex6(override)) return normalizeHex(override);
       return getMetricYearColor(chartKey, yearIndex, totalYears);
+    }
+
+    const BUILDING_COLOR_PALETTE = [
+      "#2563eb", "#0891b2", "#16a34a", "#d97706", "#7c3aed", "#dc2626",
+      "#0f766e", "#9333ea", "#ea580c", "#0284c7", "#65a30d", "#be123c",
+      "#475569", "#c2410c", "#4338ca", "#0d9488", "#a16207", "#4f46e5",
+      "#15803d", "#b45309", "#0369a1", "#7e22ce", "#1f2937", "#059669"
+    ];
+
+    function hashStringToIndex(value, modulo) {
+      const text = String(value || "");
+      let hash = 0;
+      for (let index = 0; index < text.length; index++) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(index);
+        hash |= 0;
+      }
+      return Math.abs(hash) % Math.max(1, modulo || 1);
+    }
+
+    function buildingSeriesColor(buildingKey) {
+      const key = normalizeBuildingKey(buildingKey);
+      return BUILDING_COLOR_PALETTE[hashStringToIndex(key, BUILDING_COLOR_PALETTE.length)];
     }
 
     // Set one year's colour for one chart, persist, re-skin the chart, refresh swatches.
@@ -3242,6 +4706,18 @@ body.graph-bg-transparent {
       hiddenYears[chartKey][String(year)] = hide;
       applyYearVisibility(chartKey, year, hide);
       buildInlineColorControls();
+      refreshEnterpriseAnalytics();
+    }
+    function isolateYearVisibility(chartKey, year) {
+      const sortedYears = [...allYears].map((y) => parseInt(y, 10)).filter((y) => !isNaN(y));
+      if (!hiddenYears[chartKey]) hiddenYears[chartKey] = {};
+      sortedYears.forEach(function (itemYear) {
+        const hide = String(itemYear) !== String(year);
+        hiddenYears[chartKey][String(itemYear)] = hide;
+        applyYearVisibility(chartKey, itemYear, hide);
+      });
+      buildInlineColorControls();
+      refreshEnterpriseAnalytics();
     }
     // Re-apply hidden-year state after a chart is rebuilt (e.g. on page rotation).
     function reapplyYearVisibility(chartKey) {
@@ -3285,7 +4761,7 @@ body.graph-bg-transparent {
     const hasImages = Array.isArray(mediaImages) && mediaImages.length > 0;
 
     function buildEnabledPages() {
-      const pages = [1, 2, 3, 4, 5, 6, 7];
+      const pages = [1, 2, 3, 4, 11, 5, 6, 7];
       if (hasVideos) pages.push(8);
       if (hasImages) pages.push(9);
       pages.push(10);
@@ -3858,6 +5334,16 @@ body.graph-bg-transparent {
     let waterCompareChart = null;
     let electricityCompareLineChart = null;   // bottom "trend line" panel for the electricity page
     let waterCompareLineChart = null;          // bottom "trend line" panel for the water page
+    let campusAnalyticsChart = null;
+    const campusAnalyticsState = {
+      metric: "electricity",
+      chartMode: "line",
+      segment: "months",
+      forecast: false,
+      selected: new Set(),
+      focused: null,
+      search: ""
+    };
 
     function dashboardCharts() {
       return [
@@ -3872,6 +5358,539 @@ body.graph-bg-transparent {
         wasteBarChart,
         wasteLineChart
       ].filter(Boolean);
+    }
+
+    const analyticsModuleState = new WeakMap();
+
+    function chartsInsideWrap(wrap) {
+      if (!wrap) return [];
+      return Array.from(wrap.querySelectorAll("canvas"))
+        .map(canvas => {
+          try { return Chart.getChart(canvas); } catch (error) { return null; }
+        })
+        .filter(Boolean);
+    }
+
+    function createAnalyticsToolbar(header, legendElement, accent) {
+      let toolbar = header.querySelector(".analytics-toolbar");
+      if (!toolbar) {
+        toolbar = document.createElement("div");
+        toolbar.className = "analytics-toolbar";
+        toolbar.innerHTML =
+          '<div class="analytics-control-group analytics-view-switch" aria-label="Visualization type">' +
+            '<button type="button" class="analytics-segment active" data-analytics-mode="combined">Combined</button>' +
+            '<button type="button" class="analytics-segment" data-analytics-mode="bar">Bar</button>' +
+            '<button type="button" class="analytics-segment" data-analytics-mode="line">Line</button>' +
+          '</div>' +
+          '<div class="analytics-control-group" aria-label="Analysis overlays">' +
+            '<span class="analytics-toolbar-label">Overlay</span>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-toggle="movingAverage">MA</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-toggle="trendLine">Trend</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-toggle="benchmark">Bench</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-toggle="forecast">Forecast</button>' +
+          '</div>' +
+          '<div class="analytics-control-group" aria-label="Annotations">' +
+            '<span class="analytics-toolbar-label">Annotate</span>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="marker">Marker</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="note">Note</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="region">Region</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="event">Event</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="arrow">Arrow</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="trend">Trend</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-brush="true">Brush</button>' +
+          '</div>' +
+          '<div class="analytics-control-group" aria-label="Playback">' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-play="true">Play</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-reset="true">Reset</button>' +
+          '</div>';
+        header.appendChild(toolbar);
+      }
+      if (legendElement && legendElement.parentNode !== toolbar) {
+        legendElement.dataset.analyticsLegend = "true";
+        toolbar.appendChild(legendElement);
+      }
+      if (accent) toolbar.style.setProperty("--chartAccent", accent);
+      return toolbar;
+    }
+
+    function ensureAnalyticsPanels(body, wrap) {
+      let navigator = body.querySelector(".analytics-navigator");
+      if (!navigator) {
+        navigator = document.createElement("div");
+        navigator.className = "analytics-navigator";
+        navigator.innerHTML =
+          '<span class="analytics-range-label">Timeline</span>' +
+          '<div class="analytics-range-track">' +
+            '<input class="analytics-range-input analytics-range-start" type="range" min="0" max="0" value="0" aria-label="Range start">' +
+            '<input class="analytics-range-input analytics-range-end" type="range" min="0" max="0" value="0" aria-label="Range end">' +
+          '</div>' +
+          '<span class="analytics-range-value">All periods</span>';
+        wrap.insertAdjacentElement("afterend", navigator);
+      }
+
+      let intelligence = body.querySelector(".analytics-intelligence");
+      if (!intelligence) {
+        intelligence = document.createElement("div");
+        intelligence.className = "analytics-intelligence";
+        intelligence.innerHTML =
+          '<div class="analytics-insights">' +
+            '<div class="analytics-insights-title">Intelligent insights</div>' +
+            '<div class="analytics-insights-body">Hover or select a range to inspect visible movement.</div>' +
+          '</div>' +
+          '<div class="analytics-stats">' +
+            '<div class="analytics-stats-title">Selected interval</div>' +
+            '<div class="analytics-stats-grid"></div>' +
+          '</div>';
+        navigator.insertAdjacentElement("afterend", intelligence);
+      }
+
+      return { navigator, intelligence };
+    }
+
+    function setChartRange(chart, start, end) {
+      if (!chart || !chart.data || !chart.data.labels || !chart.data.labels.length) return;
+      const labels = chart.data.labels;
+      const safeStart = Math.max(0, Math.min(labels.length - 1, Math.round(start)));
+      const safeEnd = Math.max(safeStart, Math.min(labels.length - 1, Math.round(end)));
+      if (!chart.options.scales) chart.options.scales = {};
+      if (!chart.options.scales.x) chart.options.scales.x = {};
+      chart.options.scales.x.min = labels[safeStart];
+      chart.options.scales.x.max = labels[safeEnd];
+      chart.update("none");
+    }
+
+    function resetChartRange(chart) {
+      if (!chart || !chart.options || !chart.options.scales || !chart.options.scales.x) return;
+      delete chart.options.scales.x.min;
+      delete chart.options.scales.x.max;
+      chart.update("none");
+    }
+
+    function chartPrimarySeries(chart) {
+      const primary = primaryVisibleDataset(chart);
+      if (!primary) return null;
+      const values = Array.isArray(primary.dataset.data) ? primary.dataset.data.map(Number) : [];
+      return { index: primary.index, dataset: primary.dataset, values };
+    }
+
+    function computeMovingAverage(values, windowSize) {
+      const output = [];
+      for (let index = 0; index < values.length; index++) {
+        const start = Math.max(0, index - windowSize + 1);
+        const slice = values.slice(start, index + 1).filter(Number.isFinite);
+        if (!slice.length) continue;
+        output.push({ index, value: slice.reduce((sum, value) => sum + value, 0) / slice.length });
+      }
+      return output;
+    }
+
+    function computeLinearTrend(values, start, end) {
+      const points = [];
+      for (let index = start; index <= end; index++) {
+        const value = Number(values[index]);
+        if (Number.isFinite(value)) points.push({ x: index, y: value });
+      }
+      if (points.length < 2) return [];
+      const n = points.length;
+      const sumX = points.reduce((sum, point) => sum + point.x, 0);
+      const sumY = points.reduce((sum, point) => sum + point.y, 0);
+      const sumXY = points.reduce((sum, point) => sum + point.x * point.y, 0);
+      const sumXX = points.reduce((sum, point) => sum + point.x * point.x, 0);
+      const denom = (n * sumXX) - (sumX * sumX);
+      if (!denom) return [];
+      const slope = ((n * sumXY) - (sumX * sumY)) / denom;
+      const intercept = (sumY - slope * sumX) / n;
+      return [
+        { index: start, value: intercept + slope * start },
+        { index: end, value: intercept + slope * end }
+      ];
+    }
+
+    function updateAnalyticsOverlays(state) {
+      state.charts.forEach((chart) => {
+        const series = chartPrimarySeries(chart);
+        const labels = chart.data && chart.data.labels ? chart.data.labels : [];
+        const range = getVisibleRange(chart);
+        const values = series ? series.values : [];
+        const visibleValues = values.slice(range.start, range.end + 1).filter(Number.isFinite);
+        const stats = summarizeValues(visibleValues);
+        const overlays = {};
+        if (state.toggles.movingAverage && values.length) overlays.movingAverage = computeMovingAverage(values, 3);
+        if (state.toggles.trendLine && values.length) overlays.trendLine = computeLinearTrend(values, range.start, range.end);
+        if (state.toggles.benchmark && stats) overlays.benchmark = stats.average;
+        if (state.toggles.forecast && values.length) {
+          const trend = computeLinearTrend(values, Math.max(0, range.end - 4), range.end);
+          if (trend.length === 2) {
+            const slope = (trend[1].value - trend[0].value) / Math.max(1, trend[1].index - trend[0].index);
+            overlays.forecast = [];
+            for (let index = range.end; index <= Math.min(labels.length - 1, range.end + 3); index++) {
+              overlays.forecast.push({ index, value: Number(values[range.end] || 0) + slope * (index - range.end) });
+            }
+          }
+        }
+        if (state.toggles.target && stats) overlays.target = stats.average * 0.92;
+        chart.$analyticsOverlays = overlays;
+        chart.update("none");
+      });
+    }
+
+    function buildMilestones(labels, title) {
+      if (!Array.isArray(labels) || !labels.length) return [];
+      const lowerTitle = String(title || "").toLowerCase();
+      const milestones = [];
+      const add = (index, label, color) => {
+        if (index >= 0 && index < labels.length) milestones.push({ index, label, color });
+      };
+      if (isMonthAxis(labels)) {
+        add(Math.min(2, labels.length - 1), "Policy update", "rgba(37,99,235,0.70)");
+        add(Math.min(5, labels.length - 1), lowerTitle.includes("solar") ? "Solar maintenance" : "Efficiency initiative", "rgba(22,101,52,0.70)");
+        add(Math.min(8, labels.length - 1), "Campus event", "rgba(217,119,6,0.72)");
+      } else {
+        add(Math.floor(labels.length * 0.25), "Upgrade window", "rgba(37,99,235,0.70)");
+        add(Math.floor(labels.length * 0.58), "ESG milestone", "rgba(22,101,52,0.70)");
+      }
+      return milestones;
+    }
+
+    function updateAnalyticsStats(state) {
+      const activeChart = state.mode === "line" ? state.lineChart : state.barChart || state.lineChart;
+      if (!activeChart) return;
+      const range = state.selection || getVisibleRange(activeChart);
+      const values = [];
+      activeChart.data.datasets.forEach((dataset, datasetIndex) => {
+        values.push(...visibleDatasetValues(activeChart, datasetIndex, range.start, range.end));
+      });
+      const stats = summarizeValues(values);
+      const labels = activeChart.data.labels || [];
+      const rangeText = labels.length
+        ? String(labels[range.start]) + " to " + String(labels[range.end])
+        : "All periods";
+      state.rangeValue.textContent = rangeText;
+      const grid = state.statsGrid;
+      if (!grid) return;
+      const first = values[0];
+      const last = values[values.length - 1];
+      const growth = pctChange(last, first);
+      const items = stats ? [
+        ["Min", formatAxisNumber(stats.min)],
+        ["Max", formatAxisNumber(stats.max)],
+        ["Avg", formatAxisNumber(stats.average)],
+        ["Median", formatAxisNumber(stats.median)],
+        ["Total", formatAxisNumber(stats.total)],
+        ["Growth", formatPercent(growth)],
+        ["Variance", formatAxisNumber(stats.variance)],
+        ["Points", String(stats.count)]
+      ] : [["Min", "n/a"], ["Max", "n/a"], ["Avg", "n/a"], ["Median", "n/a"]];
+      grid.innerHTML = items.map(item =>
+        '<div class="analytics-stat"><span class="analytics-stat-label">' + item[0] + '</span><span class="analytics-stat-value">' + item[1] + '</span></div>'
+      ).join("");
+
+      const insight = state.insightBody;
+      if (insight && stats) {
+        const primary = chartPrimarySeries(activeChart);
+        const primaryValues = primary ? primary.values.slice(range.start, range.end + 1).filter(Number.isFinite) : [];
+        const trend = primaryValues.length >= 2 ? pctChange(primaryValues[primaryValues.length - 1], primaryValues[0]) : null;
+        const maxIndex = primaryValues.indexOf(Math.max(...primaryValues));
+        const maxLabel = maxIndex >= 0 && labels[range.start + maxIndex] ? labels[range.start + maxIndex] : "the selected range";
+        const direction = Number(trend) > 2 ? "increased" : Number(trend) < -2 ? "decreased" : "remained broadly stable";
+        insight.textContent = "Visible values " + direction + " (" + formatPercent(trend) + "). Peak activity occurs around " + maxLabel + ", with an average of " + formatAxisNumber(stats.average) + " across " + stats.count + " visible points.";
+      }
+    }
+
+    function setAnalyticsMode(state, mode) {
+      state.mode = mode;
+      state.wrap.classList.remove("analytics-view-mode-bar", "analytics-view-mode-line", "analytics-view-mode-combined");
+      state.wrap.classList.add("analytics-view-mode-" + mode);
+      state.toolbar.querySelectorAll("[data-analytics-mode]").forEach(button => {
+        button.classList.toggle("active", button.dataset.analyticsMode === mode);
+      });
+      state.charts.forEach(chart => {
+        if (!chart || !chart.options || !chart.options.scales) return;
+        if (!chart.$analyticsScaleDisplay) {
+          chart.$analyticsScaleDisplay = {};
+          Object.keys(chart.options.scales).forEach(scaleKey => {
+            chart.$analyticsScaleDisplay[scaleKey] = chart.options.scales[scaleKey].display;
+          });
+        }
+        const isLineOverlay = mode === "combined" && chart === state.lineChart;
+        Object.keys(chart.options.scales).forEach(scaleKey => {
+          if (!chart.options.scales[scaleKey]) return;
+          chart.options.scales[scaleKey].display = isLineOverlay ? false : chart.$analyticsScaleDisplay[scaleKey];
+        });
+        chart.update("active");
+      });
+      requestAnimationFrame(() => {
+        state.charts.forEach(chart => {
+          try { chart.resize(); chart.update("none"); } catch (error) {}
+        });
+      });
+      updateAnalyticsStats(state);
+    }
+
+    function setStateRange(state, start, end, updateInputs) {
+      const labels = state.labels || [];
+      if (!labels.length) return;
+      const safeStart = Math.max(0, Math.min(labels.length - 1, Math.round(start)));
+      const safeEnd = Math.max(safeStart, Math.min(labels.length - 1, Math.round(end)));
+      state.range = { start: safeStart, end: safeEnd };
+      state.charts.forEach(chart => setChartRange(chart, safeStart, safeEnd));
+      if (updateInputs !== false) {
+        state.rangeStart.value = String(safeStart);
+        state.rangeEnd.value = String(safeEnd);
+      }
+      updateAnalyticsOverlays(state);
+      updateAnalyticsStats(state);
+    }
+
+    function resetAnalyticsRange(state) {
+      state.selection = null;
+      state.range = { start: 0, end: Math.max(0, state.labels.length - 1) };
+      state.charts.forEach(resetChartRange);
+      state.rangeStart.value = "0";
+      state.rangeEnd.value = String(Math.max(0, state.labels.length - 1));
+      updateAnalyticsOverlays(state);
+      updateAnalyticsStats(state);
+    }
+
+    function addAnalyticsAnnotation(state, chart, event) {
+      if (!state.annotationType || !chart || !chart.chartArea) return;
+      const area = chart.chartArea;
+      const rect = chart.canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      if (x < area.left || x > area.right || y < area.top || y > area.bottom) return;
+      const xScale = chart.scales.x;
+      const yScale = chart.scales.y;
+      const xIndex = Math.round(Number(xScale.getValueForPixel(x)));
+      const yValue = Number(yScale.getValueForPixel(y));
+      const defaultNote = state.annotationType === "event" ? "ESG event" :
+        state.annotationType === "region" ? "Highlighted period" :
+        state.annotationType === "trend" ? "Trend annotation" :
+        state.annotationType === "arrow" ? "Consumption spike" :
+        state.annotationType === "note" ? "Operational note" : "Marker";
+      const note = window.prompt("Annotation label", defaultNote) || defaultNote;
+      state.charts.forEach(targetChart => {
+        if (!Array.isArray(targetChart.$analyticsAnnotations)) targetChart.$analyticsAnnotations = [];
+        targetChart.$analyticsAnnotations.push({
+          type: state.annotationType,
+          xIndex,
+          yValue,
+          note,
+          color: getComputedStyle(state.wrap).getPropertyValue("--chartAccent") || "rgba(37,99,235,0.82)"
+        });
+        targetChart.update("none");
+      });
+    }
+
+    function bindAnalyticsCanvasInteractions(state) {
+      state.wrap.querySelectorAll("canvas").forEach(canvas => {
+        if (canvas.dataset.analyticsBound === "true") return;
+        canvas.dataset.analyticsBound = "true";
+        let dragStart = null;
+        canvas.addEventListener("wheel", function (event) {
+          const labels = state.labels || [];
+          if (labels.length < 2) return;
+          event.preventDefault();
+          const current = state.range || { start: 0, end: labels.length - 1 };
+          const span = Math.max(2, current.end - current.start + 1);
+          const nextSpan = event.deltaY < 0 ? Math.max(2, Math.round(span * 0.82)) : Math.min(labels.length, Math.round(span * 1.18));
+          const rect = canvas.getBoundingClientRect();
+          const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+          const anchor = current.start + ratio * (span - 1);
+          let start = Math.round(anchor - ratio * (nextSpan - 1));
+          let end = start + nextSpan - 1;
+          if (start < 0) { end -= start; start = 0; }
+          if (end >= labels.length) { start -= end - labels.length + 1; end = labels.length - 1; }
+          setStateRange(state, Math.max(0, start), Math.min(labels.length - 1, end));
+        }, { passive: false });
+
+        canvas.addEventListener("dblclick", function () { resetAnalyticsRange(state); });
+
+        canvas.addEventListener("click", function (event) {
+          if (state.annotationType) {
+            const chart = Chart.getChart(canvas);
+            addAnalyticsAnnotation(state, chart, event);
+          }
+        });
+
+        canvas.addEventListener("mousedown", function (event) {
+          if (state.annotationType) return;
+          dragStart = {
+            x: event.clientX,
+            range: Object.assign({}, state.range || { start: 0, end: state.labels.length - 1 }),
+            brush: state.brushMode || event.shiftKey
+          };
+        });
+
+        window.addEventListener("mousemove", function (event) {
+          if (!dragStart) return;
+          const labels = state.labels || [];
+          const rect = canvas.getBoundingClientRect();
+          const units = (event.clientX - dragStart.x) / Math.max(1, rect.width) * Math.max(1, dragStart.range.end - dragStart.range.start + 1);
+          if (dragStart.brush) {
+            const startRatio = Math.max(0, Math.min(1, (dragStart.x - rect.left) / rect.width));
+            const endRatio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+            const startIndex = Math.round(startRatio * (labels.length - 1));
+            const endIndex = Math.round(endRatio * (labels.length - 1));
+            state.selection = { start: Math.min(startIndex, endIndex), end: Math.max(startIndex, endIndex) };
+            updateAnalyticsStats(state);
+          } else {
+            const span = dragStart.range.end - dragStart.range.start;
+            let start = Math.round(dragStart.range.start - units);
+            let end = start + span;
+            if (start < 0) { end -= start; start = 0; }
+            if (end >= labels.length) { start -= end - labels.length + 1; end = labels.length - 1; }
+            setStateRange(state, start, end);
+          }
+        });
+
+        window.addEventListener("mouseup", function () {
+          dragStart = null;
+        });
+      });
+    }
+
+    function stopAnalyticsPlayback(state) {
+      if (state.playTimer) clearInterval(state.playTimer);
+      state.playTimer = null;
+      if (state.playButton) state.playButton.classList.remove("is-playing");
+    }
+
+    function toggleAnalyticsPlayback(state) {
+      if (state.playTimer) {
+        stopAnalyticsPlayback(state);
+        return;
+      }
+      const labels = state.labels || [];
+      if (labels.length < 2) return;
+      state.playButton.classList.add("is-playing");
+      const windowSize = Math.max(3, Math.min(labels.length, (state.range.end - state.range.start + 1) || 4));
+      state.playTimer = setInterval(() => {
+        const current = state.range || { start: 0, end: windowSize - 1 };
+        let start = current.start + 1;
+        if (start + windowSize - 1 >= labels.length) start = 0;
+        setStateRange(state, start, start + windowSize - 1);
+      }, 950);
+    }
+
+    function installEnterpriseAnalytics(wrap, options) {
+      if (!wrap) return;
+      const card = wrap.closest(".analytics-card");
+      const body = wrap.closest(".analytics-card-body");
+      const header = card ? card.querySelector(".analytics-card-header") : null;
+      if (!body || !header) return;
+      const legendElement = options && options.legendId ? document.getElementById(options.legendId) : null;
+      const accent = card ? getComputedStyle(card).getPropertyValue("--chartAccent") : "";
+      const toolbar = createAnalyticsToolbar(header, legendElement, accent);
+      const panels = ensureAnalyticsPanels(body, wrap);
+      const charts = chartsInsideWrap(wrap);
+      if (!charts.length) return;
+      const labels = (charts[0].data && charts[0].data.labels) || [];
+      charts.forEach(chart => {
+        chart.$analyticsMilestones = buildMilestones(labels, header.textContent);
+      });
+
+      let state = analyticsModuleState.get(wrap);
+      if (!state) {
+        state = {
+          wrap,
+          toolbar,
+          charts,
+          barChart: charts[0] || null,
+          lineChart: charts[1] || charts[0] || null,
+          labels,
+          range: { start: 0, end: Math.max(0, labels.length - 1) },
+          mode: "combined",
+          toggles: {},
+          annotationType: null,
+          brushMode: false,
+          navigator: panels.navigator,
+          rangeStart: panels.navigator.querySelector(".analytics-range-start"),
+          rangeEnd: panels.navigator.querySelector(".analytics-range-end"),
+          rangeValue: panels.navigator.querySelector(".analytics-range-value"),
+          statsGrid: panels.intelligence.querySelector(".analytics-stats-grid"),
+          insightBody: panels.intelligence.querySelector(".analytics-insights-body")
+        };
+        analyticsModuleState.set(wrap, state);
+      } else {
+        state.charts = charts;
+        state.barChart = charts[0] || null;
+        state.lineChart = charts[1] || charts[0] || null;
+        state.labels = labels;
+      }
+
+      state.rangeStart.max = String(Math.max(0, labels.length - 1));
+      state.rangeEnd.max = String(Math.max(0, labels.length - 1));
+      state.rangeStart.value = String(state.range.start || 0);
+      state.rangeEnd.value = String(state.range.end || Math.max(0, labels.length - 1));
+
+      if (toolbar.dataset.analyticsBound !== "true") {
+        toolbar.dataset.analyticsBound = "true";
+        toolbar.addEventListener("click", function (event) {
+          const button = event.target.closest("button");
+          if (!button) return;
+          if (button.dataset.analyticsMode) setAnalyticsMode(state, button.dataset.analyticsMode);
+          if (button.dataset.analyticsToggle) {
+            const key = button.dataset.analyticsToggle;
+            state.toggles[key] = !state.toggles[key];
+            if (key === "benchmark") state.toggles.target = false;
+            button.classList.toggle("active", !!state.toggles[key]);
+            updateAnalyticsOverlays(state);
+          }
+          if (button.dataset.analyticsAnnotation) {
+            state.annotationType = state.annotationType === button.dataset.analyticsAnnotation ? null : button.dataset.analyticsAnnotation;
+            toolbar.querySelectorAll("[data-analytics-annotation]").forEach(item => item.classList.toggle("active", item.dataset.analyticsAnnotation === state.annotationType));
+          }
+          if (button.dataset.analyticsBrush) {
+            state.brushMode = !state.brushMode;
+            button.classList.toggle("active", state.brushMode);
+          }
+          if (button.dataset.analyticsPlay) {
+            state.playButton = button;
+            toggleAnalyticsPlayback(state);
+          }
+          if (button.dataset.analyticsReset) {
+            stopAnalyticsPlayback(state);
+            state.annotationType = null;
+            state.brushMode = false;
+            state.toggles = {};
+            state.charts.forEach(chart => {
+              chart.$analyticsAnnotations = [];
+              chart.$analyticsOverlays = {};
+              chart.update("none");
+            });
+            toolbar.querySelectorAll(".analytics-tool-btn.active").forEach(item => item.classList.remove("active"));
+            resetAnalyticsRange(state);
+          }
+        });
+      }
+
+      const rangeHandler = function () {
+        let start = Number(state.rangeStart.value);
+        let end = Number(state.rangeEnd.value);
+        if (start > end) [start, end] = [end, start];
+        state.selection = null;
+        setStateRange(state, start, end, false);
+      };
+      if (state.rangeStart.dataset.analyticsBound !== "true") {
+        state.rangeStart.dataset.analyticsBound = "true";
+        state.rangeEnd.dataset.analyticsBound = "true";
+        state.rangeStart.addEventListener("input", rangeHandler);
+        state.rangeEnd.addEventListener("input", rangeHandler);
+      }
+
+      bindAnalyticsCanvasInteractions(state);
+      setAnalyticsMode(state, state.mode || "combined");
+      updateAnalyticsOverlays(state);
+      updateAnalyticsStats(state);
+    }
+
+    function refreshEnterpriseAnalytics() {
+      installEnterpriseAnalytics(document.querySelector("#page3 .three-chart-wrap"), { legendId: "elecColorControls" });
+      installEnterpriseAnalytics(document.querySelector("#page4 .three-chart-wrap"), { legendId: "waterColorControls" });
+      installEnterpriseAnalytics(document.querySelector("#page5 .three-chart-wrap"), { legendId: "buildingColorControls" });
+      installEnterpriseAnalytics(document.querySelector("#page6 .three-chart-wrap"), { legendId: "solarColorControls" });
+      installEnterpriseAnalytics(document.querySelector("#page7 .three-chart-wrap"), { legendId: "wasteColorControls" });
     }
 
     function applyGraphBackgroundMode(options) {
@@ -3893,7 +5912,7 @@ body.graph-bg-transparent {
     function updateGraphBackgroundControlVisibility() {
       const controls = document.getElementById("graphBackgroundControls");
       if (!controls) return;
-      const isGraphPage = [3, 4, 5, 6, 7].includes(Number(currentPageNumber || 1));
+      const isGraphPage = [3, 4, 5, 6, 7, 11].includes(Number(currentPageNumber || 1));
       controls.hidden = !isGraphPage;
       if (!isGraphPage) return;
       const activeHeader = document.querySelector(".active-page .analytics-card-header");
@@ -3940,7 +5959,9 @@ body.graph-bg-transparent {
       }
       allBuildingCodes = [...new Set(allBuildingCodes)].filter(Boolean);
 
-      const latestRows = overviewNewestRows.length ? overviewNewestRows : overviewOldestRows;
+      const latestRows = (latestOverviewYear && overviewByYear[latestOverviewYear] && overviewByYear[latestOverviewYear].length)
+        ? overviewByYear[latestOverviewYear]
+        : (overviewNewestRows.length ? overviewNewestRows : overviewOldestRows);
       latestOverviewByKey = {};
       latestRows.forEach(rowItem => {
         if (!rowItem || !rowItem.building) return;
@@ -4124,7 +6145,7 @@ body.graph-bg-transparent {
             const sorted = [...validYears].sort((yearA, yearB) => yearB - yearA);
             return [sorted[0]];
           }
-          return latestDataYear ? [latestDataYear] : [];
+          return [];
         }
 
         const start = startYear || (validYears && validYears.length > 0 ? Math.min(...validYears) : null);
@@ -4161,7 +6182,7 @@ body.graph-bg-transparent {
       }
 
       if (chartTitle) {
-        chartTitle.textContent = `(${buildingName}) Monthly Trend - ${yearRangeText}`;
+        chartTitle.textContent = `${cardLabelForBuilding(buildingCode)} Monthly Trend - ${yearRangeText}`;
       }
 
       let totalElectricity = 0;
@@ -4256,7 +6277,7 @@ body.graph-bg-transparent {
                 const sorted = [...validYears].sort((yearA, yearB) => yearB - yearA);
                 return [sorted[0]];
               }
-              return latestDataYear ? [latestDataYear] : [];
+              return [];
             }
 
             const start = startYear || (validYears.length > 0 ? Math.min(...validYears) : null);
@@ -4279,10 +6300,6 @@ body.graph-bg-transparent {
           const allYearsToShow = [...new Set([...elecYearsToShow, ...waterYearsToShow])]
             .sort((yearA, yearB) => yearA - yearB);
           
-          if (!allYearsToShow.length && latestDataYear) {
-            allYearsToShow.push(latestDataYear);
-          }
-
           const yearlyData = allYearsToShow.map(year => {
             const yearData = getBuildingMonthlyForYear(codeKey, year);
             
@@ -4403,12 +6420,12 @@ body.graph-bg-transparent {
           label: label,
           data: data,
           yAxisID: axisId
-        }, meta), color, { maxBarThickness: 42, categoryPercentage: 0.76, barPercentage: 0.86 }));
+        }, meta), color));
         lineDatasets.push(styleLineDataset(Object.assign({
           label: label,
           data: data,
           yAxisID: axisId
-        }, meta), color, { pointRadius: 4.4, borderWidth: 3.8 }));
+        }, meta), color));
       }
 
       elecYearsForChart.forEach((year, index) =>
@@ -4431,6 +6448,7 @@ body.graph-bg-transparent {
 
       buildBuildingColorControls();
       reapplyBuildingVisibility();
+      refreshEnterpriseAnalytics();
 
       document.querySelectorAll("#three-buildings-grid .building-list-item").forEach((card) => {
         if (card && card.dataset && card.dataset.building === buildingCode) card.classList.add("active");
@@ -4458,6 +6476,511 @@ body.graph-bg-transparent {
     }
 
     // ============================================================
+    // CAMPUS ANALYTICS
+    // ============================================================
+    function campusMetricUnit() {
+      return campusAnalyticsState.metric === "water" ? "m³" : "kWh";
+    }
+
+    function campusMetricLabel() {
+      return campusAnalyticsState.metric === "water" ? "Water" : "Electricity";
+    }
+
+    function campusYearMonthLabel(year, monthIndex) {
+      return String(year) + " " + month_labels[monthIndex];
+    }
+
+    function campusParsePeriodLabel(label) {
+      const parts = String(label || "").split(/\s+/);
+      const year = parseInt(parts[0], 10);
+      const monthIndex = month_labels.findIndex(month => month.toLowerCase() === String(parts[1] || "").toLowerCase());
+      return {
+        year: Number.isFinite(year) ? year : null,
+        monthIndex: monthIndex >= 0 ? monthIndex : 0
+      };
+    }
+
+    function campusNextPeriodLabel(label, offset) {
+      const parsed = campusParsePeriodLabel(label);
+      const startMonth = parsed.monthIndex + Number(offset || 0);
+      const year = Number(parsed.year || latestDataYear || new Date().getFullYear()) + Math.floor(startMonth / 12);
+      const monthIndex = ((startMonth % 12) + 12) % 12;
+      return campusYearMonthLabel(year, monthIndex);
+    }
+
+    function campusHistoricalPeriods() {
+      const years = orderedDashboardYears(false);
+      const labels = [];
+      years.forEach(year => {
+        for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+          labels.push(campusYearMonthLabel(year, monthIndex));
+        }
+      });
+      return labels;
+    }
+
+    function campusSeriesForBuilding(buildingKey, periods) {
+      const metricKey = campusAnalyticsState.metric === "water" ? "water" : "elec";
+      return periods.map(label => {
+        const parsed = campusParsePeriodLabel(label);
+        const monthly = getBuildingMonthlyForYear(buildingKey, parsed.year);
+        const values = monthly && Array.isArray(monthly[metricKey]) ? monthly[metricKey] : [];
+        return Number(values[parsed.monthIndex] || 0);
+      });
+    }
+
+    function campusSelectedBuildings() {
+      ensureAllBuildingsPrepared();
+      const selected = Array.from(campusAnalyticsState.selected || []);
+      return selected.filter(code => allBuildingCodes.includes(code));
+    }
+
+    function campusTotalForBuilding(buildingKey) {
+      const years = orderedDashboardYears(false);
+      return years.reduce((sum, year) => {
+        const totals = getBuildingTotalsForYear(buildingKey, year);
+        return sum + Number(totals[campusAnalyticsState.metric] || 0);
+      }, 0);
+    }
+
+    function campusVisibleBuildings() {
+      const query = String(campusAnalyticsState.search || "").trim().toLowerCase();
+      if (!query) return allBuildingCodes.slice();
+      return allBuildingCodes.filter(code => {
+        const label = labelForBuilding(code).toLowerCase();
+        return label.includes(query) || String(code || "").toLowerCase().includes(query);
+      });
+    }
+
+    function campusSetSelection(nextSelection) {
+      campusAnalyticsState.selected = new Set((nextSelection || []).map(normalizeBuildingKey).filter(Boolean));
+      if (campusAnalyticsState.focused && !campusAnalyticsState.selected.has(campusAnalyticsState.focused)) {
+        campusAnalyticsState.focused = null;
+      }
+      renderCampusBuildingSelector();
+      renderCampusAnalyticsChart();
+    }
+
+    function renderCampusBuildingSelector() {
+      ensureAllBuildingsPrepared();
+      const list = document.getElementById("campusBuildingList");
+      const count = document.getElementById("campusSelectionCount");
+      const focusButton = document.getElementById("campusFocusClearBtn");
+      if (count) count.textContent = campusAnalyticsState.selected.size + " selected";
+      if (focusButton) focusButton.textContent = campusAnalyticsState.focused ? "Clear Focus" : "Focus Off";
+      if (!list) return;
+      const visible = campusVisibleBuildings();
+      const totals = {};
+      allBuildingCodes.forEach(code => { totals[code] = campusTotalForBuilding(code); });
+      list.innerHTML = "";
+      visible.forEach(code => {
+        const selected = campusAnalyticsState.selected.has(code);
+        const row = document.createElement("div");
+        row.className = "campus-building-row" + (selected ? " is-selected" : "") + (campusAnalyticsState.focused && campusAnalyticsState.focused !== code ? " is-muted" : "");
+        row.dataset.building = code;
+        row.innerHTML =
+          '<span class="campus-building-check" aria-hidden="true"></span>' +
+          '<span class="campus-building-name"></span>' +
+          '<span class="campus-building-swatch"></span>';
+        const name = row.querySelector(".campus-building-name");
+        name.innerHTML =
+          '<span></span>' +
+          '<span class="campus-building-meta"></span>';
+        name.querySelector("span").textContent = labelForBuilding(code);
+        name.querySelector(".campus-building-meta").textContent = formatNumber(totals[code]) + " " + campusMetricUnit();
+        row.querySelector(".campus-building-swatch").style.background = buildingSeriesColor(code);
+        row.addEventListener("click", function () {
+          const next = new Set(campusAnalyticsState.selected);
+          if (next.has(code)) next.delete(code);
+          else next.add(code);
+          campusSetSelection(Array.from(next));
+        });
+        row.addEventListener("dblclick", function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          campusAnalyticsState.focused = campusAnalyticsState.focused === code ? null : code;
+          campusSetSelection([code]);
+        });
+        list.appendChild(row);
+      });
+    }
+
+    function campusBuildSegments(labels) {
+      const mode = campusAnalyticsState.segment;
+      const groups = [];
+      let currentKey = null;
+      let current = null;
+
+      function segmentFor(label) {
+        const parsed = campusParsePeriodLabel(label);
+        const year = parsed.year || "";
+        const month = parsed.monthIndex;
+        if (mode === "quarters") {
+          const q = Math.floor(month / 3) + 1;
+          return { key: year + "-Q" + q, label: "Q" + q + " " + year };
+        }
+        if (mode === "semesters") {
+          const sem = month < 6 ? "S1" : "S2";
+          return { key: year + "-" + sem, label: sem + " " + year };
+        }
+        if (mode === "fiscal") {
+          const fy = month >= 3 ? year + 1 : year;
+          return { key: "FY" + fy, label: "FY " + fy };
+        }
+        return { key: year + "-" + month, label: month_labels[month] + " " + year };
+      }
+
+      labels.forEach((label, index) => {
+        const segment = segmentFor(label);
+        if (segment.key !== currentKey) {
+          if (current) groups.push(current);
+          currentKey = segment.key;
+          current = { start: index, end: index, label: segment.label };
+        } else {
+          current.end = index;
+        }
+      });
+      if (current) groups.push(current);
+      if (mode === "months" && groups.length > 18) {
+        return groups.filter((segment, index) => index % 3 === 0 || index === groups.length - 1);
+      }
+      return groups;
+    }
+
+    function campusForecastValues(values, horizon) {
+      const clean = (values || []).map(Number).filter(Number.isFinite);
+      if (clean.length < 2) return { forecast: [], lower: [], upper: [], slope: 0, avg: 0, method: "moving average" };
+      const recent = clean.slice(Math.max(0, clean.length - 6));
+      const avg = recent.reduce((sum, value) => sum + value, 0) / recent.length;
+      const alpha = clean.length >= 12 ? 0.42 : 0.55;
+      let smooth = clean[0];
+      clean.forEach(value => { smooth = alpha * value + (1 - alpha) * smooth; });
+      const trendLine = computeLinearTrend(clean, Math.max(0, clean.length - Math.min(12, clean.length)), clean.length - 1);
+      const slope = trendLine.length === 2 ? (trendLine[1].value - trendLine[0].value) / Math.max(1, trendLine[1].index - trendLine[0].index) : 0;
+      const residuals = recent.map((value, index) => {
+        const projected = smooth + slope * (index - recent.length + 1);
+        return Math.abs(value - projected);
+      });
+      const uncertaintyBase = Math.max(avg * 0.06, residuals.reduce((sum, value) => sum + value, 0) / Math.max(1, residuals.length));
+      const forecast = [];
+      const lower = [];
+      const upper = [];
+      for (let step = 1; step <= horizon; step++) {
+        const seasonal = clean.length >= 12 ? Number(clean[clean.length - 12 + ((step - 1) % 12)] || avg) : avg;
+        const blended = (smooth + slope * step) * 0.68 + seasonal * 0.32;
+        const value = Math.max(0, blended);
+        const uncertainty = uncertaintyBase * (1 + step * 0.16);
+        forecast.push(value);
+        lower.push(Math.max(0, value - uncertainty));
+        upper.push(value + uncertainty);
+      }
+      return { forecast, lower, upper, slope, avg, method: clean.length >= 12 ? "exponential smoothing with seasonal blending" : "linear trend with moving average" };
+    }
+
+    function campusProjectionSummary(selectedBuildings, labels, seriesByBuilding, forecastByBuilding) {
+      const explanation = document.getElementById("campusForecastExplanation");
+      const statsGrid = document.getElementById("campusForecastStats");
+      if (!explanation || !statsGrid) return;
+      const unit = campusMetricUnit();
+      if (!campusAnalyticsState.forecast || !selectedBuildings.length) {
+        explanation.textContent = "Enable forecast mode to extend the selected comparison with projected usage and uncertainty bands.";
+        statsGrid.innerHTML = [
+          ["Future Total", "n/a"],
+          ["Projected Avg", "n/a"],
+          ["Peak Period", "n/a"],
+          ["ESG Target", "n/a"],
+          ["Vs History", "n/a"],
+          ["Status", "n/a"]
+        ].map(item => '<div class="campus-forecast-stat"><span>' + item[0] + '</span><strong>' + item[1] + '</strong></div>').join("");
+        return;
+      }
+
+      const historyTotalsByPeriod = labels.map((_, index) => selectedBuildings.reduce((sum, code) => sum + Number((seriesByBuilding[code] || [])[index] || 0), 0));
+      const futureLabels = [];
+      const lastLabel = labels[labels.length - 1] || campusYearMonthLabel(latestDataYear || new Date().getFullYear(), 0);
+      for (let index = 1; index <= 6; index++) futureLabels.push(campusNextPeriodLabel(lastLabel, index));
+      const forecastTotals = futureLabels.map((_, index) => selectedBuildings.reduce((sum, code) => sum + Number((forecastByBuilding[code]?.forecast || [])[index] || 0), 0));
+      const futureTotal = forecastTotals.reduce((sum, value) => sum + value, 0);
+      const futureAvg = futureTotal / Math.max(1, forecastTotals.length);
+      const recentHistory = historyTotalsByPeriod.slice(Math.max(0, historyTotalsByPeriod.length - 6));
+      const historyAvg = recentHistory.reduce((sum, value) => sum + value, 0) / Math.max(1, recentHistory.length);
+      const change = pctChange(futureAvg, historyAvg);
+      const peakValue = Math.max(...forecastTotals);
+      const peakIndex = forecastTotals.indexOf(peakValue);
+      const target = historyAvg * 0.94;
+      const onTrack = futureAvg <= target;
+      const direction = Number(change) > 2 ? "increase" : Number(change) < -2 ? "decrease" : "remain stable";
+      explanation.textContent = "Based on the current " + campusMetricLabel().toLowerCase() + " trend, selected campus usage is projected to " + direction + " by approximately " + formatPercent(change) + " over the next six months. Forecasts use recent smoothing, linear trend direction, and seasonal history where available, with confidence bands showing uncertainty.";
+      statsGrid.innerHTML = [
+        ["Future Total", formatNumber(futureTotal) + " " + unit],
+        ["Projected Avg", formatNumber(futureAvg) + " " + unit],
+        ["Peak Period", futureLabels[peakIndex] || "n/a"],
+        ["ESG Target", formatNumber(target) + " " + unit],
+        ["Vs History", formatPercent(change)],
+        ["Status", onTrack ? "On track" : "Needs attention"]
+      ].map(item => '<div class="campus-forecast-stat"><span>' + item[0] + '</span><strong>' + item[1] + '</strong></div>').join("");
+    }
+
+    function campusChartOptions(labels) {
+      const options = baseChartOptions();
+      options.plugins.legend.display = false;
+      options.plugins.barValueLabel = { enabled: campusAnalyticsState.chartMode === "bar", mode: "max-per-dataset" };
+      options.interaction.mode = campusAnalyticsState.chartMode === "bar" ? "nearest" : "index";
+      options.scales.x.offset = true;
+      options.scales.x.grid.display = false;
+      options.scales.x.ticks.autoSkip = campusAnalyticsState.chartMode !== "bar" && labels.length > 30;
+      options.scales.x.ticks.maxTicksLimit = campusAnalyticsState.chartMode === "bar" ? Math.min(24, labels.length) : 14;
+      options.scales.x.ticks.callback = function(value) {
+        const label = this.getLabelForValue ? this.getLabelForValue(value) : value;
+        if (campusAnalyticsState.chartMode === "bar") return smartTwoLineChartLabel(label);
+        const labelsList = this.chart && this.chart.data ? this.chart.data.labels : [];
+        const index = Number(value);
+        if (labelsList.length > 30 && index % Math.ceil(labelsList.length / 14) !== 0 && index !== labelsList.length - 1) return "";
+        const parsed = campusParsePeriodLabel(label);
+        return parsed.monthIndex === 0 ? String(parsed.year) : month_labels[parsed.monthIndex];
+      };
+      options.scales.y.title = makeAxisTitle(campusMetricLabel() + " (" + campusMetricUnit() + ")", campusAnalyticsState.metric === "water" ? ESG_CHART_COLORS.water : ESG_CHART_COLORS.electricity);
+      options.scales.y1.display = false;
+      options.plugins.tooltip.callbacks.label = function(context) {
+        const label = displayDatasetLabel(context.dataset && context.dataset.label);
+        const value = Number(context.parsed && context.parsed.y);
+        return label + ": " + (Number.isFinite(value) ? formatNumber(value) + " " + campusMetricUnit() : context.formattedValue);
+      };
+      return applyGraphBackgroundToChartOptions(options);
+    }
+
+    function renderCampusLegend(selectedBuildings) {
+      const legend = document.getElementById("campusAdaptiveLegend");
+      if (!legend) return;
+      const maxVisible = selectedBuildings.length > 12 ? 10 : selectedBuildings.length;
+      const chips = selectedBuildings.slice(0, maxVisible).map(code =>
+        '<span class="campus-legend-chip"><span class="campus-legend-dot" style="background:' + buildingSeriesColor(code) + '"></span><span class="campus-legend-label">' + labelForBuilding(code) + '</span></span>'
+      );
+      if (selectedBuildings.length > maxVisible) {
+        chips.push('<span class="campus-legend-more">+' + (selectedBuildings.length - maxVisible) + ' more</span>');
+      }
+      legend.innerHTML = chips.join("");
+    }
+
+    function renderCampusAnalyticsChart() {
+      ensureAllBuildingsPrepared();
+      const canvas = document.getElementById("campusAnalyticsChart");
+      if (!canvas) return;
+      const selectedBuildings = campusSelectedBuildings();
+      const historicalLabels = campusHistoricalPeriods();
+      const subtitle = document.getElementById("campusAnalyticsSubtitle");
+      const seriesByBuilding = {};
+      selectedBuildings.forEach(code => { seriesByBuilding[code] = campusSeriesForBuilding(code, historicalLabels); });
+
+      let labels = historicalLabels.slice();
+      const datasets = [];
+      const forecastByBuilding = {};
+      const selectedCount = selectedBuildings.length;
+      const focused = campusAnalyticsState.focused;
+
+      if (campusAnalyticsState.chartMode === "bar") {
+        labels = selectedBuildings.map(code => labelForBuilding(code));
+        const barValues = selectedBuildings.map(code => (seriesByBuilding[code] || []).reduce((sum, value) => sum + Number(value || 0), 0));
+        const barColors = selectedBuildings.map(code => {
+          const color = buildingSeriesColor(code);
+          const alpha = focused && focused !== code ? 0.34 : (selectedCount > 12 ? 0.72 : 0.92);
+          return hexToRgba(color, alpha);
+        });
+        const barBorders = selectedBuildings.map(code => buildingSeriesColor(code));
+        const barDataset = styleBarDataset({
+          label: campusMetricLabel() + " total",
+          data: barValues,
+          _campusTotals: true
+        }, campusAnalyticsState.metric === "water" ? ESG_CHART_COLORS.water : ESG_CHART_COLORS.electricity, {
+          categoryPercentage: 0.74,
+          barPercentage: 0.82,
+          maxBarThickness: selectedCount > 16 ? 24 : 42
+        });
+        barDataset.backgroundColor = barColors;
+        barDataset.hoverBackgroundColor = selectedBuildings.map(code => lightenHex(buildingSeriesColor(code), 0.14));
+        barDataset.borderColor = barBorders;
+        datasets.push(barDataset);
+      } else {
+        const futureLabels = [];
+        if (campusAnalyticsState.forecast && labels.length) {
+          const lastLabel = labels[labels.length - 1];
+          for (let step = 1; step <= 6; step++) futureLabels.push(campusNextPeriodLabel(lastLabel, step));
+          labels = labels.concat(futureLabels);
+        }
+        selectedBuildings.forEach(code => {
+          const color = buildingSeriesColor(code);
+          const historical = seriesByBuilding[code] || [];
+          const alpha = focused && focused !== code ? 0.22 : (selectedCount > 14 ? 0.58 : selectedCount > 8 ? 0.74 : 0.96);
+          const line = styleLineDataset({
+            label: labelForBuilding(code),
+            data: historical.concat(Array(futureLabels.length).fill(null)),
+            _building: code
+          }, color, {
+            borderWidth: focused === code ? 4.4 : (selectedCount > 12 ? 2.1 : 3.1),
+            pointRadius: selectedCount > 10 ? 0 : 2.4,
+            pointHoverRadius: 5
+          });
+          line.borderColor = hexToRgba(color, alpha);
+          line.backgroundColor = hexToRgba(color, 0.08);
+          datasets.push(line);
+
+          if (campusAnalyticsState.forecast && futureLabels.length) {
+            const forecast = campusForecastValues(historical, futureLabels.length);
+            forecastByBuilding[code] = forecast;
+            const forecastData = Array(historical.length - 1).fill(null).concat([historical[historical.length - 1] || 0], forecast.forecast);
+            const forecastDataset = styleLineDataset({
+              label: labelForBuilding(code) + " forecast",
+              data: forecastData,
+              _building: code,
+              _forecast: true
+            }, color, {
+              borderWidth: focused === code ? 3.4 : 2,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+              tension: 0.28
+            });
+            forecastDataset.borderDash = [7, 5];
+            forecastDataset.borderColor = hexToRgba(color, focused && focused !== code ? 0.18 : 0.72);
+            forecastDataset.backgroundColor = hexToRgba(color, 0.05);
+            datasets.push(forecastDataset);
+          }
+        });
+      }
+
+      if (campusAnalyticsChart) {
+        campusAnalyticsChart.destroy();
+        campusAnalyticsChart = null;
+      }
+
+      campusAnalyticsChart = new Chart(canvas, {
+        type: campusAnalyticsState.chartMode === "bar" ? "bar" : "line",
+        data: { labels, datasets },
+        options: campusChartOptions(labels)
+      });
+
+      campusAnalyticsChart.$timeSegments = campusAnalyticsState.chartMode === "line" ? campusBuildSegments(labels) : [];
+      campusAnalyticsChart.$forecastBands = [];
+      if (campusAnalyticsState.forecast && campusAnalyticsState.chartMode === "line") {
+        selectedBuildings.slice(0, selectedBuildings.length > 10 ? 4 : selectedBuildings.length).forEach(code => {
+          const forecast = forecastByBuilding[code];
+          if (!forecast) return;
+          const prefix = Array(historicalLabels.length).fill(null);
+          campusAnalyticsChart.$forecastBands.push({
+            lower: prefix.concat(forecast.lower),
+            upper: prefix.concat(forecast.upper),
+            color: hexToRgba(buildingSeriesColor(code), selectedBuildings.length > 8 ? 0.045 : 0.08)
+          });
+        });
+        const historyTotals = historicalLabels.map((_, index) => selectedBuildings.reduce((sum, code) => sum + Number((seriesByBuilding[code] || [])[index] || 0), 0));
+        const recentAvg = historyTotals.slice(-6).reduce((sum, value) => sum + value, 0) / Math.max(1, Math.min(6, historyTotals.length));
+        campusAnalyticsChart.$analyticsOverlays = {
+          benchmark: recentAvg,
+          target: recentAvg * 0.94
+        };
+      } else {
+        campusAnalyticsChart.$analyticsOverlays = {};
+      }
+      campusAnalyticsChart.update("none");
+
+      renderCampusLegend(selectedBuildings);
+      campusProjectionSummary(selectedBuildings, historicalLabels, seriesByBuilding, forecastByBuilding);
+      if (subtitle) {
+        const periodText = historicalLabels.length ? historicalLabels[0] + " to " + historicalLabels[historicalLabels.length - 1] : "No periods";
+        subtitle.textContent = campusMetricLabel() + " comparison for " + selectedBuildings.length + " buildings, " + periodText;
+      }
+    }
+
+    function setupCampusAnalyticsPage() {
+      ensureAllBuildingsPrepared();
+      if (!campusAnalyticsState.selected || campusAnalyticsState.selected.size === 0) {
+        campusAnalyticsState.selected = new Set(allBuildingCodes.slice(0, Math.min(6, allBuildingCodes.length)));
+      }
+      const search = document.getElementById("campusBuildingSearch");
+      if (search && search.dataset.campusBound !== "true") {
+        search.dataset.campusBound = "true";
+        search.addEventListener("input", function () {
+          campusAnalyticsState.search = search.value || "";
+          renderCampusBuildingSelector();
+        });
+      }
+      document.querySelectorAll("[data-campus-action]").forEach(button => {
+        if (button.dataset.campusBound === "true") return;
+        button.dataset.campusBound = "true";
+        button.addEventListener("click", function () {
+          const action = button.dataset.campusAction;
+          const visible = campusVisibleBuildings();
+          if (action === "selectAll") campusSetSelection(allBuildingCodes);
+          else if (action === "clearAll") campusSetSelection([]);
+          else if (action === "invert") {
+            const next = allBuildingCodes.filter(code => !campusAnalyticsState.selected.has(code));
+            campusSetSelection(next);
+          } else if (action === "top") {
+            campusSetSelection(allBuildingCodes.slice().sort((a, b) => campusTotalForBuilding(b) - campusTotalForBuilding(a)).slice(0, 6));
+          } else if (action === "lowest") {
+            campusSetSelection(allBuildingCodes.slice().sort((a, b) => campusTotalForBuilding(a) - campusTotalForBuilding(b)).slice(0, 6));
+          } else if (action === "similar") {
+            const base = campusAnalyticsState.focused || campusSelectedBuildings()[0] || visible[0] || allBuildingCodes[0];
+            const baseTotal = campusTotalForBuilding(base);
+            const next = allBuildingCodes.slice()
+              .sort((a, b) => Math.abs(campusTotalForBuilding(a) - baseTotal) - Math.abs(campusTotalForBuilding(b) - baseTotal))
+              .slice(0, 6);
+            campusAnalyticsState.focused = base;
+            campusSetSelection(next);
+          }
+        });
+      });
+      const focusButton = document.getElementById("campusFocusClearBtn");
+      if (focusButton && focusButton.dataset.campusBound !== "true") {
+        focusButton.dataset.campusBound = "true";
+        focusButton.addEventListener("click", function () {
+          campusAnalyticsState.focused = null;
+          renderCampusBuildingSelector();
+          renderCampusAnalyticsChart();
+        });
+      }
+      document.querySelectorAll("[data-campus-metric]").forEach(button => {
+        if (button.dataset.campusBound === "true") return;
+        button.dataset.campusBound = "true";
+        button.addEventListener("click", function () {
+          campusAnalyticsState.metric = button.dataset.campusMetric;
+          document.querySelectorAll("[data-campus-metric]").forEach(item => item.classList.toggle("active", item === button));
+          renderCampusBuildingSelector();
+          renderCampusAnalyticsChart();
+        });
+      });
+      document.querySelectorAll("[data-campus-chart-mode]").forEach(button => {
+        if (button.dataset.campusBound === "true") return;
+        button.dataset.campusBound = "true";
+        button.addEventListener("click", function () {
+          campusAnalyticsState.chartMode = button.dataset.campusChartMode;
+          document.querySelectorAll("[data-campus-chart-mode]").forEach(item => item.classList.toggle("active", item === button));
+          renderCampusAnalyticsChart();
+        });
+      });
+      document.querySelectorAll("[data-campus-segment]").forEach(button => {
+        if (button.dataset.campusBound === "true") return;
+        button.dataset.campusBound = "true";
+        button.addEventListener("click", function () {
+          campusAnalyticsState.segment = button.dataset.campusSegment;
+          document.querySelectorAll("[data-campus-segment]").forEach(item => item.classList.toggle("active", item === button));
+          renderCampusAnalyticsChart();
+        });
+      });
+      const forecastToggle = document.getElementById("campusForecastToggle");
+      if (forecastToggle && forecastToggle.dataset.campusBound !== "true") {
+        forecastToggle.dataset.campusBound = "true";
+        forecastToggle.addEventListener("change", function () {
+          campusAnalyticsState.forecast = !!forecastToggle.checked;
+          renderCampusAnalyticsChart();
+        });
+      }
+      renderCampusBuildingSelector();
+      renderCampusAnalyticsChart();
+      if (!is_auto_mode) { stopProgressBarAnimation(); return; }
+      runProgressForPage(11, getPageDuration(11), true);
+    }
+
+    // ============================================================
     // PAGE SETUP FUNCTIONS
     // ============================================================
     function setupAllBuildingsListPage() {
@@ -4482,49 +7005,38 @@ body.graph-bg-transparent {
     function makeComparePanels(cfg) {
       const barCtx = document.getElementById(cfg.barCanvasId);
       const lineCtx = document.getElementById(cfg.lineCanvasId);
-      const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
-      const tickSize = isUltra ? 22 : 14;
 
       function compareOptions(showXLabels, showLegend) {
         const options = baseChartOptions();
         options.plugins.legend.display = showLegend;
-        options.plugins.legend.labels.font = { size: isUltra ? 22 : 13, weight: "800" };
-        options.plugins.tooltip.titleFont = { size: isUltra ? 24 : 15, weight: "800" };
-        options.plugins.tooltip.bodyFont = { size: tickSize, weight: "650" };
-        options.scales.x.ticks.font = { size: tickSize, weight: "750" };
+        options.plugins.legend.labels.font = makeAxisFont("legend");
+        options.plugins.tooltip.titleFont = makeAxisFont("tooltipTitle");
+        options.plugins.tooltip.bodyFont = makeAxisFont("tooltip");
+        options.scales.x.ticks.font = makeAxisFont("axisLabel");
         options.scales.x.ticks.display = showXLabels;
-        options.scales.y.ticks.font = { size: tickSize, weight: "750" };
+        options.scales.x.offset = true;
+        options.scales.y.ticks.font = makeAxisFont("axisLabel");
         if (cfg.yTitle) {
-          options.scales.y.title = {
-            display: true,
-            text: cfg.yTitle,
-            color: cfg.metric === "water" ? ESG_CHART_COLORS.water : ESG_CHART_COLORS.electricity,
-            font: { size: isUltra ? 24 : 15, weight: "850" },
-            padding: { bottom: 10 }
-          };
+          options.scales.y.title = makeAxisTitle(
+            cfg.yTitle,
+            cfg.metric === "water" ? ESG_CHART_COLORS.water : ESG_CHART_COLORS.electricity
+          );
         }
         if (cfg.scaleType === "logarithmic") {
           options.scales.y.type = "logarithmic";
           options.scales.y.beginAtZero = false;
           options.scales.y.min = cfg.minPositiveValue || 1;
-          options.scales.y.ticks.callback = function(value) {
-            const number = Number(value);
-            if (!Number.isFinite(number) || number <= 0) return "";
-            return formatAxisNumber(number);
-          };
+          options.scales.y.afterBuildTicks = enforceLogScaleTicks;
+          options.scales.y.ticks.callback = formatLogAxisNumber;
         }
         options.scales.y1.display = true;
         options.scales.y1.grid.drawOnChartArea = false;
         options.scales.y1.type = options.scales.y.type;
         options.scales.y1.beginAtZero = options.scales.y.beginAtZero;
         if (options.scales.y.min) options.scales.y1.min = options.scales.y.min;
-        options.scales.y1.ticks.font = { size: tickSize, weight: "750" };
-        options.scales.y1.afterBuildTicks = (scale) => {
-          try {
-            const yScale = scale?.chart?.scales?.y;
-            if (yScale) { scale.ticks = yScale.ticks; scale.min = yScale.min; scale.max = yScale.max; }
-          } catch (error) {}
-        };
+        options.scales.y1.ticks.font = makeAxisFont("axisLabel");
+        options.scales.y1.ticks.callback = options.scales.y.ticks.callback;
+        options.scales.y1.afterBuildTicks = mirrorPrimaryAxisTicks;
         return applyGraphBackgroundToChartOptions(options);
       }
 
@@ -4552,21 +7064,20 @@ body.graph-bg-transparent {
     function makeBuildingPanels(cfg) {
       const barCtx  = document.getElementById(cfg.barCanvasId);
       const lineCtx = document.getElementById(cfg.lineCanvasId);
-      const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
-      const tickSize = isUltra ? 22 : 14;
 
       function panelOptions(showXLabels) {
         const options = baseChartOptions();
         options.plugins.legend.display = false;        // on-page swatch row is the legend
         options.plugins.barValueLabel = { enabled: false };
-        options.scales.x.ticks.font = { size: tickSize, weight: "750" };
+        options.scales.x.ticks.font = makeAxisFont("axisLabel");
         options.scales.x.ticks.display = showXLabels;
-        options.scales.y.ticks.font = { size: tickSize, weight: "750" };
-        options.scales.y.title = { display: true, text: "Electricity (kWh)", color: ESG_CHART_COLORS.electricity, font: { size: isUltra ? 24 : 15, weight: "850" }, padding: { bottom: 10 } };
+        options.scales.y.ticks.font = makeAxisFont("axisLabel");
+        options.scales.y.title = makeAxisTitle("Electricity (kWh)", ESG_CHART_COLORS.electricity);
         options.scales.y1.display = true;
         options.scales.y1.grid.drawOnChartArea = false;
-        options.scales.y1.ticks.font = { size: tickSize, weight: "750" };
-        options.scales.y1.title = { display: true, text: "Water (m³)", color: ESG_CHART_COLORS.water, font: { size: isUltra ? 24 : 15, weight: "850" }, padding: { bottom: 10 } };
+        options.scales.y1.ticks.font = makeAxisFont("axisLabel");
+        options.scales.y1.title = makeAxisTitle("Water (m³)", ESG_CHART_COLORS.water);
+        options.scales.y1.afterBuildTicks = syncSecondaryAxisTicks;
         return applyGraphBackgroundToChartOptions(options);
       }
 
@@ -4620,6 +7131,20 @@ body.graph-bg-transparent {
       buildingHiddenSeries[metric][String(year)] = hide;
       applyBuildingSeriesVisibility(metric, year, hide);
       buildBuildingColorControls();
+      refreshEnterpriseAnalytics();
+    }
+    function isolateBuildingSeries(metric, year) {
+      ["electricity", "water"].forEach(function (metricKey) {
+        if (!buildingHiddenSeries[metricKey]) buildingHiddenSeries[metricKey] = {};
+        const years = metricKey === "water" ? _buildingWaterYears : _buildingElecYears;
+        years.forEach(function (itemYear) {
+          const hide = !(metricKey === metric && String(itemYear) === String(year));
+          buildingHiddenSeries[metricKey][String(itemYear)] = hide;
+          applyBuildingSeriesVisibility(metricKey, itemYear, hide);
+        });
+      });
+      buildBuildingColorControls();
+      refreshEnterpriseAnalytics();
     }
     function reapplyBuildingVisibility() {
       ["electricity", "water"].forEach(function (metric) {
@@ -4687,6 +7212,11 @@ body.graph-bg-transparent {
           yearBtn.title = (off ? "Show " : "Hide ") + year + " in the chart";
           yearBtn.textContent = year;
           yearBtn.addEventListener("click", function () { toggleBuildingSeries(metric, year); });
+          yearBtn.addEventListener("dblclick", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            isolateBuildingSeries(metric, year);
+          });
           chip.appendChild(yearBtn);
 
           wrap.appendChild(chip);
@@ -4724,16 +7254,14 @@ body.graph-bg-transparent {
     function makeCategoryPanels(cfg) {
       const barCtx  = document.getElementById(cfg.barCanvasId);
       const lineCtx = document.getElementById(cfg.lineCanvasId);
-      const isUltra = (window.innerWidth >= 5000) || ((window.innerWidth / Math.max(1, window.innerHeight)) >= 4.5);
-      const tickSize = isUltra ? 22 : 14;
       function panelOptions(showXLabels) {
         const options = baseChartOptions();
         options.plugins.legend.display = false;
         options.plugins.barValueLabel = { enabled: false };
-        options.scales.x.ticks.font = { size: tickSize, weight: "750" };
+        options.scales.x.ticks.font = makeAxisFont("axisLabel");
         options.scales.x.ticks.display = showXLabels;
-        options.scales.y.ticks.font = { size: tickSize, weight: "750" };
-        if (cfg.yTitle) options.scales.y.title = { display: true, text: cfg.yTitle, color: "#475569", font: { size: isUltra ? 24 : 15, weight: "850" }, padding: { bottom: 10 } };
+        options.scales.y.ticks.font = makeAxisFont("axisLabel");
+        if (cfg.yTitle) options.scales.y.title = makeAxisTitle(cfg.yTitle, "#475569");
         options.scales.y1.display = false;
         return applyGraphBackgroundToChartOptions(options);
       }
@@ -4756,7 +7284,7 @@ body.graph-bg-transparent {
         const meta  = { _group: groupKey, _cat: cat.id };
         barDatasets.push(styleBarDataset(Object.assign({
           label: cat.label, data: data, yAxisID: "y"
-        }, meta), color, { maxBarThickness: 44, categoryPercentage: 0.76, barPercentage: 0.88 }));
+        }, meta), color));
         lineDatasets.push(styleLineDataset(Object.assign({
           label: cat.label, data: data, yAxisID: "y"
         }, meta), color));
@@ -4782,6 +7310,17 @@ body.graph-bg-transparent {
       categoryHidden[groupKey][String(catId)] = hide;
       applyCategoryVisibility(charts, groupKey, catId, hide);
       rebuild();
+      refreshEnterpriseAnalytics();
+    }
+    function isolateCategory(groupKey, catId, cats, charts, rebuild) {
+      if (!categoryHidden[groupKey]) categoryHidden[groupKey] = {};
+      cats.forEach(function (cat) {
+        const hide = String(cat.id) !== String(catId);
+        categoryHidden[groupKey][String(cat.id)] = hide;
+        applyCategoryVisibility(charts, groupKey, cat.id, hide);
+      });
+      rebuild();
+      refreshEnterpriseAnalytics();
     }
     function reapplyCategoryVisibility(charts, groupKey) {
       const map = categoryHidden[groupKey] || {};
@@ -4836,6 +7375,13 @@ body.graph-bg-transparent {
             buildCategoryControls(containerId, groupKey, cats, charts);
           });
         });
+        labelBtn.addEventListener("dblclick", function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          isolateCategory(groupKey, cat.id, cats, charts, function () {
+            buildCategoryControls(containerId, groupKey, cats, charts);
+          });
+        });
         chip.appendChild(labelBtn);
 
         wrap.appendChild(chip);
@@ -4881,7 +7427,7 @@ body.graph-bg-transparent {
         labelForBuilding(keyA).localeCompare(labelForBuilding(keyB))
       );
 
-      const labels = buildingKeys.map(keyItem => keyItem);
+      const labels = buildingKeys.map(keyItem => labelForBuilding(keyItem));
 
       if (electricityCompareChart) { electricityCompareChart.destroy(); electricityCompareChart = null; }
       if (electricityCompareLineChart) { electricityCompareLineChart.destroy(); electricityCompareLineChart = null; }
@@ -4898,7 +7444,7 @@ body.graph-bg-transparent {
         barDatasets.push(styleBarDataset({
           label: String(year),
           data: data
-        }, barColor, { maxBarThickness: 42, categoryPercentage: 0.76, barPercentage: 0.86 }));
+        }, barColor));
 
         // Trend line goes in the SEPARATE BOTTOM panel (no longer drawn over the bars).
         lineDatasets.push(styleLineDataset({
@@ -4922,6 +7468,7 @@ body.graph-bg-transparent {
       electricityCompareLineChart = built.lineChart;
       reapplyYearVisibility("electricity");
       buildInlineColorControls();
+      refreshEnterpriseAnalytics();
 
       if (!is_auto_mode) { stopProgressBarAnimation(); return; }
       runProgressForPage(3, getPageDuration(3), true);
@@ -4957,7 +7504,7 @@ body.graph-bg-transparent {
         labelForBuilding(keyA).localeCompare(labelForBuilding(keyB))
       );
 
-      const labels = buildingKeys.map(keyItem => keyItem);
+      const labels = buildingKeys.map(keyItem => labelForBuilding(keyItem));
 
       if (waterCompareChart) { waterCompareChart.destroy(); waterCompareChart = null; }
       if (waterCompareLineChart) { waterCompareLineChart.destroy(); waterCompareLineChart = null; }
@@ -4974,7 +7521,7 @@ body.graph-bg-transparent {
         barDatasets.push(styleBarDataset({
           label: String(year),
           data: data
-        }, barColor, { maxBarThickness: 42, categoryPercentage: 0.76, barPercentage: 0.86 }));
+        }, barColor));
 
         // Trend line goes in the SEPARATE BOTTOM panel (no longer drawn over the bars).
         lineDatasets.push(styleLineDataset({
@@ -4996,6 +7543,7 @@ body.graph-bg-transparent {
       waterCompareLineChart = built.lineChart;
       reapplyYearVisibility("water");
       buildInlineColorControls();
+      refreshEnterpriseAnalytics();
 
       if (!is_auto_mode) { stopProgressBarAnimation(); return; }
       runProgressForPage(4, getPageDuration(4), true);
@@ -5338,11 +7886,12 @@ body.graph-bg-transparent {
         let data = [];
         if (solarByYear && solarByYear[year] && solarByYear[year].length) {
           data = solarByYear[year];
-        } else if (year === oldestYear && solarOldestMonths.length) {
+        } else if (year === oldestSolarYear && solarOldestMonths.length) {
           data = solarOldestMonths;
-        } else if (year === newestYear && solarNewestMonths.length) {
+        } else if (year === latestSolarYear && solarNewestMonths.length) {
           data = solarNewestMonths;
         }
+        if (!solarHasData(data)) return;
         
         // Calculate totals for the year
         let urbanTotal = 0;
@@ -5356,20 +7905,20 @@ body.graph-bg-transparent {
       });
       
       if (!options.length) {
-        if (newestYear && solarNewestMonths.length) {
+        if (latestSolarYear && solarNewestMonths.length) {
           let urbanTotal = 0, ghTotal = 0;
           solarNewestMonths.forEach(monthData => {
             urbanTotal += Number(monthData.urban || 0);
             ghTotal += Number(monthData.greenhouse || 0);
           });
-          options.push({ year: newestYear, label: String(newestYear), data: solarNewestMonths, urbanTotal, ghTotal });
-        } else if (oldestYear && solarOldestMonths.length) {
+          options.push({ year: latestSolarYear, label: String(latestSolarYear), data: solarNewestMonths, urbanTotal, ghTotal });
+        } else if (oldestSolarYear && solarOldestMonths.length) {
           let urbanTotal = 0, ghTotal = 0;
           solarOldestMonths.forEach(monthData => {
             urbanTotal += Number(monthData.urban || 0);
             ghTotal += Number(monthData.greenhouse || 0);
           });
-          options.push({ year: oldestYear, label: String(oldestYear), data: solarOldestMonths, urbanTotal, ghTotal });
+          options.push({ year: oldestSolarYear, label: String(oldestSolarYear), data: solarOldestMonths, urbanTotal, ghTotal });
         }
       }
 
@@ -5437,11 +7986,12 @@ body.graph-bg-transparent {
         solarLineChart = builtSolar.lineChart;
         buildCategoryControls("solarColorControls", "solar", SOLAR_CATS, solarCharts);
         reapplyCategoryVisibility(solarCharts, "solar");
+        refreshEnterpriseAnalytics();
         
         // Update chart title with year
         const chartTitle = document.getElementById("solarChartTitle");
         if (chartTitle) {
-          chartTitle.textContent = `Solar (Urban Renewables & Green House) - ${selected.year}`;
+          chartTitle.textContent = `Solar Generation - ${selected.year}`;
         }
         
         // Update active state in list
@@ -5569,11 +8119,12 @@ body.graph-bg-transparent {
         let data = [];
         if (wasteByYear && wasteByYear[year] && wasteByYear[year].length) {
           data = wasteByYear[year];
-        } else if (year === oldestYear && wasteOldestMonths.length) {
+        } else if (year === oldestWasteYear && wasteOldestMonths.length) {
           data = wasteOldestMonths;
-        } else if (year === newestYear && wasteNewestMonths.length) {
+        } else if (year === latestWasteYear && wasteNewestMonths.length) {
           data = wasteNewestMonths;
         }
+        if (!wasteHasData(data)) return;
         
         // Calculate totals for the year
         let generalTotal = 0;
@@ -5587,20 +8138,20 @@ body.graph-bg-transparent {
       });
       
       if (!options.length) {
-        if (newestYear && wasteNewestMonths.length) {
+        if (latestWasteYear && wasteNewestMonths.length) {
           let generalTotal = 0, recyclableTotal = 0;
           wasteNewestMonths.forEach(monthData => {
             generalTotal += Number(monthData.generalKg || 0);
             recyclableTotal += Number(monthData.recyclableKg || 0);
           });
-          options.push({ year: newestYear, label: "FY " + String(newestYear), data: wasteNewestMonths, generalTotal, recyclableTotal });
-        } else if (oldestYear && wasteOldestMonths.length) {
+          options.push({ year: latestWasteYear, label: "FY " + String(latestWasteYear), data: wasteNewestMonths, generalTotal, recyclableTotal });
+        } else if (oldestWasteYear && wasteOldestMonths.length) {
           let generalTotal = 0, recyclableTotal = 0;
           wasteOldestMonths.forEach(monthData => {
             generalTotal += Number(monthData.generalKg || 0);
             recyclableTotal += Number(monthData.recyclableKg || 0);
           });
-          options.push({ year: oldestYear, label: "FY " + String(oldestYear), data: wasteOldestMonths, generalTotal, recyclableTotal });
+          options.push({ year: oldestWasteYear, label: "FY " + String(oldestWasteYear), data: wasteOldestMonths, generalTotal, recyclableTotal });
         }
       }
 
@@ -5670,11 +8221,12 @@ body.graph-bg-transparent {
         wasteLineChart = builtWaste.lineChart;
         buildCategoryControls("wasteColorControls", "waste", WASTE_CATS, wasteCharts);
         reapplyCategoryVisibility(wasteCharts, "waste");
+        refreshEnterpriseAnalytics();
         
         // Update chart title with year
         const chartTitle = document.getElementById("wasteChartTitle");
         if (chartTitle) {
-          chartTitle.textContent = `Waste (General & Recyclable) - FY ${selected.year}`;
+          chartTitle.textContent = `Waste Analytics - FY ${selected.year}`;
         }
         
         // Update active state in list
@@ -5945,6 +8497,7 @@ body.graph-bg-transparent {
       else if (pageNum === 2) setupAllBuildingsListPage();
       else if (pageNum === 3) setupElectricityComparePage();
       else if (pageNum === 4) setupWaterComparePage();
+      else if (pageNum === 11) setupCampusAnalyticsPage();
       else if (pageNum === 5) setupBuildingThreePanelPage();
       else if (pageNum === 6) setupSolarThreePanelPage();
       else if (pageNum === 7) setupWasteThreePanelPage();
@@ -6258,7 +8811,8 @@ body.graph-bg-transparent {
         showPageByNumber(1, "right");
       } else if (event.key === "End") {
         event.preventDefault();
-        showPageByNumber(10, "left");
+        const pages = enabledPages();
+        showPageByNumber(pages[pages.length - 1] || 10, "left");
       }
     });
 
@@ -6290,7 +8844,9 @@ body.graph-bg-transparent {
       ensureAllBuildingsPrepared();
 
       // ── Deep-link from 3D map: /?building=e1 ──
-      const requestedBuilding = new URLSearchParams(window.location.search).get("building");
+      const startupParams = new URLSearchParams(window.location.search);
+      const requestedBuilding = startupParams.get("building");
+      const requestedPage = String(startupParams.get("page") || "").toLowerCase();
       const targetBuildingCode = requestedBuilding ? normalizeBuildingKey(requestedBuilding) : null;
 
       if (targetBuildingCode) {
@@ -6307,6 +8863,16 @@ body.graph-bg-transparent {
           clearThreeCycleTimer();
           setThreePanelBuilding(targetBuildingCode);
         }, 150);
+      } else if (requestedPage === "campus-analytics" || requestedPage === "campus") {
+        currentPageNumber = 11;
+        document.querySelectorAll(".page").forEach(p => {
+          p.classList.remove("active-page");
+          p.style.transform = "";
+          p.style.opacity = "";
+        });
+        const page11 = document.getElementById("page11");
+        if (page11) page11.classList.add("active-page");
+        onEnterPage(11);
       } else {
         onEnterPage(currentPageNumber);
       }
@@ -6434,6 +9000,11 @@ body.graph-bg-transparent {
           yearBtn.title = (off ? "Show " : "Hide ") + year + " in the chart";
           yearBtn.textContent = year;
           yearBtn.addEventListener("click", function () { toggleYearVisibility(cfg.key, year); });
+          yearBtn.addEventListener("dblclick", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            isolateYearVisibility(cfg.key, year);
+          });
           chip.appendChild(yearBtn);
 
           wrap.appendChild(chip);
@@ -6533,12 +9104,14 @@ body.graph-bg-transparent {
     // WELCOME PAGE KPI SUMMARY (average monthly, latest year)
     // ============================================================
     (function setupWelcomeKpis(){
-      const year = latestDataYear || newestYear;
-      if (!year) return;
+      const overviewYear = latestOverviewYear || latestDataYear || newestYear;
+      const solarYear = latestSolarYear || latestDataYear || newestYear;
+      const wasteYear = latestWasteYear || latestDataYear || newestYear;
+      if (!overviewYear && !solarYear && !wasteYear) return;
 
       // Electricity + Water totals (sum all buildings for the year)
       let elecTotal = 0, waterTotal = 0;
-      const overview = overviewByYear[year] || [];
+      const overview = overviewByYear[overviewYear] || [];
       overview.forEach(b => {
         elecTotal  += Number(b.electricity || 0);
         waterTotal += Number(b.water || 0);
@@ -6546,20 +9119,20 @@ body.graph-bg-transparent {
 
       // Solar total (sum monthly urban + greenhouse)
       let solarTotal = 0;
-      (solarByYear[year] || []).forEach(m => {
+      (solarByYear[solarYear] || []).forEach(m => {
         solarTotal += Number(m.urban || 0) + Number(m.greenhouse || 0);
       });
 
       // Waste total (sum monthly general + recyclable)
       let wasteTotal = 0;
-      (wasteByYear[year] || []).forEach(m => {
+      (wasteByYear[wasteYear] || []).forEach(m => {
         wasteTotal += Number(m.generalKg || 0) + Number(m.recyclableKg || 0);
       });
 
       // Count months that actually have data, for a fair monthly average
       const elecMonths  = 12; // building totals are annual; divide by 12
-      const solarMonths = (solarByYear[year] || []).filter(m => (Number(m.urban||0)+Number(m.greenhouse||0)) > 0).length || 12;
-      const wasteMonths = (wasteByYear[year] || []).filter(m => (Number(m.generalKg||0)+Number(m.recyclableKg||0)) > 0).length || 12;
+      const solarMonths = (solarByYear[solarYear] || []).filter(m => (Number(m.urban||0)+Number(m.greenhouse||0)) > 0).length || 12;
+      const wasteMonths = (wasteByYear[wasteYear] || []).filter(m => (Number(m.generalKg||0)+Number(m.recyclableKg||0)) > 0).length || 12;
 
       const avgElec  = elecTotal  / elecMonths;
       const avgWater = waterTotal / elecMonths;
