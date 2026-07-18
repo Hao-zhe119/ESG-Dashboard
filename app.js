@@ -2389,6 +2389,8 @@ app.get('/interactivemap', (req, res) => {res.render('interactivemap');});
 const OLLAMA_HOST  = process.env.OLLAMA_HOST  || "http://127.0.0.1:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
 
+const OFF_TOPIC_REPLY = "I can only help with ESG and sustainability topics for RP — try asking about electricity, water, solar, waste, or ESG in general.";
+
 const ASSISTANT_SYSTEM_PROMPT =
   "You are the assistant for the Republic Polytechnic (RP) ESG Sustainability Dashboard. " +
   "ESG stands for Environmental, Social, and Governance. Help visitors understand " +
@@ -2397,7 +2399,12 @@ const ASSISTANT_SYSTEM_PROMPT =
   "A section titled 'REAL DASHBOARD DATA' is provided below with the actual figures. " +
   "When asked about specific numbers, buildings, years, or trends, use ONLY the figures in that " +
   "section. Do NOT invent or estimate numbers. If a requested figure is not in the data, say you " +
-  "don't have that figure rather than guessing.";
+  "don't have that figure rather than guessing. " +
+  "STAY ON TOPIC: only answer questions about ESG, sustainability, or the topics above (electricity, " +
+  "water, solar, waste, recycling, RP's environmental/social/governance practices). If the user asks " +
+  "about anything else — general knowledge, other companies, coding, personal advice, entertainment, " +
+  "or any unrelated subject — do NOT answer it. Reply with EXACTLY this sentence and nothing else: " +
+  "\"" + OFF_TOPIC_REPLY + "\"";
 
 // ---- Real ESG data context (the model phrases these; it never computes them) ----
 const fmtNum = n => Number(n || 0).toLocaleString("en-US");
