@@ -1457,6 +1457,15 @@ body.mode-interactive #page7 .three-panel {
   font: 700 12px/1.18 var(--chartFont);
 }
 
+/* Name on the first line, usage total on its own line below — the two spans
+   used to render inline and collide on long building names. */
+.campus-building-name > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .campus-building-meta {
   margin-top: 2px;
   color: #64748b;
@@ -3581,7 +3590,9 @@ body.graph-bg-transparent .three-chart-wrap {
             ctx.moveTo(area.left, y);
             ctx.lineTo(area.right, y);
             ctx.stroke();
-            drawTextPill("Target " + formatAxisNumber(overlays.target), area.left + 8, y, "rgba(22,101,52,0.72)");
+            // Anchored at the right edge so it never collides with the
+            // benchmark pill, whose value (and therefore y position) is close.
+            drawTextPill("Target " + formatAxisNumber(overlays.target), area.right - 190, y, "rgba(22,101,52,0.72)");
             ctx.restore();
           }
 
@@ -3955,6 +3966,7 @@ body.graph-bg-transparent .three-chart-wrap {
       const end = Math.min(values.length - 1, Number.isFinite(endIndex) ? endIndex : values.length - 1);
       const output = [];
       for (let index = start; index <= end; index++) {
+        if (values[index] == null) continue; // null = no reading for this period
         const value = Number(values[index]);
         if (Number.isFinite(value)) output.push(value);
       }
@@ -3981,7 +3993,7 @@ body.graph-bg-transparent .three-chart-wrap {
     }
 
     function summarizeValues(values) {
-      const clean = (values || []).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+      const clean = (values || []).filter(value => value != null).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
       if (!clean.length) return null;
       const total = clean.reduce((sum, value) => sum + value, 0);
       const average = total / clean.length;
@@ -4005,6 +4017,10 @@ body.graph-bg-transparent .three-chart-wrap {
         const dataset = chart.data.datasets[index];
         if (!dataset || String(dataset.label || "").startsWith("_")) continue;
         if (chart.isDatasetVisible && !chart.isDatasetVisible(index)) continue;
+        // Skip series with no readings at all (e.g. a year with no data) so
+        // overlays and insights anchor on a series that actually has values.
+        const hasData = (dataset.data || []).some(value => value != null && Number.isFinite(Number(value)));
+        if (!hasData) continue;
         return { dataset, index };
       }
       return null;
@@ -4021,7 +4037,10 @@ body.graph-bg-transparent .three-chart-wrap {
       const target = Number(chart.data.datasets[datasetIndex] && chart.data.datasets[datasetIndex].data ? chart.data.datasets[datasetIndex].data[dataIndex] : NaN);
       if (!Number.isFinite(target)) return null;
       const values = chart.data.datasets
-        .map((dataset, index) => ({ index, value: Number(dataset && dataset.data ? dataset.data[dataIndex] : NaN) }))
+        .map((dataset, index) => {
+          const raw = dataset && dataset.data ? dataset.data[dataIndex] : null;
+          return { index, value: raw == null ? NaN : Number(raw) };
+        })
         .filter(item => Number.isFinite(item.value) && (!chart.isDatasetVisible || chart.isDatasetVisible(item.index)))
         .sort((a, b) => b.value - a.value);
       const rank = values.findIndex(item => item.index === datasetIndex);
@@ -4152,7 +4171,8 @@ body.graph-bg-transparent .three-chart-wrap {
         row.querySelector(".pct-value").textContent = formatTooltipValue(numericValue, inferDatasetUnit(dataset, chart));
         body.appendChild(row);
 
-        const previous = Array.isArray(dataset.data) && dataIndex > 0 ? Number(dataset.data[dataIndex - 1]) : NaN;
+        const previousRaw = Array.isArray(dataset.data) && dataIndex > 0 ? dataset.data[dataIndex - 1] : null;
+        const previous = previousRaw == null ? NaN : Number(previousRaw);
         const currentAverage = computeDatasetAverage(chart, datasetIndex);
         const periodChange = pctChange(numericValue, previous);
         const deviation = Number.isFinite(Number(currentAverage)) && currentAverage !== 0
@@ -4350,6 +4370,18 @@ body.graph-bg-transparent .three-chart-wrap {
     const color_waste_gen = ESG_CHART_COLORS.waste;
     const color_waste_rec = ESG_CHART_COLORS.recyclable;
 
+    // A month recorded as 0 inside a series that has real readings elsewhere is
+    // almost always a missing bill, not a true zero. Convert those to null so
+    // Chart.js draws a gap instead of a dive to zero, and stats skip them.
+    // A series that is entirely zero is kept as-is — that is a genuine
+    // "nothing recorded" story (e.g. no recyclable waste yet).
+    function nullifyMissingReadings(series) {
+      const values = (series || []).map(value => (value == null ? null : Number(value)));
+      const hasRealReading = values.some(value => Number.isFinite(value) && value !== 0);
+      if (!hasRealReading) return values;
+      return values.map(value => (value === 0 ? null : value));
+    }
+
     function hideZeroMonths(labels, ...series) {
       const keep = labels.map((_, index) => series.some(arr => Number(arr[index] || 0) !== 0));
       const outLabels = [];
@@ -4360,7 +4392,7 @@ body.graph-bg-transparent .three-chart-wrap {
         series.forEach((arr, seriesIndex) => outSeries[seriesIndex].push(Number(arr[index] || 0)));
       }
       if (!outLabels.length) return { labels: labels.slice(), series: series.map(array => array.map(value => Number(value || 0))) };
-      return { labels: outLabels, series: outSeries };
+      return { labels: outLabels, series: outSeries.map(nullifyMissingReadings) };
     }
 
     function formatNumber(number) {
@@ -4471,11 +4503,14 @@ body.graph-bg-transparent .three-chart-wrap {
       return yearColorPalette[colorIndex];
     }
 
+    // Per-metric year colours. Each stays in the metric's colour family but the
+    // steps are far enough apart (hue + lightness) to tell years apart at a
+    // glance — the old ramps had near-identical neighbours (#1d4ed8 vs #2563eb).
     const METRIC_YEAR_PALETTES = {
-      electricity: ["#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#1e40af", "#0f5bd8"],
-      water: ["#0e7490", "#0891b2", "#06b6d4", "#22d3ee", "#155e75", "#67e8f9"],
-      solar: ["#b45309", "#d97706", "#f59e0b", "#ea580c", "#92400e", "#fbbf24"],
-      waste: ["#475569", "#64748b", "#94a3b8", "#334155", "#71717a", "#a1a1aa"]
+      electricity: ["#1e3a8a", "#2563eb", "#0ea5e9", "#6366f1", "#38bdf8", "#4338ca"],
+      water: ["#164e63", "#0891b2", "#22d3ee", "#14b8a6", "#0369a1", "#5eead4"],
+      solar: ["#92400e", "#ea580c", "#f59e0b", "#fbbf24", "#b45309", "#facc15"],
+      waste: ["#1f2937", "#64748b", "#94a3b8", "#475569", "#334155", "#a1a1aa"]
     };
 
     function getMetricYearColor(metric, yearIndex, totalYears) {
@@ -4632,8 +4667,15 @@ body.graph-bg-transparent .three-chart-wrap {
       return Math.abs(hash) % Math.max(1, modulo || 1);
     }
 
+    // One stable colour per building, assigned by its position in the campus
+    // building list. With 24 palette entries and ~22 buildings every building
+    // gets a unique colour — a name hash used to collide (e.g. E1 and E4).
     function buildingSeriesColor(buildingKey) {
       const key = normalizeBuildingKey(buildingKey);
+      const index = (typeof allBuildingCodes !== "undefined" && Array.isArray(allBuildingCodes))
+        ? allBuildingCodes.indexOf(key)
+        : -1;
+      if (index >= 0) return BUILDING_COLOR_PALETTE[index % BUILDING_COLOR_PALETTE.length];
       return BUILDING_COLOR_PALETTE[hashStringToIndex(key, BUILDING_COLOR_PALETTE.length)];
     }
 
@@ -5469,7 +5511,9 @@ body.graph-bg-transparent .three-chart-wrap {
     function chartPrimarySeries(chart) {
       const primary = primaryVisibleDataset(chart);
       if (!primary) return null;
-      const values = Array.isArray(primary.dataset.data) ? primary.dataset.data.map(Number) : [];
+      const values = Array.isArray(primary.dataset.data)
+        ? primary.dataset.data.map(value => (value == null ? NaN : Number(value)))
+        : [];
       return { index: primary.index, dataset: primary.dataset, values };
     }
 
@@ -5534,24 +5578,6 @@ body.graph-bg-transparent .three-chart-wrap {
       });
     }
 
-    function buildMilestones(labels, title) {
-      if (!Array.isArray(labels) || !labels.length) return [];
-      const lowerTitle = String(title || "").toLowerCase();
-      const milestones = [];
-      const add = (index, label, color) => {
-        if (index >= 0 && index < labels.length) milestones.push({ index, label, color });
-      };
-      if (isMonthAxis(labels)) {
-        add(Math.min(2, labels.length - 1), "Policy update", "rgba(37,99,235,0.70)");
-        add(Math.min(5, labels.length - 1), lowerTitle.includes("solar") ? "Solar maintenance" : "Efficiency initiative", "rgba(22,101,52,0.70)");
-        add(Math.min(8, labels.length - 1), "Campus event", "rgba(217,119,6,0.72)");
-      } else {
-        add(Math.floor(labels.length * 0.25), "Upgrade window", "rgba(37,99,235,0.70)");
-        add(Math.floor(labels.length * 0.58), "ESG milestone", "rgba(22,101,52,0.70)");
-      }
-      return milestones;
-    }
-
     function updateAnalyticsStats(state) {
       const activeChart = state.mode === "line" ? state.lineChart : state.barChart || state.lineChart;
       if (!activeChart) return;
@@ -5562,23 +5588,31 @@ body.graph-bg-transparent .three-chart-wrap {
       });
       const stats = summarizeValues(values);
       const labels = activeChart.data.labels || [];
+      const timeAxis = isMonthAxis(labels);
       const rangeText = labels.length
         ? String(labels[range.start]) + " to " + String(labels[range.end])
         : "All periods";
       state.rangeValue.textContent = rangeText;
       const grid = state.statsGrid;
       if (!grid) return;
-      const first = values[0];
-      const last = values[values.length - 1];
-      const growth = pctChange(last, first);
+
+      // Growth is only meaningful along a time axis. On categorical axes
+      // (building comparisons) "first vs last" is alphabetical noise, so we
+      // report the high–low spread instead.
+      const primary = chartPrimarySeries(activeChart);
+      const windowValues = primary ? primary.values.slice(range.start, range.end + 1) : [];
+      const finiteWindow = windowValues.filter(Number.isFinite);
+      const growth = timeAxis && finiteWindow.length >= 2
+        ? pctChange(finiteWindow[finiteWindow.length - 1], finiteWindow[0])
+        : null;
       const items = stats ? [
         ["Min", formatAxisNumber(stats.min)],
         ["Max", formatAxisNumber(stats.max)],
         ["Avg", formatAxisNumber(stats.average)],
         ["Median", formatAxisNumber(stats.median)],
         ["Total", formatAxisNumber(stats.total)],
-        ["Growth", formatPercent(growth)],
-        ["Variance", formatAxisNumber(stats.variance)],
+        timeAxis ? ["Growth", formatPercent(growth)] : ["Spread", formatAxisNumber(stats.max - stats.min)],
+        ["Std Dev", formatAxisNumber(Math.sqrt(stats.variance))],
         ["Points", String(stats.count)]
       ] : [["Min", "n/a"], ["Max", "n/a"], ["Avg", "n/a"], ["Median", "n/a"]];
       grid.innerHTML = items.map(item =>
@@ -5587,13 +5621,33 @@ body.graph-bg-transparent .three-chart-wrap {
 
       const insight = state.insightBody;
       if (insight && stats) {
-        const primary = chartPrimarySeries(activeChart);
-        const primaryValues = primary ? primary.values.slice(range.start, range.end + 1).filter(Number.isFinite) : [];
-        const trend = primaryValues.length >= 2 ? pctChange(primaryValues[primaryValues.length - 1], primaryValues[0]) : null;
-        const maxIndex = primaryValues.indexOf(Math.max(...primaryValues));
-        const maxLabel = maxIndex >= 0 && labels[range.start + maxIndex] ? labels[range.start + maxIndex] : "the selected range";
-        const direction = Number(trend) > 2 ? "increased" : Number(trend) < -2 ? "decreased" : "remained broadly stable";
-        insight.textContent = "Visible values " + direction + " (" + formatPercent(trend) + "). Peak activity occurs around " + maxLabel + ", with an average of " + formatAxisNumber(stats.average) + " across " + stats.count + " visible points.";
+        // Peak is looked up across every visible series, not just the primary
+        // one, so it survives hidden years and series with missing readings.
+        let maxValue = -Infinity;
+        let maxOffset = -1;
+        activeChart.data.datasets.forEach((dataset, datasetIndex) => {
+          if (!dataset) return;
+          if (activeChart.isDatasetVisible && !activeChart.isDatasetVisible(datasetIndex)) return;
+          const dataArray = Array.isArray(dataset.data) ? dataset.data : [];
+          const end = Math.min(range.end, dataArray.length - 1);
+          for (let index = range.start; index <= end; index++) {
+            const value = dataArray[index] == null ? NaN : Number(dataArray[index]);
+            if (Number.isFinite(value) && value > maxValue) { maxValue = value; maxOffset = index - range.start; }
+          }
+        });
+        const maxLabel = maxOffset >= 0 && labels[range.start + maxOffset] != null
+          ? String(labels[range.start + maxOffset])
+          : "the selected range";
+        if (timeAxis) {
+          const direction = Number(growth) > 2 ? "increased" : Number(growth) < -2 ? "decreased" : "remained broadly stable";
+          insight.textContent = "Usage " + direction + (growth != null ? " (" + formatPercent(growth) + ")" : "") +
+            " across the visible months. The peak is in " + maxLabel + ", and the average is " +
+            formatAxisNumber(stats.average) + " over " + stats.count + " recorded readings.";
+        } else {
+          insight.textContent = "Highest usage is at " + maxLabel + ". The visible average is " +
+            formatAxisNumber(stats.average) + " across " + stats.count + " readings, with a high–low gap of " +
+            formatAxisNumber(stats.max - stats.min) + ".";
+        }
       }
     }
 
@@ -5612,11 +5666,26 @@ body.graph-bg-transparent .three-chart-wrap {
             chart.$analyticsScaleDisplay[scaleKey] = chart.options.scales[scaleKey].display;
           });
         }
-        const isLineOverlay = mode === "combined" && chart === state.lineChart;
+        // In combined mode the line canvas is overlaid on the bar canvas. Its
+        // axes must stay LAID OUT (same fonts, same tick text, same padding) so
+        // both plot areas are pixel-identical — otherwise lines drift off the
+        // bars. So instead of hiding the scales we paint them transparent.
+        const isLineOverlay = mode === "combined" && chart === state.lineChart && state.lineChart !== state.barChart;
+        applyGraphBackgroundToChartOptions(chart.options); // restore themed colours first
         Object.keys(chart.options.scales).forEach(scaleKey => {
-          if (!chart.options.scales[scaleKey]) return;
-          chart.options.scales[scaleKey].display = isLineOverlay ? false : chart.$analyticsScaleDisplay[scaleKey];
+          const scale = chart.options.scales[scaleKey];
+          if (!scale) return;
+          scale.display = chart.$analyticsScaleDisplay[scaleKey];
+          if (!isLineOverlay) return;
+          if (!scale.ticks) scale.ticks = {};
+          if (!scale.border) scale.border = {};
+          if (!scale.grid) scale.grid = {};
+          scale.ticks.color = "transparent";
+          scale.border.color = "transparent";
+          scale.grid.color = "transparent";
+          if (scale.title) scale.title.color = "transparent";
         });
+        chart.$axisGhost = isLineOverlay;
         chart.update("active");
       });
       requestAnimationFrame(() => {
@@ -5786,9 +5855,6 @@ body.graph-bg-transparent .three-chart-wrap {
       const charts = chartsInsideWrap(wrap);
       if (!charts.length) return;
       const labels = (charts[0].data && charts[0].data.labels) || [];
-      charts.forEach(chart => {
-        chart.$analyticsMilestones = buildMilestones(labels, header.textContent);
-      });
 
       let state = analyticsModuleState.get(wrap);
       if (!state) {
@@ -5904,7 +5970,9 @@ body.graph-bg-transparent .three-chart-wrap {
       if (!shouldUpdateCharts) return;
       dashboardCharts().forEach((chart) => {
         if (!chart || !chart.options) return;
-        applyGraphBackgroundToChartOptions(chart.options);
+        // Combined-mode overlay charts keep their transparent "ghost" axes;
+        // recolouring them here would make the duplicate axis text visible.
+        if (!chart.$axisGhost) applyGraphBackgroundToChartOptions(chart.options);
         chart.update("none");
       });
     }
@@ -6521,12 +6589,12 @@ body.graph-bg-transparent .three-chart-wrap {
 
     function campusSeriesForBuilding(buildingKey, periods) {
       const metricKey = campusAnalyticsState.metric === "water" ? "water" : "elec";
-      return periods.map(label => {
+      return nullifyMissingReadings(periods.map(label => {
         const parsed = campusParsePeriodLabel(label);
         const monthly = getBuildingMonthlyForYear(buildingKey, parsed.year);
         const values = monthly && Array.isArray(monthly[metricKey]) ? monthly[metricKey] : [];
         return Number(values[parsed.monthIndex] || 0);
-      });
+      }));
     }
 
     function campusSelectedBuildings() {
@@ -6737,10 +6805,21 @@ body.graph-bg-transparent .three-chart-wrap {
         const index = Number(value);
         if (labelsList.length > 30 && index % Math.ceil(labelsList.length / 14) !== 0 && index !== labelsList.length - 1) return "";
         const parsed = campusParsePeriodLabel(label);
-        return parsed.monthIndex === 0 ? String(parsed.year) : month_labels[parsed.monthIndex];
+        // Year is stamped on January and on the very first visible tick (the
+        // trimmed range can start mid-year), plain month names in between.
+        if (parsed.monthIndex === 0 || index === 0) return month_labels[parsed.monthIndex] + " " + String(parsed.year);
+        return month_labels[parsed.monthIndex];
       };
       options.scales.y.title = makeAxisTitle(campusMetricLabel() + " (" + campusMetricUnit() + ")", campusAnalyticsState.metric === "water" ? ESG_CHART_COLORS.water : ESG_CHART_COLORS.electricity);
       options.scales.y1.display = false;
+      // In quarter/semester/fiscal views the shaded segment row IS the x axis —
+      // hide the per-month ticks so the two label rows don't overlap, and leave
+      // room below the plot for the segment captions.
+      const showSegmentRow = campusAnalyticsState.chartMode !== "bar" && campusAnalyticsState.segment !== "months";
+      if (showSegmentRow) {
+        options.scales.x.ticks.display = false;
+        options.layout.padding = Object.assign({}, CHART_LAYOUT.padding, { bottom: 44 });
+      }
       options.plugins.tooltip.callbacks.label = function(context) {
         const label = displayDatasetLabel(context.dataset && context.dataset.label);
         const value = Number(context.parsed && context.parsed.y);
@@ -6767,10 +6846,32 @@ body.graph-bg-transparent .three-chart-wrap {
       const canvas = document.getElementById("campusAnalyticsChart");
       if (!canvas) return;
       const selectedBuildings = campusSelectedBuildings();
-      const historicalLabels = campusHistoricalPeriods();
+      const allPeriods = campusHistoricalPeriods();
       const subtitle = document.getElementById("campusAnalyticsSubtitle");
       const seriesByBuilding = {};
-      selectedBuildings.forEach(code => { seriesByBuilding[code] = campusSeriesForBuilding(code, historicalLabels); });
+      selectedBuildings.forEach(code => { seriesByBuilding[code] = campusSeriesForBuilding(code, allPeriods); });
+
+      // Trim leading/trailing periods where NO selected building has a reading,
+      // so the chart opens on the span that actually contains data instead of
+      // long flat runs of empty years.
+      let firstIdx = -1;
+      let lastIdx = -1;
+      allPeriods.forEach((_, index) => {
+        const hasReading = selectedBuildings.some(code => {
+          const value = (seriesByBuilding[code] || [])[index];
+          return Number.isFinite(value) && value !== 0;
+        });
+        if (hasReading) {
+          if (firstIdx < 0) firstIdx = index;
+          lastIdx = index;
+        }
+      });
+      const historicalLabels = firstIdx >= 0 ? allPeriods.slice(firstIdx, lastIdx + 1) : allPeriods.slice();
+      if (firstIdx >= 0) {
+        selectedBuildings.forEach(code => {
+          seriesByBuilding[code] = (seriesByBuilding[code] || []).slice(firstIdx, lastIdx + 1);
+        });
+      }
 
       let labels = historicalLabels.slice();
       const datasets = [];
@@ -6827,7 +6928,8 @@ body.graph-bg-transparent .three-chart-wrap {
           if (campusAnalyticsState.forecast && futureLabels.length) {
             const forecast = campusForecastValues(historical, futureLabels.length);
             forecastByBuilding[code] = forecast;
-            const forecastData = Array(historical.length - 1).fill(null).concat([historical[historical.length - 1] || 0], forecast.forecast);
+            const lastReal = [...historical].reverse().find(value => Number.isFinite(value));
+            const forecastData = Array(historical.length - 1).fill(null).concat([lastReal || 0], forecast.forecast);
             const forecastDataset = styleLineDataset({
               label: labelForBuilding(code) + " forecast",
               data: forecastData,
@@ -6858,7 +6960,9 @@ body.graph-bg-transparent .three-chart-wrap {
         options: campusChartOptions(labels)
       });
 
-      campusAnalyticsChart.$timeSegments = campusAnalyticsState.chartMode === "line" ? campusBuildSegments(labels) : [];
+      campusAnalyticsChart.$timeSegments = (campusAnalyticsState.chartMode === "line" && campusAnalyticsState.segment !== "months")
+        ? campusBuildSegments(labels)
+        : [];
       campusAnalyticsChart.$forecastBands = [];
       if (campusAnalyticsState.forecast && campusAnalyticsState.chartMode === "line") {
         selectedBuildings.slice(0, selectedBuildings.length > 10 ? 4 : selectedBuildings.length).forEach(code => {
@@ -7015,6 +7119,17 @@ body.graph-bg-transparent .three-chart-wrap {
         options.scales.x.ticks.font = makeAxisFont("axisLabel");
         options.scales.x.ticks.display = showXLabels;
         options.scales.x.offset = true;
+        // With ~22 buildings the full names collide, so the axis shows the
+        // short building code; tooltips still carry the full display name.
+        if (Array.isArray(cfg.tickLabels) && cfg.tickLabels.length) {
+          options.scales.x.ticks.callback = function(value) {
+            const index = Number(value);
+            const code = cfg.tickLabels[index] != null
+              ? cfg.tickLabels[index]
+              : (this.getLabelForValue ? this.getLabelForValue(value) : value);
+            return wrapChartLabel(code);
+          };
+        }
         options.scales.y.ticks.font = makeAxisFont("axisLabel");
         if (cfg.yTitle) {
           options.scales.y.title = makeAxisTitle(
@@ -7040,12 +7155,13 @@ body.graph-bg-transparent .three-chart-wrap {
         return applyGraphBackgroundToChartOptions(options);
       }
 
-      // Top panel: bars. Hide X labels (shown under the line panel) AND the
-      // built-in legend — the on-page swatch row is the year legend/control now.
+      // Top panel: bars. X labels stay visible here so every view mode
+      // (bar / line / combined overlay) has readable categories. The built-in
+      // legend stays hidden — the on-page swatch row is the year legend/control.
       const barChart = barCtx ? new Chart(barCtx, {
         type: "bar",
         data: { labels: cfg.labels, datasets: cfg.barDatasets },
-        options: compareOptions(false, false)
+        options: compareOptions(true, false)
       }) : null;
 
       // Bottom panel: trend line. Show the X labels here; hide the (empty) legend.
@@ -7071,6 +7187,7 @@ body.graph-bg-transparent .three-chart-wrap {
         options.plugins.barValueLabel = { enabled: false };
         options.scales.x.ticks.font = makeAxisFont("axisLabel");
         options.scales.x.ticks.display = showXLabels;
+        options.scales.x.offset = true; // same x geometry for bar + line panels
         options.scales.y.ticks.font = makeAxisFont("axisLabel");
         options.scales.y.title = makeAxisTitle("Electricity (kWh)", ESG_CHART_COLORS.electricity);
         options.scales.y1.display = true;
@@ -7084,7 +7201,7 @@ body.graph-bg-transparent .three-chart-wrap {
       const barChart = barCtx ? new Chart(barCtx, {
         type: "bar",
         data: { labels: cfg.labels, datasets: cfg.barDatasets },
-        options: panelOptions(false)
+        options: panelOptions(true)
       }) : null;
 
       const lineChart = lineCtx ? new Chart(lineCtx, {
@@ -7260,13 +7377,14 @@ body.graph-bg-transparent .three-chart-wrap {
         options.plugins.barValueLabel = { enabled: false };
         options.scales.x.ticks.font = makeAxisFont("axisLabel");
         options.scales.x.ticks.display = showXLabels;
+        options.scales.x.offset = true; // same x geometry for bar + line panels
         options.scales.y.ticks.font = makeAxisFont("axisLabel");
         if (cfg.yTitle) options.scales.y.title = makeAxisTitle(cfg.yTitle, "#475569");
         options.scales.y1.display = false;
         return applyGraphBackgroundToChartOptions(options);
       }
       const barChart = barCtx ? new Chart(barCtx, {
-        type: "bar", data: { labels: cfg.labels, datasets: cfg.barDatasets }, options: panelOptions(false)
+        type: "bar", data: { labels: cfg.labels, datasets: cfg.barDatasets }, options: panelOptions(true)
       }) : null;
       const lineChart = lineCtx ? new Chart(lineCtx, {
         type: "line", data: { labels: cfg.labels, datasets: cfg.lineDatasets }, options: panelOptions(true)
@@ -7437,7 +7555,13 @@ body.graph-bg-transparent .three-chart-wrap {
       
       sortedYears.forEach((year, yearIndex) => {
         const yearMap = dataByYear[year] || {};
-        const data = buildingKeys.map(keyItem => Number((yearMap[keyItem] && yearMap[keyItem].electricity) || 0));
+        // A building-year of 0 kWh means "no bill recorded", never true zero
+        // consumption — null it so lines gap instead of diving to the floor
+        // and a year with no data at all simply draws nothing.
+        const data = buildingKeys.map(keyItem => {
+          const value = Number((yearMap[keyItem] && yearMap[keyItem].electricity) || 0);
+          return value > 0 ? value : null;
+        });
         const barColor = getYearColor("electricity", year, yearIndex, sortedYears.length);
 
         // Bars go in the TOP panel (solid year colour).
@@ -7453,6 +7577,16 @@ body.graph-bg-transparent .three-chart-wrap {
         }, barColor));
       });
 
+      // Floor the log axis at the decade below the smallest real reading so the
+      // scale is not stretched down to 1 kWh (which made every bar look full).
+      let minPositive = Infinity;
+      barDatasets.forEach(ds => (ds.data || []).forEach(value => {
+        if (Number.isFinite(value) && value > 0 && value < minPositive) minPositive = value;
+      }));
+      const logFloor = Number.isFinite(minPositive) && minPositive !== Infinity
+        ? Math.max(1, Math.pow(10, Math.floor(Math.log10(minPositive))))
+        : 1;
+
       const built = makeComparePanels({
         barCanvasId: "electricityCompareChart",
         lineCanvasId: "electricityCompareLineChart",
@@ -7462,7 +7596,8 @@ body.graph-bg-transparent .three-chart-wrap {
         metric: "electricity",
         yTitle: "Electricity (kWh)",
         scaleType: "logarithmic",
-        minPositiveValue: 1
+        minPositiveValue: logFloor,
+        tickLabels: buildingKeys
       });
       electricityCompareChart = built.barChart;
       electricityCompareLineChart = built.lineChart;
@@ -7514,7 +7649,12 @@ body.graph-bg-transparent .three-chart-wrap {
       
       sortedYears.forEach((year, yearIndex) => {
         const yearMap = dataByYear[year] || {};
-        const data = buildingKeys.map(keyItem => Number((yearMap[keyItem] && yearMap[keyItem].water) || 0));
+        // 0 m³ for a building-year means "no reading recorded" — null it so a
+        // data-free year draws nothing instead of a flat line at zero.
+        const data = buildingKeys.map(keyItem => {
+          const value = Number((yearMap[keyItem] && yearMap[keyItem].water) || 0);
+          return value > 0 ? value : null;
+        });
         const barColor = getYearColor("water", year, yearIndex, sortedYears.length);
 
         // Bars go in the TOP panel (solid year colour).
@@ -7537,7 +7677,8 @@ body.graph-bg-transparent .three-chart-wrap {
         barDatasets: barDatasets,
         lineDatasets: lineDatasets,
         metric: "water",
-        yTitle: "Water (m³)"
+        yTitle: "Water (m³)",
+        tickLabels: buildingKeys
       });
       waterCompareChart = built.barChart;
       waterCompareLineChart = built.lineChart;
@@ -8011,9 +8152,11 @@ body.graph-bg-transparent .three-chart-wrap {
 
       window.__applySolarYearFromControls = applySolarYear;
       renderList();
-      
-      // Initial year selection
-      const initialYear = (solarPendingYear != null) ? solarPendingYear : (options[0] ? options[0].year : null);
+
+      // Initial year selection: auto mode cycles oldest → newest, so start at
+      // the oldest; interactive visitors should land on the latest year.
+      const defaultOption = is_auto_mode ? options[0] : options[options.length - 1];
+      const initialYear = (solarPendingYear != null) ? solarPendingYear : (defaultOption ? defaultOption.year : null);
       if (initialYear) applySolarYear(initialYear, false);
       
       if (!is_auto_mode) { 
@@ -8246,9 +8389,11 @@ body.graph-bg-transparent .three-chart-wrap {
 
       window.__applyWasteYearFromControls = applyWasteYear;
       renderList();
-      
-      // Initial year selection
-      const initialYear = (wastePendingYear != null) ? wastePendingYear : (options[0] ? options[0].year : null);
+
+      // Initial year selection: auto mode cycles oldest → newest, so start at
+      // the oldest; interactive visitors should land on the latest fiscal year.
+      const defaultWasteOption = is_auto_mode ? options[0] : options[options.length - 1];
+      const initialYear = (wastePendingYear != null) ? wastePendingYear : (defaultWasteOption ? defaultWasteOption.year : null);
       if (initialYear) applyWasteYear(initialYear, false);
       
       if (!is_auto_mode) { 
