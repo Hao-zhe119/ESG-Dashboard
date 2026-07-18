@@ -9,6 +9,21 @@
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* :root {
+      --green:        #00c896;
+      --green-dim:    #00c89640;
+      --dark:         #050d0a;
+      --panel:        #0a1a14cc;
+      --panel-solid:  #0a1a14;
+      --panel-border: #1a3a2a;
+      --text:         #c8ffe8;
+      --text-dim:     #6a9980;
+      --accent:       #00ffb3;
+      --e-color:      #22c55e;
+      --w-color:      #a855f7;
+      --other-color:  #ffb347;
+    } */
+
     :root {
       --green:        #00c896;
       --green-dim:    #00c89640;
@@ -22,7 +37,15 @@
       --e-color:      #22c55e;
       --w-color:      #a855f7;
       --other-color:  #ffb347;
+
+      /* ── Map backdrop (driven by the Background picker) ── */
+      --bgBase:  #050d0a;                                   /* solid fill colour   */
+      --bgGlow:  rgba(0, 200, 150, 0.16);                   /* centre glow colour  */
+      --bgImage: none;                                      /* optional PNG/JPG    */
+      --bgFit:   cover;                                     /* cover | contain     */
+      --bgOpacity: 1;                                       /* image opacity       */
     }
+
 
     html, body { height: 100%; background: var(--dark); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; position: relative; }
 
@@ -262,8 +285,7 @@
     }
     .zoom-btn:hover { background: rgba(0,200,150,0.15); border-color: var(--green); color: var(--accent); }
     .zoom-divider { height: 1px; background: var(--panel-border); margin: 2px 0; }
-      50%       { box-shadow: 0 0 0 6px rgba(0,200,150,0); }
-    }
+    
 
     /* ── LEGEND ── */
     .legend {
@@ -307,9 +329,183 @@
     body.mirror .controls-hint,
     body.mirror .info-panel { display: none !important; }
     body.mirror .hotspot { pointer-events: none; }
+
+    /* ============================================================
+       MAP BACKDROP  (colour + optional image)  — sits behind everything
+    ============================================================ */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 60% at 50% 48%,
+          var(--bgGlow) 0%,
+          color-mix(in srgb, var(--bgGlow) 40%, transparent) 35%,
+          transparent 70%),
+        var(--bgBase);
+    }
+
+    /* Image layer — separate so opacity can be tuned without killing the glow */
+    #bgImageLayer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: var(--bgImage);
+      background-size: var(--bgFit);
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: var(--bgOpacity);
+      transition: opacity .25s ease;
+    }
+
+    /* ============================================================
+       BACKGROUND PICKER
+    ============================================================ */
+/* ── BACKGROUND PICKER BUTTON ── */
+    .bg-btn {
+      position: fixed; top: 84px; right: 20px; z-index: 400;
+      display: flex; align-items: center; gap: 8px;
+      height: 40px; padding: 0 16px 0 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(0,200,150,.18), rgba(0,255,179,.06));
+      border: 1px solid var(--green);
+      color: var(--accent);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: .82rem; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      cursor: pointer; white-space: nowrap;
+      box-shadow: 0 0 0 0 rgba(0,200,150,.45);
+      animation: bgBtnPulse 2.6s ease-out infinite;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .bg-btn:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(135deg, rgba(0,200,150,.32), rgba(0,255,179,.14));
+      box-shadow: 0 6px 20px rgba(0,200,150,.4);
+      animation: none;
+    }
+    .bg-btn:active { transform: translateY(0); }
+
+    /* Colour-wheel swatch — reads instantly as "colour" */
+    .bg-btn::before {
+      content: "";
+      width: 18px; height: 18px; border-radius: 50%;
+      flex-shrink: 0;
+      background: conic-gradient(
+        #ff4d4d, #ffb347, #ffe74d, #4dff88,
+        #4dd2ff, #4d6bff, #b84dff, #ff4dbf, #ff4d4d
+      );
+      border: 2px solid rgba(255,255,255,.9);
+      box-shadow: 0 0 8px rgba(255,255,255,.35);
+    }
+
+    @keyframes bgBtnPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(0,200,150,.45); }
+      70%  { box-shadow: 0 0 0 10px rgba(0,200,150,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,200,150,0); }
+    }
+
+    .bg-panel {
+      position: fixed; top: 132px; right: 20px; z-index: 401;
+      width: 260px; padding: 14px;
+      background: var(--panel-solid); border: 1px solid var(--panel-border);
+      border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.5);
+      display: none; font-family: 'Inter', sans-serif;
+    }
+    .bg-panel.open { display: block; }
+
+    .bg-panel h4 {
+      font-family: 'Rajdhani', sans-serif; font-size: .95rem; font-weight: 700;
+      color: var(--accent); margin-bottom: 10px; letter-spacing: .04em;
+    }
+    .bg-section-label {
+      font-size: .68rem; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--text-dim); margin: 12px 0 6px;
+    }
+    .bg-section-label:first-of-type { margin-top: 0; }
+
+    .bg-swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; }
+    .bg-swatch {
+      aspect-ratio: 1; border-radius: 7px; cursor: pointer;
+      border: 2px solid transparent; transition: transform .12s ease, border-color .12s ease;
+    }
+    .bg-swatch:hover  { transform: scale(1.12); }
+    .bg-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
+
+    .bg-row { display: flex; align-items: center; gap: 8px; }
+    .bg-row input[type="color"] {
+      width: 38px; height: 30px; padding: 0; border: 1px solid var(--panel-border);
+      border-radius: 6px; background: transparent; cursor: pointer;
+    }
+    .bg-row input[type="range"] { flex: 1; accent-color: var(--green); }
+    .bg-row .bg-val { font-size: .7rem; color: var(--text-dim); min-width: 32px; text-align: right; }
+
+    .bg-file-btn {
+      display: block; width: 100%; text-align: center;
+      padding: 8px; border-radius: 7px; cursor: pointer;
+      background: rgba(255,255,255,.05); border: 1px dashed var(--panel-border);
+      color: var(--text-dim); font-size: .75rem; transition: all .15s ease;
+    }
+    .bg-file-btn:hover { border-color: var(--green); color: var(--accent); }
+
+    .bg-actions { display: flex; gap: 7px; margin-top: 12px; }
+    .bg-actions button {
+      flex: 1; padding: 7px; border-radius: 7px; cursor: pointer;
+      font-size: .72rem; font-family: 'Inter', sans-serif;
+      background: rgba(255,255,255,.05); border: 1px solid var(--panel-border);
+      color: var(--text-dim); transition: all .15s ease;
+    }
+    .bg-actions button:hover { border-color: var(--green); color: var(--accent); }
   </style>
 </head>
+
 <body>
+  <!-- Backdrop image layer (colour glow is on body::before) -->
+  <div id="bgImageLayer"></div>
+
+  <!-- Background picker -->
+  <button class="bg-btn" id="bgToggle" title="Change background">Theme</button>
+
+  <div class="bg-panel" id="bgPanel">
+    <h4>Map Background</h4>
+
+    <div class="bg-section-label">Presets</div>
+    <div class="bg-swatches" id="bgSwatches"></div>
+
+    <div class="bg-section-label">Custom colour</div>
+    <div class="bg-row">
+      <input type="color" id="bgColorPick" value="#050d0a" title="Base colour" />
+      <input type="color" id="bgGlowPick"  value="#00c896" title="Glow colour" />
+      <span class="bg-val">base / glow</span>
+    </div>
+
+    <div class="bg-section-label">Image</div>
+    <label class="bg-file-btn" for="bgFile">Upload PNG / JPG</label>
+    <input type="file" id="bgFile" accept="image/*" hidden />
+
+    <div class="bg-row" style="margin-top:8px;">
+      <span class="bg-val" style="text-align:left;">Fit</span>
+      <select id="bgFit" style="flex:1;background:rgba(255,255,255,.05);border:1px solid var(--panel-border);color:var(--text-dim);border-radius:6px;padding:4px;font-size:.72rem;">
+        <option value="cover">Cover</option>
+        <option value="contain">Contain</option>
+      </select>
+    </div>
+
+    <div class="bg-row" style="margin-top:8px;">
+      <span class="bg-val" style="text-align:left;">Fade</span>
+      <input type="range" id="bgOpacity" min="0" max="100" value="100" />
+      <span class="bg-val" id="bgOpacityVal">100%</span>
+    </div>
+
+    <div class="bg-actions">
+      <button id="bgClearImg" type="button">Remove image</button>
+      <button id="bgReset"    type="button">Reset</button>
+    </div>
+  </div>
 
   <!-- Loading -->
   <div class="loading-overlay" id="loadingOverlay">
@@ -369,7 +565,7 @@
     interpolation-decay="80"
     camera-orbit="0deg 55deg 90%"
     camera-target="0m 0m 0m"
-    style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:radial-gradient(ellipse at center,#0c1f18 0%,#050d0a 100%);z-index:0;"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;"
   >
 
     <!-- E Block (cyan) -->
@@ -845,6 +1041,148 @@
       setTimeout(() => { showCycleBuilding(); }, 800);
     });
   </script>
+
+ <script>
+  (function setupMapBackground(){
+    const KEY = "rpMapBg";
+
+    const PRESETS = [
+      { name:"Green",  base:"#050d0a", glow:"rgba(0,200,150,0.16)",  sw:"#0f3a2c" },
+      { name:"Night",  base:"#05070d", glow:"rgba(96,165,250,0.16)", sw:"#1e3a8a" },
+      { name:"Red",    base:"#140505", glow:"rgba(239,68,68,0.16)",  sw:"#7f1d1d" },
+      { name:"Pink",   base:"#14050f", glow:"rgba(236,72,153,0.16)", sw:"#9d174d" },
+      { name:"Sunset", base:"#140b05", glow:"rgba(251,146,60,0.18)", sw:"#9a3412" },
+      { name:"Slate",  base:"#0b0e12", glow:"rgba(203,213,225,0.10)", sw:"#475569" }
+    ];
+
+    const DEFAULTS = { base:"#050d0a", glow:"rgba(0,200,150,0.16)", image:null, fit:"cover", opacity:1 };
+
+    const root       = document.documentElement;
+    const mvEl       = document.getElementById("campusViewer");
+    const toggle     = document.getElementById("bgToggle");
+    const panel      = document.getElementById("bgPanel");
+    const swatches   = document.getElementById("bgSwatches");
+    const colorPick  = document.getElementById("bgColorPick");
+    const glowPick   = document.getElementById("bgGlowPick");
+    const fileInput  = document.getElementById("bgFile");
+    const fitSel     = document.getElementById("bgFit");
+    const opSlider   = document.getElementById("bgOpacity");
+    const opVal      = document.getElementById("bgOpacityVal");
+    const clearImg   = document.getElementById("bgClearImg");
+    const resetBtn   = document.getElementById("bgReset");
+
+    // The model-viewer carries a hardcoded inline gradient that would cover
+    // our backdrop. Make it transparent so body::before + #bgImageLayer show through.
+    if (mvEl) mvEl.style.background = "transparent";
+
+    let state = { ...DEFAULTS };
+
+    function hexToRgba(hex, a){
+      const h = hex.replace("#","");
+      const n = parseInt(h.length === 3 ? h.split("").map(c=>c+c).join("") : h, 16);
+      return "rgba(" + ((n>>16)&255) + "," + ((n>>8)&255) + "," + (n&255) + "," + a + ")";
+    }
+
+    function apply(){
+      root.style.setProperty("--bgBase", state.base);
+      root.style.setProperty("--bgGlow", state.glow);
+      root.style.setProperty("--bgImage", state.image ? 'url("' + state.image + '")' : "none");
+      root.style.setProperty("--bgFit", state.fit);
+      root.style.setProperty("--bgOpacity", String(state.opacity));
+
+      colorPick.value = state.base;
+      fitSel.value    = state.fit;
+      opSlider.value  = String(Math.round(state.opacity * 100));
+      opVal.textContent = Math.round(state.opacity * 100) + "%";
+
+      // mark matching preset
+      Array.from(swatches.children).forEach(el => {
+        el.classList.toggle("active",
+          el.dataset.base === state.base && el.dataset.glow === state.glow);
+      });
+    }
+
+    function save(){
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+    }
+
+    function load(){
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (raw) state = Object.assign({}, DEFAULTS, JSON.parse(raw));
+      } catch(e){ state = { ...DEFAULTS }; }
+    }
+
+    // Build preset swatches
+    PRESETS.forEach(p => {
+      const el = document.createElement("div");
+      el.className = "bg-swatch";
+      el.title = p.name;
+      el.style.background = p.sw;
+      el.dataset.base = p.base;
+      el.dataset.glow = p.glow;
+      el.addEventListener("click", () => {
+        state.base = p.base;
+        state.glow = p.glow;
+        apply(); save();
+      });
+      swatches.appendChild(el);
+    });
+
+    // Custom colours
+    colorPick.addEventListener("input", () => {
+      state.base = colorPick.value;
+      apply(); save();
+    });
+    glowPick.addEventListener("input", () => {
+      state.glow = hexToRgba(glowPick.value, 0.16);
+      apply(); save();
+    });
+
+    // Image upload → base64 so it persists without a server round-trip
+    fileInput.addEventListener("change", () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.image = reader.result;
+        apply(); save();
+      };
+      reader.readAsDataURL(f);
+      fileInput.value = "";
+    });
+
+    fitSel.addEventListener("change", () => { state.fit = fitSel.value; apply(); save(); });
+
+    opSlider.addEventListener("input", () => {
+      state.opacity = Number(opSlider.value) / 100;
+      apply(); save();
+    });
+
+    clearImg.addEventListener("click", () => { state.image = null; apply(); save(); });
+
+    resetBtn.addEventListener("click", () => {
+      state = { ...DEFAULTS };
+      apply(); save();
+    });
+
+    // Panel open/close
+    toggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      panel.classList.toggle("open");
+    });
+    document.addEventListener("click", (e) => {
+      if (!panel.contains(e.target) && e.target !== toggle) panel.classList.remove("open");
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") panel.classList.remove("open");
+    });
+
+    load();
+    apply();
+  })();
+  </script>
+
 </body>
 </html>
 

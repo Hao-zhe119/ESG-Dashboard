@@ -845,19 +845,6 @@
       -webkit-text-fill-color:transparent; color:transparent;
       font-weight:800;
     }
-    .ai-chips{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
-    .ai-chip{
-      background:var(--aiGlassSoft);
-      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
-      border:var(--aiGlassBorder);
-      color:var(--text); padding:9px 14px; border-radius:999px; font-size:13px; cursor:pointer;
-      transition:transform .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
-    }
-    .ai-chip:hover{
-      border-color:var(--aiAccent); color:var(--aiAccent);
-      transform:translateY(-2px); box-shadow:0 6px 16px rgba(52,211,153,0.18);
-    }
-
     .ai-foot{
       flex:0 0 auto; border-top:var(--aiGlassBorder); padding:12px 14px;
       background:var(--aiGlassPanel);
@@ -884,27 +871,12 @@
     #aiSend:disabled{ opacity:0.45; cursor:not-allowed; box-shadow:none; }
     .ai-note{ text-align:center; color:var(--muted); font-size:10px; margin-top:8px; }
 
-    /* ── Quick-question panel (touch-only, no-keyboard friendly) ── */
-    #aiQuickToggle{
-      flex:0 0 auto; width:48px; height:48px;
-      display:flex; align-items:center; justify-content:center;
-      background:var(--aiGlassSoft);
-      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
-      border:var(--aiGlassBorder); border-radius:14px;
-      font-size:19px; cursor:pointer;
-      transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-    }
-    #aiQuickToggle.active{ border-color:var(--aiAccent); box-shadow:0 0 0 3px rgba(52,211,153,0.18); }
-    #aiQuickToggle:hover{ transform:translateY(-2px); }
+    /* ── Quick questions are the default view; "type your own" swaps to
+       the text input + on-screen keyboard (touch-only, no-keyboard
+       friendly kiosk use). ── */
+    #aiQuickView.hidden,
+    #aiTypeView.hidden{ display:none; }
 
-    #aiQuickPanel{
-      background:var(--aiGlassSoft);
-      -webkit-backdrop-filter:var(--aiBlur); backdrop-filter:var(--aiBlur);
-      border:var(--aiGlassBorder); border-radius:16px;
-      padding:12px; margin-bottom:10px;
-      max-height:34vh; overflow-y:auto;
-    }
-    #aiQuickPanel.hidden{ display:none; }
     .ai-quickTabs{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
     .ai-quickTab{
       background:rgba(255,255,255,0.05);
@@ -925,6 +897,187 @@
     }
     .ai-quickQ:hover, .ai-quickQ:active{
       border-color:var(--aiAccent); color:var(--aiAccent); transform:translateY(-1px);
+    }
+
+    /* ============================================================
+       PAGE RAIL - ten stations, Leo the lion rides it.
+       Stations reuse .pill/.active/.disabled so the existing JS is untouched.
+    ============================================================ */
+    .rail{
+      position:relative;
+      display:grid;
+      grid-template-columns:repeat(10, 1fr);
+      align-items:end;
+      padding:44px 0 4px;
+      margin:0 6px;
+    }
+
+    .rail-line,
+    .rail-line-travelled{
+      position:absolute;
+      left:5%; right:5%;
+      bottom:42px;
+      height:3px;
+      border-radius:999px;
+    }
+    .rail-line{ background:#1f2a33; }
+    .rail-line-travelled{
+      right:auto;
+      width:0;
+      background:linear-gradient(90deg, #2563eb, var(--accentGreen));
+      box-shadow:0 0 10px rgba(52,211,153,.5);
+    }
+
+    /* ---- STATION ---- */
+    .rail .pill{
+      position:relative;
+      z-index:2;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:0;
+      padding:0;
+      background:none;
+      border:none;
+      box-shadow:none;
+      border-radius:0;
+      color:inherit;
+      cursor:pointer;
+      transition:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .rail .pill:hover{
+      background:none;
+      border:none;
+      transform:none;
+      box-shadow:none;
+    }
+
+    .rail .pill::before{
+      content:"";
+      width:14px; height:14px;
+      border-radius:50%;
+      background:#1f2a33;
+      border:2px solid #35414d;
+      margin-bottom:13px;
+      transition:background .25s ease, border-color .25s ease, transform .25s ease, box-shadow .25s ease;
+    }
+    .rail .pill:hover::before{
+      border-color:var(--accentGreen);
+      transform:scale(1.25);
+    }
+    .rail .pill.active::before{
+      background:var(--accentGreen);
+      border-color:var(--accentGreen);
+      transform:scale(1.35);
+      box-shadow:0 0 0 5px rgba(52,211,153,.18), 0 0 14px rgba(52,211,153,.7);
+    }
+    .rail .pill.visited::before{
+      background:#2563eb;
+      border-color:#2563eb;
+    }
+
+    .st-num{
+      font-size:11px;
+      font-weight:800;
+      color:#64748b;
+      letter-spacing:.06em;
+      line-height:1;
+      margin-bottom:3px;
+      transition:color .25s ease;
+    }
+    .st-name{
+      font-size:12px;
+      color:#94a3b8;
+      white-space:nowrap;
+      line-height:1.1;
+      transition:color .25s ease;
+    }
+    .rail .pill:hover .st-num,
+    .rail .pill:hover .st-name{ color:#e2e8f0; }
+    .rail .pill.active .st-num{ color:var(--accentGreen); }
+    .rail .pill.active .st-name{ color:#ffffff; font-weight:700; }
+
+    /* Skipped stations: hollow. Leo walks straight past them. */
+    .rail .pill.disabled{
+      opacity:.45;
+      pointer-events:none;
+      cursor:not-allowed;
+      text-decoration:none;
+    }
+    .rail .pill.disabled::before{
+      background:transparent;
+      border-color:#4b5563;
+      border-style:dashed;
+    }
+    .rail .pill.disabled .st-name{ text-decoration:line-through; }
+
+    /* ============================================================
+       LEO - the RP lion. SVG, so he actually reads as a lion.
+       Green, smiling, walks the rail.
+    ============================================================ */
+    .lion{
+      position:absolute;
+      bottom:50px;
+      left:0;
+      width:32px; height:30px;
+      z-index:4;
+      transform:translateX(-50%);
+      pointer-events:none;
+      filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));
+    }
+    .lion.flip{ transform:translateX(-50%) scaleX(-1); }
+
+    .lion-sprite{
+      display:block;
+      width:32px; height:30px;
+      overflow:visible;
+    }
+
+    /* Bob while walking */
+    .lion.walking .lion-sprite{ animation:leoBob .28s steps(2) infinite; }
+    @keyframes leoBob{
+      0%   { transform:translateY(0); }
+      100% { transform:translateY(-1.5px); }
+    }
+
+    /* Mane turns slowly while he rests */
+    .lion-mane{ transform-origin:16px 14px; }
+    .lion:not(.walking) .lion-mane{ animation:leoMane 7s linear infinite; }
+    @keyframes leoMane{
+      to { transform:rotate(360deg); }
+    }
+
+    /* Legs alternate */
+    .lion.walking .lion-leg.front{ animation:leoStepA .28s steps(2) infinite; }
+    .lion.walking .lion-leg.back { animation:leoStepB .28s steps(2) infinite; }
+    @keyframes leoStepA{
+      0%   { transform:translateY(0);    }
+      100% { transform:translateY(-2px); }
+    }
+    @keyframes leoStepB{
+      0%   { transform:translateY(-2px); }
+      100% { transform:translateY(0);    }
+    }
+
+    /* Tail flicks when resting */
+    .lion-tail{ transform-origin:27px 16px; }
+    .lion:not(.walking) .lion-tail{ animation:leoTail 2s ease-in-out infinite; }
+    @keyframes leoTail{
+      0%, 100% { transform:rotate(0deg);  }
+      50%      { transform:rotate(14deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .lion{ transition:none !important; }
+      .rail-line-travelled{ transition:none !important; }
+      .lion *, .lion-sprite{ animation:none !important; }
+    }
+
+    /* Narrow panels: drop the station names, keep the numbers */
+    @media (max-width:1100px){
+      .st-name{ display:none; }
+      .rail{ padding-top:40px; }
     }
   </style>
 </head>
@@ -975,22 +1128,70 @@
           <button id="dashPrevPageBtn" class="nav-btn" type="button">Prev Page</button>
           <button id="dashNextPageBtn" class="nav-btn" type="button">Next Page</button>
         </div>
+        <div class="mini-label">Jump to page</div>
+      </div>
 
-        <div class="right">
-          <div class="mini-label">Quick Page</div>
-          <div class="pill-group" aria-label="Dashboard pages">
-            <button class="pill" data-page="1" type="button">1 - Welcome</button>
-            <button class="pill" data-page="2" type="button">2 - Overview</button>
-            <button class="pill" data-page="3" type="button">3 - Electricity</button>
-            <button class="pill" data-page="4" type="button">4 - Water</button>
-            <button class="pill" data-page="5" type="button">5 - Infographics</button>
-            <button class="pill" data-page="6" type="button">6 - Solar</button>
-            <button class="pill" data-page="7" type="button">7 - Waste</button>
-            <button class="pill" data-page="8" type="button">8 - Video</button>
-            <button class="pill" data-page="9" type="button">9 - Images</button>
-            <button class="pill" data-page="10" type="button">10 - Thank You</button>
-          </div>
+      <!-- Page rail. Leo rides this. Stations keep .pill + data-page so all
+           existing JS (setActivePill, pagePills, click handlers) still works. -->
+      <div class="rail" id="pageRail" aria-label="Dashboard pages">
+        <div class="rail-line"></div>
+        <div class="rail-line-travelled" id="railTravelled"></div>
+
+        <div class="lion" id="lion" aria-hidden="true">
+          <svg class="lion-sprite" viewBox="0 0 32 30" xmlns="http://www.w3.org/2000/svg">
+            <!-- Mane: spiked ring, two greens -->
+            <g class="lion-mane">
+              <path d="M16 1 L18 5 L22 3 L22 7 L27 7 L24 11 L28 14 L24 17 L27 21 L22 21 L22 25 L18 23 L16 27 L14 23 L10 25 L10 21 L5 21 L8 17 L4 14 L8 11 L5 7 L10 7 L10 3 L14 5 Z"
+                    fill="#059669"/>
+              <path d="M16 3 L17 6 L21 5 L21 8 L25 8 L23 11 L26 14 L23 16 L25 20 L21 20 L21 23 L17 22 L16 25 L15 22 L11 23 L11 20 L7 20 L9 16 L6 14 L9 11 L7 8 L11 8 L11 5 L15 6 Z"
+                    fill="#10b981"/>
+            </g>
+
+            <!-- Ears -->
+            <circle cx="10" cy="7" r="2.5" fill="#047857"/>
+            <circle cx="22" cy="7" r="2.5" fill="#047857"/>
+            <circle cx="10" cy="7" r="1.2" fill="#34d399"/>
+            <circle cx="22" cy="7" r="1.2" fill="#34d399"/>
+
+            <!-- Face -->
+            <circle cx="16" cy="14" r="7.5" fill="#6ee7b7"/>
+
+            <!-- Happy closed eyes -->
+            <path d="M11.5 12.5 q1.5 -1.8 3 0" stroke="#064e3b" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+            <path d="M17.5 12.5 q1.5 -1.8 3 0" stroke="#064e3b" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+
+            <!-- Muzzle + nose + smile -->
+            <ellipse cx="16" cy="17" rx="4.5" ry="3.2" fill="#d1fae5"/>
+            <path d="M14.6 15.4 L17.4 15.4 L16 16.9 Z" fill="#065f46"/>
+            <path d="M16 16.9 L16 17.6 M16 17.6 q-1.8 1.6 -3.2 0 M16 17.6 q1.8 1.6 3.2 0"
+                  stroke="#065f46" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+
+            <!-- Whiskers -->
+            <path d="M11 16.5 L8 16 M11 17.8 L8 18.2 M21 16.5 L24 16 M21 17.8 L24 18.2"
+                  stroke="#065f46" stroke-width="0.7" stroke-linecap="round" opacity="0.55"/>
+
+            <!-- Legs -->
+            <rect class="lion-leg front" x="10" y="25" width="4" height="4" rx="1.2" fill="#047857"/>
+            <rect class="lion-leg back"  x="18" y="25" width="4" height="4" rx="1.2" fill="#047857"/>
+
+            <!-- Tail -->
+            <g class="lion-tail">
+              <path d="M27 16 q4 -1 4 -5" stroke="#047857" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+              <circle cx="31" cy="10.5" r="1.8" fill="#10b981"/>
+            </g>
+          </svg>
         </div>
+
+        <button class="pill" data-page="1"  type="button"><span class="st-num">1</span><span class="st-name">Welcome</span></button>
+        <button class="pill" data-page="2"  type="button"><span class="st-num">2</span><span class="st-name">Overview</span></button>
+        <button class="pill" data-page="3"  type="button"><span class="st-num">3</span><span class="st-name">Electricity</span></button>
+        <button class="pill" data-page="4"  type="button"><span class="st-num">4</span><span class="st-name">Water</span></button>
+        <button class="pill" data-page="5"  type="button"><span class="st-num">5</span><span class="st-name">Infographics</span></button>
+        <button class="pill" data-page="6"  type="button"><span class="st-num">6</span><span class="st-name">Solar</span></button>
+        <button class="pill" data-page="7"  type="button"><span class="st-num">7</span><span class="st-name">Waste</span></button>
+        <button class="pill" data-page="8"  type="button"><span class="st-num">8</span><span class="st-name">Video</span></button>
+        <button class="pill" data-page="9"  type="button"><span class="st-num">9</span><span class="st-name">Images</span></button>
+        <button class="pill" data-page="10" type="button"><span class="st-num">10</span><span class="st-name">Thank You</span></button>
       </div>
 
       <div class="hint" id="topHint">
@@ -1980,6 +2181,85 @@
       postToMain({ type: "REQUEST_STATE" });
     }, 450);
 
+    // ============================================================
+    // LEO - rides the page rail to whichever page the dashboard is on.
+    // Reads real station positions from the DOM so it survives any window
+    // width. Walks straight past skipped stations without stopping.
+    // Wraps selectDashboardPage rather than editing it, so no existing
+    // behaviour changes: if Leo fails, the panel still works.
+    // ============================================================
+    const lionEl      = document.getElementById("lion");
+    const railEl      = document.getElementById("pageRail");
+    const travelledEl = document.getElementById("railTravelled");
+
+    const LION_SPEED = 260;   // px per second - a long journey visibly takes longer
+    let lionWalkTimer = null;
+    let lionAtPage = null;
+
+    function stationCenter(page){
+      const station = document.querySelector('.rail .pill[data-page="' + page + '"]');
+      if (!station || !railEl) return null;
+      const stationBox = station.getBoundingClientRect();
+      const railBox = railEl.getBoundingClientRect();
+      return (stationBox.left - railBox.left) + (stationBox.width / 2);
+    }
+
+    function moveLionTo(page, animate){
+      if (!lionEl || !railEl) return;
+
+      const targetX = stationCenter(page);
+      if (targetX == null) return;
+
+      // Face the way he is travelling
+      if (lionAtPage != null && Number(page) < Number(lionAtPage)) {
+        lionEl.classList.add("flip");
+      } else if (lionAtPage != null && Number(page) > Number(lionAtPage)) {
+        lionEl.classList.remove("flip");
+      }
+
+      // Distance sets the walk duration
+      const fromX = (lionAtPage != null ? stationCenter(lionAtPage) : targetX);
+      const distance = Math.abs(targetX - (fromX == null ? targetX : fromX));
+      const durationMs = (animate === false) ? 0 : Math.min(1600, (distance / LION_SPEED) * 1000);
+
+      lionEl.style.transition = durationMs ? ("left " + durationMs + "ms cubic-bezier(.4,0,.2,1)") : "none";
+      lionEl.style.left = targetX + "px";
+
+      // Walk cycle only runs while he is actually moving
+      clearTimeout(lionWalkTimer);
+      if (durationMs > 0) {
+        lionEl.classList.add("walking");
+        lionWalkTimer = setTimeout(() => lionEl.classList.remove("walking"), durationMs);
+      } else {
+        lionEl.classList.remove("walking");
+      }
+
+      // Rail fills in behind him
+      if (travelledEl) {
+        const railStart = railEl.clientWidth * 0.05;
+        travelledEl.style.transition = durationMs ? ("width " + durationMs + "ms cubic-bezier(.4,0,.2,1)") : "none";
+        travelledEl.style.width = Math.max(0, targetX - railStart) + "px";
+      }
+
+      // Stations he has already passed
+      document.querySelectorAll('.rail .pill[data-page]').forEach(station => {
+        station.classList.toggle("visited", Number(station.dataset.page) < Number(page));
+      });
+
+      lionAtPage = Number(page);
+    }
+
+    // Observe page selection without changing it
+    const originalSelectDashboardPage = selectDashboardPage;
+    selectDashboardPage = function(page, alsoTellMain){
+      originalSelectDashboardPage(page, alsoTellMain);
+      moveLionTo(Math.max(1, Math.min(10, Number(page || 1))), true);
+    };
+
+    // Put him in place on load, and keep him aligned if the window changes size
+    requestAnimationFrame(() => moveLionTo(selectedDashboardPage, false));
+    window.addEventListener("resize", () => moveLionTo(lionAtPage || 1, false));
+
     console.log("Building Controls initialized");
   </script>
 
@@ -1997,23 +2277,25 @@
     <div class="ai-messages" id="aiMessages">
       <div class="ai-welcome" id="aiWelcome">
         Ask me anything about <b>RP's sustainability</b> &mdash; ESG, electricity, water, solar, or waste.
-        <div class="ai-chips">
-          <span class="ai-chip">What is ESG?</span>
-          <span class="ai-chip">Why does saving electricity matter?</span>
-          <span class="ai-chip">3 simple ways to reduce waste</span>
-        </div>
+        Pick a question below, or tap "Ask something else" to type your own.
       </div>
     </div>
     <div class="ai-foot">
-      <div id="aiQuickPanel" class="hidden">
+      <div id="aiQuickView">
         <div class="ai-quickTabs" id="aiQuickTabs"></div>
         <div class="ai-quickList" id="aiQuickList"></div>
+        <button id="aiTypeToggle" class="ai-typeToggle" type="button">⌨️ Ask something else</button>
       </div>
-      <div class="ai-inputRow">
-        <button id="aiQuickToggle" type="button" title="Quick questions">💡</button>
-        <textarea id="aiInput" placeholder="Type your question..." rows="1"></textarea>
-        <button id="aiSend" type="button">Send</button>
+
+      <div id="aiTypeView" class="hidden">
+        <div class="ai-inputRow">
+          <button id="aiBackToQuick" class="ai-backBtn" type="button" title="Back to quick questions">&lsaquo;</button>
+          <textarea id="aiInput" placeholder="Type your question..." rows="1"></textarea>
+          <button id="aiSend" type="button">Send</button>
+        </div>
+        <div class="ai-keyboard" id="aiKeyboard"></div>
       </div>
+
       <div class="ai-note">Your conversation stays on this machine. Nothing is sent to the internet.</div>
     </div>
   </aside>
@@ -2079,10 +2361,13 @@
     const welcome   = document.getElementById("aiWelcome");
     const input     = document.getElementById("aiInput");
     const sendBtn   = document.getElementById("aiSend");
-    const quickToggle = document.getElementById("aiQuickToggle");
-    const quickPanel  = document.getElementById("aiQuickPanel");
+    const quickView   = document.getElementById("aiQuickView");
+    const typeView    = document.getElementById("aiTypeView");
+    const typeToggle  = document.getElementById("aiTypeToggle");
+    const backToQuick = document.getElementById("aiBackToQuick");
     const quickTabs   = document.getElementById("aiQuickTabs");
     const quickList   = document.getElementById("aiQuickList");
+    const keyboardEl  = document.getElementById("aiKeyboard");
 
     const history = [];
     let busy = false;
@@ -2152,14 +2437,106 @@
       const q = e.target.closest(".ai-quickQ");
       if (!q) return;
       input.value = q.textContent;
-      quickPanel.classList.add("hidden");
-      quickToggle.classList.remove("active");
       send();
     });
 
-    quickToggle.addEventListener("click", () => {
-      quickPanel.classList.toggle("hidden");
-      quickToggle.classList.toggle("active");
+    // Default view is the quick-question list; "Ask something else" swaps
+    // to a free-text box with an on-screen keyboard for touch-only kiosks.
+    function showTypeView(){
+      quickView.classList.add("hidden");
+      typeView.classList.remove("hidden");
+      setTimeout(() => input.focus(), 50);
+    }
+    function showQuickView(){
+      typeView.classList.add("hidden");
+      quickView.classList.remove("hidden");
+    }
+    typeToggle.addEventListener("click", showTypeView);
+    backToQuick.addEventListener("click", showQuickView);
+
+    // ── On-screen keyboard ──
+    const KB_LAYERS = {
+      letters: [
+        ["q","w","e","r","t","y","u","i","o","p"],
+        ["a","s","d","f","g","h","j","k","l"],
+        ["⇧","z","x","c","v","b","n","m","⌫"],
+        ["123",",","space",".","↵"]
+      ],
+      numbers: [
+        ["1","2","3","4","5","6","7","8","9","0"],
+        ["-","/",":",";","(",")","$","&","@","\""],
+        [".",",","?","!","'","⌫"],
+        ["ABC","space","↵"]
+      ]
+    };
+    const KEY_LABELS = { "space": "", "⌫": "⌫", "↵": "Send ↵" };
+    const WIDE_KEYS = new Set(["⇧","⌫","↵","123","ABC"]);
+    let kbLayer = "letters";
+    let kbShift = false;
+
+    function renderKeyboard(){
+      keyboardEl.innerHTML = "";
+      KB_LAYERS[kbLayer].forEach(row => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "ai-kbRow";
+        row.forEach(key => {
+          const keyEl = document.createElement("button");
+          keyEl.type = "button";
+          keyEl.dataset.key = key;
+          let label = key in KEY_LABELS ? KEY_LABELS[key] : key;
+          if (kbLayer === "letters" && key.length === 1 && kbShift) label = key.toUpperCase();
+
+          let cls = "ai-key";
+          if (key === "space") cls += " ai-key-space";
+          else if (WIDE_KEYS.has(key)) cls += " ai-key-wide";
+          if (key === "↵") cls += " ai-key-accent";
+          if (key === "⇧" && kbShift) cls += " active";
+          keyEl.className = cls;
+          keyEl.textContent = label;
+          rowEl.appendChild(keyEl);
+        });
+        keyboardEl.appendChild(rowEl);
+      });
+    }
+    renderKeyboard();
+
+    function insertAtCursor(text){
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      input.value = input.value.slice(0, start) + text + input.value.slice(end);
+      const pos = start + text.length;
+      input.setSelectionRange(pos, pos);
+      input.focus();
+      autoGrow();
+    }
+
+    keyboardEl.addEventListener("click", e => {
+      const keyEl = e.target.closest(".ai-key");
+      if (!keyEl) return;
+      const key = keyEl.dataset.key;
+
+      if (key === "⇧"){ kbShift = !kbShift; renderKeyboard(); return; }
+      if (key === "123"){ kbLayer = "numbers"; renderKeyboard(); return; }
+      if (key === "ABC"){ kbLayer = "letters"; kbShift = false; renderKeyboard(); return; }
+      if (key === "space"){ insertAtCursor(" "); return; }
+      if (key === "↵"){ send(); return; }
+      if (key === "⌫"){
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? input.value.length;
+        if (start === end && start > 0){
+          input.value = input.value.slice(0, start - 1) + input.value.slice(end);
+          input.setSelectionRange(start - 1, start - 1);
+        } else {
+          input.value = input.value.slice(0, start) + input.value.slice(end);
+          input.setSelectionRange(start, start);
+        }
+        autoGrow(); input.focus();
+        return;
+      }
+
+      const ch = (kbLayer === "letters" && kbShift) ? key.toUpperCase() : key;
+      insertAtCursor(ch);
+      if (kbShift){ kbShift = false; renderKeyboard(); } // one-shot shift, like mobile keyboards
     });
 
     function openPanel(){
@@ -2249,9 +2626,6 @@
     sendBtn.addEventListener("click", send);
     input.addEventListener("keydown", e => {
       if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); }
-    });
-    messages.addEventListener("click", e => {
-      if (e.target.classList.contains("ai-chip")){ input.value = e.target.textContent; send(); }
     });
   })();
   </script>
