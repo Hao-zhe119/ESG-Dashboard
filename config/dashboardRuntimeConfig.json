@@ -13,13 +13,13 @@
     "10": 15
   },
   "defaultAnimations": {
-    "1": "both",
+    "1": "rain",
     "2": "particles",
-    "3": "particles",
+    "3": "sparks",
     "4": "particles",
     "5": "particles",
-    "6": "particles",
-    "7": "particles",
+    "6": "sun",
+    "7": "leaves",
     "8": "particles",
     "9": "particles",
     "10": "particles"
@@ -28,7 +28,7 @@
     "autoSwitchOnActivity": true,
     "autoRevertEnabled": true,
     "idleTimeoutMinutes": 15,
-    "lastActivityAt": "2026-07-13T05:33:46.592Z"
+    "lastActivityAt": "2026-07-20T07:56:12.596Z"
   },
   "dashboardSettingsProfiles": [
     {
@@ -175,6 +175,5 @@
       "XLC",
       "ALC"
     ]
-  },
-  "offlineDashboardMode": "interactive"
+  }
 }

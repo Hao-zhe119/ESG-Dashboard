@@ -558,13 +558,13 @@
 
             <!-- Timer Settings Panel -->
             <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
-              <h5 class="text-white mb-0">Page Timer Settings</h5>
+              <h5 class="text-white mb-0">Page Timer &amp; Animation Settings</h5>
               <span class="save-chip" id="timerSaveChip">Auto-save enabled</span>
             </div>
 
             <div class="alert alert-secondary mb-3">
-              <strong>Configure Page Timers:</strong> Set the display duration for each dashboard page in <strong>MM:SS</strong> format,
-              and pick which background animation plays behind it. Changes are <strong>saved automatically</strong>. These timers are used in Auto Mode.
+              <strong>Configure Page Timers and Animations:</strong> Set the display duration for each dashboard page in <strong>MM:SS</strong> format,
+              and pick which background animation plays behind it. Changes are <strong>saved automatically</strong>. These timers and animations are used in Auto Mode.
             </div>
 
             <div class="border border-secondary rounded p-3 mb-3">
@@ -652,7 +652,7 @@
                       <option value="rain" <%= timerAnimation === 'rain' ? 'selected' : '' %>>💧 Falling Rain</option>
                       <option value="sparks" <%= timerAnimation === 'sparks' ? 'selected' : '' %>>⚡ Electric Sparks</option>
                       <option value="sun" <%= timerAnimation === 'sun' ? 'selected' : '' %>>☀️ Sun Glow</option>
-                      <option value="leaves" <%= timerAnimation === 'leaves' ? 'selected' : '' %>>🍎 Half-Eaten Food (Waste)</option>
+                      <option value="leaves" <%= timerAnimation === 'leaves' ? 'selected' : '' %>>🍎 Food Waste</option>
                       <option value="none" <%= timerAnimation === 'none' ? 'selected' : '' %>>🚫 None</option>
                     </select>
                     <div class="timer-input-group">

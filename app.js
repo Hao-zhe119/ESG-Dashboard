@@ -516,7 +516,7 @@ function getValidYearsForBuilding(allYears, buildingKey, buildingYearRanges, dat
   }
   
   if (!startYear && !endYear) {
-    return allYears;
+    return [];
   }
   
   return allYears.filter(year => {
@@ -626,6 +626,12 @@ function emptyDashboardData() {
     latestYear: null,
     oldestYear: null,
     newestYear: null,
+    latestOverviewYear: null,
+    oldestOverviewYear: null,
+    latestSolarYear: null,
+    oldestSolarYear: null,
+    latestWasteYear: null,
+    oldestWasteYear: null,
     overviewByYear: {},
     solarByYear: {},
     wasteByYear: {},
@@ -1967,6 +1973,32 @@ async function getBuildingMonthlyDetail(accountId, year, buildingNameRaw) {
   return { year, elec, water, building: buildingName };
 }
 
+function latestYearWithData(years, byYear, hasData) {
+  return (years || []).find((year) => hasData(byYear[year])) || null;
+}
+
+function oldestYearWithData(years, byYear, hasData) {
+  return (years || []).slice().reverse().find((year) => hasData(byYear[year])) || null;
+}
+
+function overviewRowsHaveData(rows) {
+  return Array.isArray(rows) && rows.some((row) =>
+    Number(row.electricity || 0) > 0 || Number(row.water || 0) > 0
+  );
+}
+
+function solarMonthsHaveData(months) {
+  return Array.isArray(months) && months.some((month) =>
+    Number(month.urban || 0) > 0 || Number(month.greenhouse || 0) > 0
+  );
+}
+
+function wasteMonthsHaveData(months) {
+  return Array.isArray(months) && months.some((month) =>
+    Number(month.generalKg || 0) > 0 || Number(month.recyclableKg || 0) > 0
+  );
+}
+
 /* ==============================
    VIEW ENGINE & STATIC FILES
 ============================== */
@@ -2040,14 +2072,17 @@ app.get("/", async (req, res) => {
       overviewByYear[year] = rows;
     }
 
+    const latestOverviewYear = latestYearWithData(allYears, overviewByYear, overviewRowsHaveData) || newestYear;
+    const oldestOverviewYear = oldestYearWithData(allYears, overviewByYear, overviewRowsHaveData) || oldestYear;
+
     let overviewOldestRows = [];
     let overviewNewestRows = [];
     
-    if (oldestYear && overviewByYear[oldestYear]) {
-      overviewOldestRows = overviewByYear[oldestYear];
+    if (oldestOverviewYear && overviewByYear[oldestOverviewYear]) {
+      overviewOldestRows = overviewByYear[oldestOverviewYear];
     }
-    if (newestYear && overviewByYear[newestYear]) {
-      overviewNewestRows = overviewByYear[newestYear];
+    if (latestOverviewYear && overviewByYear[latestOverviewYear]) {
+      overviewNewestRows = overviewByYear[latestOverviewYear];
     }
 
     // Fetch solar data for ALL years
@@ -2057,14 +2092,17 @@ app.get("/", async (req, res) => {
       solarByYear[year] = months;
     }
 
+    const latestSolarYear = latestYearWithData(allYears, solarByYear, solarMonthsHaveData) || newestYear;
+    const oldestSolarYear = oldestYearWithData(allYears, solarByYear, solarMonthsHaveData) || oldestYear;
+
     let solarOldestMonths = [];
     let solarNewestMonths = [];
     
-    if (oldestYear && solarByYear[oldestYear]) {
-      solarOldestMonths = solarByYear[oldestYear];
+    if (oldestSolarYear && solarByYear[oldestSolarYear]) {
+      solarOldestMonths = solarByYear[oldestSolarYear];
     }
-    if (newestYear && solarByYear[newestYear]) {
-      solarNewestMonths = solarByYear[newestYear];
+    if (latestSolarYear && solarByYear[latestSolarYear]) {
+      solarNewestMonths = solarByYear[latestSolarYear];
     }
 
     // Fetch waste data for ALL years
@@ -2074,14 +2112,17 @@ app.get("/", async (req, res) => {
       wasteByYear[year] = months;
     }
 
+    const latestWasteYear = latestYearWithData(allYears, wasteByYear, wasteMonthsHaveData) || newestYear;
+    const oldestWasteYear = oldestYearWithData(allYears, wasteByYear, wasteMonthsHaveData) || oldestYear;
+
     let wasteOldestMonths = [];
     let wasteNewestMonths = [];
     
-    if (oldestYear && wasteByYear[oldestYear]) {
-      wasteOldestMonths = wasteByYear[oldestYear];
+    if (oldestWasteYear && wasteByYear[oldestWasteYear]) {
+      wasteOldestMonths = wasteByYear[oldestWasteYear];
     }
-    if (newestYear && wasteByYear[newestYear]) {
-      wasteNewestMonths = wasteByYear[newestYear];
+    if (latestWasteYear && wasteByYear[latestWasteYear]) {
+      wasteNewestMonths = wasteByYear[latestWasteYear];
     }
 
     // Building monthly data
@@ -2217,6 +2258,12 @@ app.get("/", async (req, res) => {
       latestYear,
       oldestYear,
       newestYear,
+      latestOverviewYear,
+      oldestOverviewYear,
+      latestSolarYear,
+      oldestSolarYear,
+      latestWasteYear,
+      oldestWasteYear,
       overviewByYear,
       solarByYear,
       wasteByYear,
