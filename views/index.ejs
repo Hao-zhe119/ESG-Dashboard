@@ -2373,62 +2373,8 @@ body.graph-bg-transparent .three-chart-wrap {
 }
 
 
-/* ===== Ambient falling-water droplets =====
-   !important needed for the same reason as .bg-particles above: `#pageN > *`
-   (ID specificity) otherwise forces position:relative / z-index:1 onto this
-   layer since it's inserted as a direct child of the page. */
-.rain-layer{
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  z-index: 0 !important;
-  pointer-events: none !important;
-  overflow: hidden;
-}
-
-.rain-layer .drop{
-  position: absolute;
-  top: -8%;
-  width: 2px;
-  height: 60px;
-  background: linear-gradient(to bottom,
-              rgba(160,210,255,0) 0%,
-              rgba(160,210,255,0.45) 60%,
-              rgba(200,230,255,0.85) 100%);
-  border-radius: 0 0 2px 2px;
-  filter: drop-shadow(0 0 4px rgba(140,200,255,0.5));
-  animation: dropFall linear infinite;
-  opacity: 0;
-}
-@keyframes dropFall{
-  0%   { transform: translateY(-10vh) scaleY(0.8); opacity: 0; }
-  10%  { opacity: 1; }
-  85%  { opacity: 1; }
-  100% { transform: translateY(110vh) scaleY(1);   opacity: 0; }
-}
-
-/* Randomized positions / speeds / delays per droplet */
-.rain-layer .drop:nth-child(1) { left: 5%;  animation-duration: 2.4s; animation-delay: 0s;   }
-.rain-layer .drop:nth-child(2) { left: 12%; animation-duration: 3.1s; animation-delay: 1.2s; }
-.rain-layer .drop:nth-child(3) { left: 19%; animation-duration: 2.0s; animation-delay: 0.6s; }
-.rain-layer .drop:nth-child(4) { left: 26%; animation-duration: 3.6s; animation-delay: 2.0s; }
-.rain-layer .drop:nth-child(5) { left: 33%; animation-duration: 2.7s; animation-delay: 0.3s; }
-.rain-layer .drop:nth-child(6) { left: 40%; animation-duration: 3.3s; animation-delay: 1.6s; }
-.rain-layer .drop:nth-child(7) { left: 47%; animation-duration: 2.2s; animation-delay: 0.9s; }
-.rain-layer .drop:nth-child(8) { left: 54%; animation-duration: 3.8s; animation-delay: 2.4s; }
-.rain-layer .drop:nth-child(9) { left: 61%; animation-duration: 2.5s; animation-delay: 0.2s; }
-.rain-layer .drop:nth-child(10){ left: 68%; animation-duration: 3.0s; animation-delay: 1.4s; }
-.rain-layer .drop:nth-child(11){ left: 9%;  animation-duration: 3.4s; animation-delay: 2.1s; }
-.rain-layer .drop:nth-child(12){ left: 23%; animation-duration: 2.3s; animation-delay: 0.7s; }
-.rain-layer .drop:nth-child(13){ left: 37%; animation-duration: 3.7s; animation-delay: 1.9s; }
-.rain-layer .drop:nth-child(14){ left: 51%; animation-duration: 2.1s; animation-delay: 0.4s; }
-.rain-layer .drop:nth-child(15){ left: 65%; animation-duration: 3.2s; animation-delay: 1.1s; }
-.rain-layer .drop:nth-child(16){ left: 75%; animation-duration: 2.6s; animation-delay: 0.5s; }
-.rain-layer .drop:nth-child(17){ left: 82%; animation-duration: 3.5s; animation-delay: 1.8s; }
-.rain-layer .drop:nth-child(18){ left: 89%; animation-duration: 2.4s; animation-delay: 0.8s; }
-.rain-layer .drop:nth-child(19){ left: 95%; animation-duration: 3.1s; animation-delay: 2.2s; }
-.rain-layer .drop:nth-child(20){ left: 72%; animation-duration: 2.8s; animation-delay: 1.3s; }
+/* Falling rain is now rendered on a .bg-particles canvas (see
+   setupRainParticles in the script below), not this CSS layer. */
 </style>
 
 </head>
@@ -9315,20 +9261,139 @@ body.graph-bg-transparent .three-chart-wrap {
     return VALID_PAGE_ANIMATIONS.indexOf(value) !== -1 ? value : "particles";
   }
 
-  (function setupRainLayers(){
-    var pages = Array.prototype.slice.call(document.querySelectorAll(".page"));
-    pages.forEach(function (pg) {
+  // ============================================================
+  // FALLING RAIN — wind-angled streaks that spawn a fading splash
+  // ring where they land, for pages configured with the "rain"
+  // animation. Canvas-based (like the other animations below) so
+  // drop count/speed can vary randomly instead of a fixed CSS list,
+  // and so the splash can react to where each drop actually lands.
+  // ============================================================
+  (function setupRainParticles(){
+    var pages = Array.prototype.slice.call(document.querySelectorAll(".page")).filter(function (pg) {
       var pageNumber = Number((pg.id || "").replace("page", ""));
-      if (getPageAnimation(pageNumber) !== "rain") return;
-
-      var layer = document.createElement("div");
-      layer.className = "rain-layer";
-      layer.setAttribute("aria-hidden", "true");
-      for (var i = 0; i < 20; i++) {
-        layer.appendChild(document.createElement("span")).className = "drop";
-      }
-      pg.insertBefore(layer, pg.firstChild);
+      return getPageAnimation(pageNumber) === "rain";
     });
+    if (!pages.length) return;
+
+    var canvases = pages.map(function (pg) {
+      var c = document.createElement("canvas");
+      c.className = "bg-particles";
+      pg.insertBefore(c, pg.firstChild);
+      return c;
+    });
+
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = 0, H = 0;
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvases.forEach(function (c) {
+        c.width = Math.round(W * dpr);
+        c.height = Math.round(H * dpr);
+      });
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Gentle wind lean so drops fall at a slight diagonal rather than
+    // dead-vertical, plus a fading splash ring spawned where each lands.
+    // Kept small on purpose: a steep lean drifts drops rightward over
+    // their whole fall and leaves the left side looking empty.
+    var WIND = 0.18;
+    var COUNT = Math.max(70, Math.min(150, Math.round((W * H) / 13000)));
+    var drops = [];
+    var splashes = [];
+    function rand(a, b) { return a + Math.random() * (b - a); }
+
+    function makeDrop(atTop) {
+      return {
+        x: rand(0, W),
+        y: atTop ? rand(-60, -10) : rand(0, H),
+        len: rand(16, 32),
+        speed: rand(3.2, 5.8)
+      };
+    }
+    for (var i = 0; i < COUNT; i++) drops.push(makeDrop(false));
+
+    function getActiveCanvases() {
+      var out = [];
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].classList.contains("active-page")) out.push(canvases[i]);
+      }
+      return out;
+    }
+
+    var xs = new Array(drops.length);
+    var ys = new Array(drops.length);
+    var tailXs = new Array(drops.length);
+    var tailYs = new Array(drops.length);
+
+    function renderTo(canvas) {
+      var ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.lineWidth = 2;
+      ctx.shadowColor = "rgba(140, 200, 255, 0.5)";
+      ctx.shadowBlur = 4;
+      for (var i = 0; i < drops.length; i++) {
+        var grad = ctx.createLinearGradient(tailXs[i], tailYs[i], xs[i], ys[i]);
+        grad.addColorStop(0, "rgba(160, 210, 255, 0)");
+        grad.addColorStop(1, "rgba(200, 230, 255, 0.85)");
+        ctx.strokeStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(tailXs[i], tailYs[i]);
+        ctx.lineTo(xs[i], ys[i]);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+
+      ctx.lineWidth = 1.2;
+      for (var j = 0; j < splashes.length; j++) {
+        var sp = splashes[j];
+        if (sp.op <= 0) continue;
+        ctx.strokeStyle = "rgba(200, 230, 255, " + sp.op + ")";
+        ctx.beginPath();
+        ctx.ellipse(sp.x, sp.y, sp.r * 1.8, sp.r * 0.6, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    var lastT = performance.now();
+    function frame(now) {
+      var dt = Math.min(now - lastT, 50);
+      lastT = now;
+
+      for (var i = 0; i < drops.length; i++) {
+        var d = drops[i];
+        var dy = d.speed * (dt / 16.6);
+        d.y += dy;
+        d.x += dy * WIND;
+        if (d.y > H - 6) {
+          splashes.push({ x: d.x, y: H - 4, r: 1, op: 0.9 });
+          drops[i] = makeDrop(true);
+          d = drops[i];
+        }
+        ys[i] = d.y;
+        xs[i] = d.x;
+        tailYs[i] = d.y - d.len;
+        tailXs[i] = d.x - d.len * WIND;
+      }
+
+      for (var j = splashes.length - 1; j >= 0; j--) {
+        var sp = splashes[j];
+        sp.r += 0.6 * (dt / 16.6);
+        sp.op -= 0.035 * (dt / 16.6);
+        if (sp.op <= 0) splashes.splice(j, 1);
+      }
+
+      var active = getActiveCanvases();
+      for (var k = 0; k < active.length; k++) renderTo(active[k]);
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   })();
 
   (function setupBackgroundParticles(){
@@ -9362,23 +9427,40 @@ body.graph-bg-transparent .three-chart-wrap {
     window.addEventListener("resize", resize);
 
     // Density scales with screen area; capped so big displays stay tasteful.
-    var COUNT = Math.max(60, Math.min(130, Math.round((W * H) / 18000)));
-    var particles = [];
+    var COUNT = Math.max(100, Math.min(220, Math.round((W * H) / 10000)));
     function rand(a, b) { return a + Math.random() * (b - a); }
 
-    function makeParticle(atBottom) {
+    // Three depth bands (far/mid/near) with distinct size, speed and glow so
+    // the field reads as drifting through space rather than one flat plane —
+    // near specks are bigger/brighter/faster, far ones smaller/dimmer/slower.
+    var LAYERS = [
+      { share: 0.34, r: [1, 1.8],  speed: [0.12, 0.22], sway: [6, 14],  opacity: [0.25, 0.4],  blur: 1.6 },
+      { share: 0.36, r: [2, 3],    speed: [0.28, 0.45], sway: [10, 22], opacity: [0.4, 0.65],  blur: 2.6 },
+      { share: 0.30, r: [3, 4.6],  speed: [0.5, 0.8],   sway: [14, 30], opacity: [0.6, 0.92],  blur: 3.6 }
+    ];
+    var particles = [];
+
+    function makeParticle(layer, atBottom) {
       return {
+        layer: layer,
         x: rand(0, W),
         y: atBottom ? rand(H, H + 60) : rand(0, H),
-        r: rand(1.6, 4.5),                 // radius
-        speed: rand(0.2, 0.7),             // upward drift
-        sway: rand(10, 30),                // horizontal sway amplitude
-        swaySpeed: rand(0.0006, 0.0018),   // sway frequency
+        r: rand(layer.r[0], layer.r[1]),
+        speed: rand(layer.speed[0], layer.speed[1]),       // upward drift
+        sway: rand(layer.sway[0], layer.sway[1]),          // horizontal sway amplitude
+        swaySpeed: rand(0.0006, 0.0018),                   // sway frequency
         phase: rand(0, Math.PI * 2),
-        opacity: rand(0.45, 0.9)
+        baseOpacity: rand(layer.opacity[0], layer.opacity[1]),
+        // Independent twinkle so specks don't all glow in lockstep, like
+        // dust catching light rather than a uniformly-lit sprite field.
+        twinklePhase: rand(0, Math.PI * 2),
+        twinkleSpeed: rand(0.0012, 0.0026)
       };
     }
-    for (var i = 0; i < COUNT; i++) particles.push(makeParticle(false));
+    LAYERS.forEach(function (layer) {
+      var n = Math.round(COUNT * layer.share);
+      for (var i = 0; i < n; i++) particles.push(makeParticle(layer, false));
+    });
 
     // During a page transition TWO pages briefly carry .active-page (the
     // outgoing one isn't cleared until the 500ms slide ends). Draw to ALL of
@@ -9393,8 +9475,9 @@ body.graph-bg-transparent .three-chart-wrap {
       return out;
     }
 
-    // Pre-computed x positions so every active canvas renders the same frame.
+    // Pre-computed x positions / opacities so every active canvas renders the same frame.
     var xs = new Array(particles.length);
+    var opacities = new Array(particles.length);
 
     function renderTo(canvas) {
       var ctx = canvas.getContext("2d");
@@ -9406,9 +9489,9 @@ body.graph-bg-transparent .three-chart-wrap {
         ctx.beginPath();
         ctx.arc(xs[i], p.y, p.r, 0, Math.PI * 2);
         // Light mint-green so specks read clearly over the teal photo.
-        ctx.fillStyle = "rgba(190, 255, 214, " + p.opacity + ")";
+        ctx.fillStyle = "rgba(190, 255, 214, " + opacities[i] + ")";
         ctx.shadowColor = "rgba(52, 211, 153, 0.95)";
-        ctx.shadowBlur = p.r * 3.2;
+        ctx.shadowBlur = p.layer.blur;
         ctx.fill();
       }
       ctx.shadowBlur = 0;
@@ -9424,11 +9507,14 @@ body.graph-bg-transparent .three-chart-wrap {
         var p = particles[i];
         p.y -= p.speed * (dt / 16.6);
         p.phase += p.swaySpeed * dt;
+        p.twinklePhase += p.twinkleSpeed * dt;
         if (p.y < -10) {
-          particles[i] = makeParticle(true); // recycle from the bottom
+          particles[i] = makeParticle(p.layer, true); // recycle from the bottom
           p = particles[i];
         }
         xs[i] = p.x + Math.sin(p.phase) * p.sway;
+        var twinkle = 0.55 + Math.sin(p.twinklePhase) * 0.45;
+        opacities[i] = p.baseOpacity * twinkle;
       }
 
       // 2) Render to every page that is currently active.
@@ -9496,7 +9582,6 @@ body.graph-bg-transparent .three-chart-wrap {
         jitter: rand(1.5, 4),                 // tiny settle drift, not a fast buzz
         jitterSpeed: rand(0.0012, 0.002),
         angle: rand(-0.25, 0.25),             // fixed tilt for the whole flicker — no spin
-        glint: Math.random() < 0.55,          // most sparks render as a lightning-bolt glint
         surge: surge
       };
     }
@@ -9504,6 +9589,49 @@ body.graph-bg-transparent .three-chart-wrap {
       var s = makeSpark();
       s.life = rand(0, s.maxLife); // stagger initial flicker phases
       sparks.push(s);
+    }
+
+    // Rare branching arc — every few seconds, a jagged multi-segment bolt
+    // (with a small side branch) strikes across the page, trailing a few
+    // fading embers off the branch tip. Reads as an actual electrical
+    // discharge rather than the same fixed bolt icon repeating.
+    var ARC_INTERVAL = 2600;
+    var ARC_LIFE = 280;
+    var arcTimer = rand(0, ARC_INTERVAL);
+    var activeArc = null;
+    var arcBranchEnd = null;
+    var arcLife = 0;
+    var arcAlpha = 0;
+    var embers = [];
+
+    function buildArc(x1, y1, x2, y2, segments) {
+      var pts = [[x1, y1]];
+      for (var i = 1; i < segments; i++) {
+        var t = i / segments;
+        pts.push([
+          x1 + (x2 - x1) * t + rand(-16, 16),
+          y1 + (y2 - y1) * t + rand(-10, 10)
+        ]);
+      }
+      pts.push([x2, y2]);
+      return pts;
+    }
+
+    function drawArc(ctx, pts, a) {
+      ctx.shadowColor = "rgba(250, 204, 21, 0.95)";
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = "rgba(255, 255, 255, " + a + ")";
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(250, 204, 21, " + (a * 0.9) + ")";
+      ctx.lineWidth = 5.5;
+      ctx.globalAlpha = 0.5;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
     }
 
     function getActiveCanvases() {
@@ -9533,39 +9661,46 @@ body.graph-bg-transparent .three-chart-wrap {
         ctx.shadowColor = "rgba(250, 204, 21, 0.95)";
         ctx.shadowBlur = s.r * (s.surge ? 7 : 5.5);
 
-        if (s.glint) {
-          // Bold jagged lightning-bolt silhouette, scaled off the spark radius —
-          // roughly 3-6x larger than the old glint so it stays legible.
-          var bh = s.r * 6;
-          var bw = bh * 0.55;
-          ctx.fillStyle = "rgba(255, 244, 190, " + a + ")";
-          ctx.beginPath();
-          ctx.moveTo(0.15 * bw, -1.0 * bh);
-          ctx.lineTo(0.55 * bw, -1.0 * bh);
-          ctx.lineTo(0.05 * bw, -0.1 * bh);
-          ctx.lineTo(0.5 * bw, -0.1 * bh);
-          ctx.lineTo(-0.25 * bw, 1.0 * bh);
-          ctx.lineTo(0.05 * bw, 0.15 * bh);
-          ctx.lineTo(-0.5 * bw, 0.15 * bh);
-          ctx.closePath();
-          ctx.fill();
-          // Slim bright-white core stroke down the middle so the bolt pops
-          // even against busy chart backgrounds.
-          ctx.shadowBlur = 0;
-          ctx.strokeStyle = "rgba(255, 255, 255, " + (a * 0.8) + ")";
-          ctx.lineWidth = Math.max(1, s.r * 0.18);
-          ctx.beginPath();
-          ctx.moveTo(0.35 * bw, -0.85 * bh);
-          ctx.lineTo(0.02 * bw, -0.05 * bh);
-          ctx.lineTo(-0.1 * bw, 0.85 * bh);
-          ctx.stroke();
-        } else {
-          ctx.fillStyle = "rgba(255, 244, 190, " + a + ")";
-          ctx.beginPath();
-          ctx.arc(0, 0, s.r, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        // Bold jagged lightning-bolt silhouette, scaled off the spark radius —
+        // roughly 3-6x larger than the old glint so it stays legible.
+        var bh = s.r * 6;
+        var bw = bh * 0.55;
+        ctx.fillStyle = "rgba(255, 244, 190, " + a + ")";
+        ctx.beginPath();
+        ctx.moveTo(0.15 * bw, -1.0 * bh);
+        ctx.lineTo(0.55 * bw, -1.0 * bh);
+        ctx.lineTo(0.05 * bw, -0.1 * bh);
+        ctx.lineTo(0.5 * bw, -0.1 * bh);
+        ctx.lineTo(-0.25 * bw, 1.0 * bh);
+        ctx.lineTo(0.05 * bw, 0.15 * bh);
+        ctx.lineTo(-0.5 * bw, 0.15 * bh);
+        ctx.closePath();
+        ctx.fill();
+        // Slim bright-white core stroke down the middle so the bolt pops
+        // even against busy chart backgrounds.
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(255, 255, 255, " + (a * 0.8) + ")";
+        ctx.lineWidth = Math.max(1, s.r * 0.18);
+        ctx.beginPath();
+        ctx.moveTo(0.35 * bw, -0.85 * bh);
+        ctx.lineTo(0.02 * bw, -0.05 * bh);
+        ctx.lineTo(-0.1 * bw, 0.85 * bh);
+        ctx.stroke();
         ctx.restore();
+      }
+      ctx.shadowBlur = 0;
+
+      if (activeArc && arcAlpha > 0.01) drawArc(ctx, activeArc, arcAlpha);
+
+      for (var e = 0; e < embers.length; e++) {
+        var em = embers[e];
+        if (em.op <= 0) continue;
+        ctx.beginPath();
+        ctx.arc(em.x, em.y, em.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 220, 140, " + em.op + ")";
+        ctx.shadowColor = "rgba(250, 204, 21, 0.9)";
+        ctx.shadowBlur = 4;
+        ctx.fill();
       }
       ctx.shadowBlur = 0;
     }
@@ -9591,6 +9726,46 @@ body.graph-bg-transparent .three-chart-wrap {
         // fast circular buzz that made a screen full of bolts feel dizzying.
         xs[i] = s.x + Math.sin(now * s.jitterSpeed + i) * s.jitter;
         ys[i] = s.y + Math.cos(now * s.jitterSpeed * 0.8 + i * 1.3) * s.jitter;
+      }
+
+      // Rare branching arc: spawn one every ARC_INTERVAL-ish ms, fade it
+      // in/out over ARC_LIFE, and drip a few embers off the branch tip
+      // while it's visible.
+      arcTimer += dt;
+      if (!activeArc && arcTimer > ARC_INTERVAL) {
+        arcTimer = 0;
+        arcLife = 0;
+        var x1 = rand(W * 0.1, W * 0.75), y1 = rand(0, H * 0.35);
+        var x2 = x1 + rand(-60, 90), y2 = y1 + rand(H * 0.3, H * 0.6);
+        activeArc = buildArc(x1, y1, x2, y2, 5);
+        var mid = activeArc[Math.floor(activeArc.length / 2)];
+        arcBranchEnd = [
+          mid[0] + rand(18, 40) * (Math.random() < 0.5 ? -1 : 1),
+          mid[1] + rand(14, 30)
+        ];
+      }
+      if (activeArc) {
+        arcLife += dt;
+        var at = arcLife / ARC_LIFE;
+        arcAlpha = at < 0.2 ? (at / 0.2) : Math.max(0, 1 - (at - 0.2) / 0.8);
+        if (arcAlpha > 0.3 && Math.random() < 0.5) {
+          embers.push({
+            x: arcBranchEnd[0] + rand(-6, 6),
+            y: arcBranchEnd[1] + rand(-6, 6),
+            vx: rand(-0.3, 0.3),
+            vy: rand(0.15, 0.55),
+            r: rand(1, 2),
+            op: 0.9
+          });
+        }
+        if (arcLife >= ARC_LIFE) activeArc = null;
+      }
+      for (var k = embers.length - 1; k >= 0; k--) {
+        var em = embers[k];
+        em.x += em.vx * (dt / 16.6);
+        em.y += em.vy * (dt / 16.6);
+        em.op -= 0.018 * (dt / 16.6);
+        if (em.op <= 0) embers.splice(k, 1);
       }
 
       var active = getActiveCanvases();
@@ -9641,6 +9816,13 @@ body.graph-bg-transparent .three-chart-wrap {
     // scattered field instead of a handful of isolated icons.
     var COUNT = Math.max(32, Math.min(70, Math.round((W * H) / 32000)));
     var RAY_COUNT = 10;
+    // Lens-flare echo positions, as a multiple of the sun's core radius
+    // outward from center through the sun, with their own size/brightness.
+    var FLARE_ECHOES = [
+      { dist: 5,  r: 1.6, op: 0.16 },
+      { dist: 9,  r: 2.6, op: 0.12 },
+      { dist: 13, r: 1.3, op: 0.10 }
+    ];
     var suns = [];
     function rand(a, b) { return a + Math.random() * (b - a); }
 
@@ -9690,16 +9872,39 @@ body.graph-bg-transparent .three-chart-wrap {
         ctx.save();
         ctx.translate(xs[i], s.y);
 
-        // Soft outer halo — a wide, faint glow behind everything else,
-        // like atmospheric bloom around a real light source.
-        var haloR = s.r * 3.4;
+        // Soft outer halo — a wide, faint glow behind everything else, like
+        // atmospheric bloom around a real light source. Breathes in sync
+        // with the core pulse rather than sitting at a fixed size, so the
+        // whole thing reads as a living light rather than a static sticker.
+        var breathe = 1 + Math.sin(s.pulsePhase * 0.7) * 0.18;
+        var haloR = s.r * 3.4 * breathe;
         var haloGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, haloR);
-        haloGrad.addColorStop(0, "rgba(255, 205, 120, " + (s.opacity * 0.32) + ")");
+        haloGrad.addColorStop(0, "rgba(255, 205, 120, " + (s.opacity * 0.32 * breathe) + ")");
         haloGrad.addColorStop(1, "rgba(255, 205, 120, 0)");
         ctx.fillStyle = haloGrad;
         ctx.beginPath();
         ctx.arc(0, 0, haloR, 0, Math.PI * 2);
         ctx.fill();
+
+        // Lens-flare echoes — a couple of faint rings strung out along the
+        // line from screen center through the sun, like a real camera
+        // artifact, so it reads as an actual light source being viewed
+        // through a lens rather than a flat icon.
+        var vx = xs[i] - W / 2, vy = s.y - H / 2;
+        var vlen = Math.sqrt(vx * vx + vy * vy) || 1;
+        var dirX = vx / vlen, dirY = vy / vlen;
+        for (var f = 0; f < FLARE_ECHOES.length; f++) {
+          var echo = FLARE_ECHOES[f];
+          var ex = dirX * s.r * echo.dist, ey = dirY * s.r * echo.dist;
+          var er = s.r * echo.r;
+          var echoGrad = ctx.createRadialGradient(ex, ey, 0, ex, ey, er);
+          echoGrad.addColorStop(0, "rgba(255, 220, 150, " + (s.opacity * echo.op) + ")");
+          echoGrad.addColorStop(1, "rgba(255, 220, 150, 0)");
+          ctx.fillStyle = echoGrad;
+          ctx.beginPath();
+          ctx.arc(ex, ey, er, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         ctx.rotate(s.rotation);
 
