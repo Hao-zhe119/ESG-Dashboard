@@ -1553,6 +1553,71 @@ app.post("/admin/automation/hibernate-now", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/admin/automation/hibernate-wake-demo", requireAuth, async (req, res) => {
+  try {
+    const config = readRuntimeConfig();
+    if (!config.automation.autoHibernateEnabled) {
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Hibernate before running the live demo" });
+    }
+    if (!config.automation.autoWakeEnabled) {
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Wake before running the live demo" });
+    }
+
+    const minutes = Math.max(1, Math.min(30, Number(req.body.wakeInMinutes || 2)));
+    const wakeScriptPath = path.join(__dirname, "scripts", "wake-dashboard.ps1");
+    const hibernateScriptPath = path.join(__dirname, "scripts", "hibernate.ps1");
+    const taskName = "ESG Dashboard Wake Demo";
+
+    const scriptOutput = await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          wakeScriptPath,
+          "-WakeInMinutes",
+          String(minutes),
+          "-TaskName",
+          taskName
+        ],
+        { timeout: 15000 },
+        (error, stdout, stderr) => {
+          if (error) {
+            error.message = `${error.message}${stderr ? `: ${stderr}` : ""}`;
+            reject(error);
+            return;
+          }
+          resolve(String(stdout || stderr || "").trim());
+        }
+      );
+    });
+
+    res.json({
+      ok: true,
+      wakeInMinutes: minutes,
+      message: `Wake demo task registered. This laptop will hibernate now and should wake in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      scriptOutput
+    });
+
+    setTimeout(() => {
+      const child = spawn(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", hibernateScriptPath, "-ExecuteHibernate"],
+        { detached: true, stdio: "ignore", windowsHide: true }
+      );
+      child.unref();
+    }, 1000);
+  } catch (error) {
+    console.error("Hibernate wake demo failed:", error);
+    res.status(500).json({
+      ok: false,
+      error: "Could not register the wake task, so hibernate was not started. Run the app as administrator and check Windows wake timers."
+    });
+  }
+});
+
 app.get("/admin/automation/shutdown-start-capability", requireAuth, async (req, res) => {
   res.json({
     ok: true,

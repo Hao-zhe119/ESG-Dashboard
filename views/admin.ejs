@@ -1226,8 +1226,14 @@
                           <button class="btn btn-outline-warning btn-sm" id="hibernateDryRunBtn" type="button">Test Hibernate Script</button>
                           <button class="btn btn-danger btn-sm" id="hibernateNowBtn" type="button">Hibernate Now</button>
                         </div>
+                        <div class="input-group input-group-sm mt-2" style="max-width: 300px;">
+                          <span class="input-group-text">Wake in</span>
+                          <input class="form-control" id="wakeDemoMinutes" type="number" min="1" max="30" value="2">
+                          <span class="input-group-text">min</span>
+                          <button class="btn btn-outline-success" id="hibernateWakeDemoBtn" type="button">Live Demo</button>
+                        </div>
                         <div class="small text-muted mt-2">
-                          Register Wake Task may require administrator permission. Hibernate Now can immediately put this laptop into hibernate.
+                          Register Wake Task may require administrator permission. Live Demo registers a one-time wake task before hibernating.
                         </div>
                       </div>
                     </div>
@@ -2321,6 +2327,28 @@
           .removeClass("text-danger")
           .addClass("text-success")
           .text(json.message || "Hibernate requested.");
+      } catch (error) {
+        $("#hibernateDryRunStatus")
+          .removeClass("text-success")
+          .addClass("text-danger")
+          .text(error.message);
+      }
+    });
+
+    $("#hibernateWakeDemoBtn").on("click", async function() {
+      if (!$("#autoHibernateToggle").prop("checked") || !$("#autoWakeToggle").prop("checked")) {
+        alert("Turn on both Auto-Hibernate and Auto-Wake before running the live demo.");
+        return;
+      }
+      const minutes = Math.max(1, Math.min(30, Number($("#wakeDemoMinutes").val() || 2)));
+      if (!confirm("Register a one-time wake task, then hibernate this laptop now? It should wake in about " + minutes + " minute(s).")) return;
+      try {
+        await postJson("/admin/automation/wake-settings", wakeSchedulePayload());
+        const json = await postJson("/admin/automation/hibernate-wake-demo", { wakeInMinutes: minutes });
+        $("#hibernateDryRunStatus")
+          .removeClass("text-danger")
+          .addClass("text-success")
+          .text((json.message || "Live demo started.") + " " + (json.scriptOutput || ""));
       } catch (error) {
         $("#hibernateDryRunStatus")
           .removeClass("text-success")
