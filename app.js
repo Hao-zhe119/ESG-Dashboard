@@ -159,6 +159,7 @@ const connection = mysql.createPool(dbConfig);
 
 let databaseAvailable = false;
 let latestDatabaseError = databaseConfigError;
+const hibernateAttemptLogPath = path.join(__dirname, "config", "lastHibernateAttempt.log");
 
 if (databaseConfigError) {
   console.error("Database configuration error:", databaseConfigError);
@@ -1566,7 +1567,17 @@ app.post("/admin/automation/hibernate-now", requireAuth, async (req, res) => {
     setTimeout(() => {
       const child = spawn(
         "powershell.exe",
-        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-ExecuteHibernate", "-Force"],
+        [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          scriptPath,
+          "-ExecuteHibernate",
+          "-Force",
+          "-LogPath",
+          hibernateAttemptLogPath
+        ],
         { detached: true, stdio: "ignore", windowsHide: true }
       );
       child.unref();
@@ -1628,7 +1639,17 @@ app.post("/admin/automation/hibernate-wake-demo", requireAuth, async (req, res) 
     setTimeout(() => {
       const child = spawn(
         "powershell.exe",
-        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", hibernateScriptPath, "-ExecuteHibernate", "-Force"],
+        [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          hibernateScriptPath,
+          "-ExecuteHibernate",
+          "-Force",
+          "-LogPath",
+          hibernateAttemptLogPath
+        ],
         { detached: true, stdio: "ignore", windowsHide: true }
       );
       child.unref();
