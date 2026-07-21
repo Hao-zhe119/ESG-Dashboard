@@ -1,1 +1,13 @@
 /databaseinfo.env
+
+# Local dependencies
+/node_modules/
+
+# Local runtime/demo state
+/config/dashboardRuntimeConfig.json
+/public/uploads/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+*.log
