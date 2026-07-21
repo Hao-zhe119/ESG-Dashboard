@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "node scripts/check.js",
-    "devstart": "PORT=3000 node ./node_modules/nodemon/bin/nodemon.js --legacy-watch --watch app.js --watch config --watch views --ext js,ejs,json app.js",
-    "devStart": "PORT=3000 node ./node_modules/nodemon/bin/nodemon.js --legacy-watch --watch app.js --watch config --watch views --ext js,ejs,json app.js"
+    "devstart": "node ./node_modules/nodemon/bin/nodemon.js --legacy-watch --watch app.js --watch config --watch views --ext js,ejs,json app.js",
+    "devStart": "node ./node_modules/nodemon/bin/nodemon.js --legacy-watch --watch app.js --watch config --watch views --ext js,ejs,json app.js",
+    "start": "node app.js"
   },
   "nodemonConfig": {
     "ignore": [
