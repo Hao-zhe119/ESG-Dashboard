@@ -41,8 +41,8 @@ if ($DryRun) {
 }
 
 $action = New-ScheduledTaskAction `
-  -Execute "cmd.exe" `
-  -Argument "/c cd /d `"$ProjectDir`" && npm.cmd run devStart"
+  -Execute "powershell.exe" `
+  -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"if (Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue) { exit 0 }; Set-Location -LiteralPath '$ProjectDir'; & npm.cmd run devStart`""
 
 $trigger = if ($Once) {
   New-ScheduledTaskTrigger -Once -At $startBoundary
