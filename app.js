@@ -1628,7 +1628,7 @@ app.post("/admin/automation/hibernate-wake-demo", requireAuth, async (req, res) 
     setTimeout(() => {
       const child = spawn(
         "powershell.exe",
-        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", hibernateScriptPath, "-ExecuteHibernate"],
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", hibernateScriptPath, "-ExecuteHibernate", "-Force"],
         { detached: true, stdio: "ignore", windowsHide: true }
       );
       child.unref();
