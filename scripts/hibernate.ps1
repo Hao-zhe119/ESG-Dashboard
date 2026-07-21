@@ -16,8 +16,15 @@
 
 param(
   [switch]$DryRun,
-  [switch]$ExecuteHibernate
+  [switch]$ExecuteHibernate,
+  [switch]$CapabilityCheck,
+  [switch]$Force
 )
+
+if ($CapabilityCheck) {
+  powercfg /a
+  exit $LASTEXITCODE
+}
 
 if ($DryRun) {
   Write-Output "DRY RUN: Auto-hibernate hook reached. No OS hibernate command executed."
@@ -25,9 +32,14 @@ if ($DryRun) {
 }
 
 if ($ExecuteHibernate) {
+  $args = @("/h")
+  if ($Force) { $args += "/f" }
   Write-Output "Executing Windows hibernate now."
-  shutdown.exe /h
-  exit 0
+  & shutdown.exe @args
+  if ($LASTEXITCODE -ne 0) {
+    throw "Windows hibernate command failed with exit code $LASTEXITCODE."
+  }
+  exit $LASTEXITCODE
 }
 
 Write-Output "Auto-hibernate hook reached. Add -ExecuteHibernate to run Windows hibernate."

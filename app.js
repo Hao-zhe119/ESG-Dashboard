@@ -1536,20 +1536,44 @@ app.post("/admin/automation/hibernate-dry-run", requireAuth, async (req, res) =>
 app.post("/admin/automation/hibernate-now", requireAuth, async (req, res) => {
   try {
     const scriptPath = path.join(__dirname, "scripts", "hibernate.ps1");
+    const capabilityOutput = await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-CapabilityCheck"],
+        { timeout: 10000 },
+        (error, stdout, stderr) => {
+          const output = String(stdout || stderr || "").trim();
+          if (error) {
+            error.message = `${error.message}${output ? `: ${output}` : ""}`;
+            reject(error);
+            return;
+          }
+          resolve(output);
+        }
+      );
+    });
+    if (!/^\s*Hibernate\s*$/im.test(capabilityOutput)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Windows does not currently report Hibernate as available. Run powercfg /a for details."
+      });
+    }
+
     res.json({
       ok: true,
-      message: "Real Windows hibernate requested. The laptop may sleep immediately."
+      message: "Real Windows hibernate requested. The laptop should hibernate immediately. If it stays awake, check Windows power policy or run the app as administrator."
     });
     setTimeout(() => {
       const child = spawn(
         "powershell.exe",
-        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-ExecuteHibernate"],
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-ExecuteHibernate", "-Force"],
         { detached: true, stdio: "ignore", windowsHide: true }
       );
       child.unref();
     }, 750);
   } catch (error) {
     console.error("Immediate hibernate failed:", error);
+    res.status(500).json({ ok: false, error: error.message || "Immediate hibernate failed" });
   }
 });
 
