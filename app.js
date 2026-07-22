@@ -632,6 +632,7 @@ function emptyDashboardData() {
     oldestSolarYear: null,
     latestWasteYear: null,
     oldestWasteYear: null,
+    welcomeKpiYears: { overview: null, solar: null, waste: null },
     overviewByYear: {},
     solarByYear: {},
     wasteByYear: {},
@@ -1343,6 +1344,29 @@ app.post("/admin/automation/toggle", requireAuth, async (req, res) => {
   } catch (error) {
     console.error("Failed to update automation toggle:", error);
     res.status(500).json({ ok: false, error: "Failed to update automation setting" });
+  }
+});
+
+app.post("/admin/welcome-kpi-year", requireAuth, async (req, res) => {
+  try {
+    function normYear(value) {
+      if (value === null || value === undefined || value === "" || value === "auto") return null;
+      const year = Number(value);
+      return Number.isFinite(year) ? year : null;
+    }
+    const welcomeKpiYear = {
+      overview: normYear(req.body.overview),
+      solar: normYear(req.body.solar),
+      waste: normYear(req.body.waste)
+    };
+    const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.welcomeKpiYear = welcomeKpiYear;
+      return nextConfig;
+    });
+    res.json({ ok: true, welcomeKpiYear: config.welcomeKpiYear });
+  } catch (error) {
+    console.error("Failed to update welcome KPI year setting:", error);
+    res.status(500).json({ ok: false, error: "Failed to update welcome KPI year setting" });
   }
 });
 
@@ -2115,6 +2139,27 @@ app.get("/", async (req, res) => {
     const latestWasteYear = latestYearWithData(allYears, wasteByYear, wasteMonthsHaveData) || newestYear;
     const oldestWasteYear = oldestYearWithData(allYears, wasteByYear, wasteMonthsHaveData) || oldestYear;
 
+    // Welcome page KPI summary year — admins can pin this to a specific
+    // year per category (see /admin/welcome-kpi-year). Left on "auto", all
+    // three categories share the single overall newest year (not each
+    // category's own latest-year-with-data), so they always stay in sync —
+    // a category with nothing uploaded yet for that year just shows 0
+    // instead of quietly falling back to an older year on its own.
+    // A pinned year is likewise honored as-is, even if it has no data yet.
+    const welcomeKpiYearConfig = runtimeConfig.welcomeKpiYear || {};
+    function resolveWelcomeKpiYear(overrideYear, fallbackYear) {
+      // Number(null) is 0, which Number.isFinite() treats as a valid year —
+      // guard explicitly so "auto" (null/undefined) actually falls through.
+      if (overrideYear === null || overrideYear === undefined || overrideYear === "") return fallbackYear;
+      const year = Number(overrideYear);
+      return Number.isFinite(year) ? year : fallbackYear;
+    }
+    const welcomeKpiYears = {
+      overview: resolveWelcomeKpiYear(welcomeKpiYearConfig.overview, newestYear),
+      solar: resolveWelcomeKpiYear(welcomeKpiYearConfig.solar, newestYear),
+      waste: resolveWelcomeKpiYear(welcomeKpiYearConfig.waste, newestYear)
+    };
+
     let wasteOldestMonths = [];
     let wasteNewestMonths = [];
     
@@ -2264,6 +2309,7 @@ app.get("/", async (req, res) => {
       oldestSolarYear,
       latestWasteYear,
       oldestWasteYear,
+      welcomeKpiYears,
       overviewByYear,
       solarByYear,
       wasteByYear,
