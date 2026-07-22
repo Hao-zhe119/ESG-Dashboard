@@ -11,6 +11,27 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Get-EnvValue {
+  param(
+    [string]$Name,
+    [string]$Fallback = ""
+  )
+
+  $envValue = [Environment]::GetEnvironmentVariable($Name)
+  if (-not [string]::IsNullOrWhiteSpace($envValue)) { return $envValue }
+
+  $envPath = Join-Path $ProjectDir "databaseinfo.env"
+  if (Test-Path $envPath) {
+    $line = Get-Content $envPath | Where-Object { $_ -match "^\s*$Name\s*=" } | Select-Object -First 1
+    if ($line) {
+      $value = ($line -split "=", 2)[1].Trim()
+      return $value.Trim("'").Trim('"')
+    }
+  }
+
+  return $Fallback
+}
+
 function Get-AppListener {
   Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 }
@@ -18,7 +39,10 @@ function Get-AppListener {
 function Get-DatabaseStatus {
   $mysqladmin = "C:\xampp\mysql\bin\mysqladmin.exe"
   if (Test-Path $mysqladmin) {
-    & $mysqladmin -h localhost -u ESGAdmin -p12345678 ping 2>$null | Out-Null
+    $dbHost = Get-EnvValue -Name "DB_HOST" -Fallback "localhost"
+    $dbUser = Get-EnvValue -Name "DB_USER" -Fallback "ESGAdmin"
+    $dbPassword = Get-EnvValue -Name "DB_PASSWORD" -Fallback "12345678"
+    & $mysqladmin -h $dbHost -u $dbUser "-p$dbPassword" ping 2>$null | Out-Null
     return ($LASTEXITCODE -eq 0)
   }
   return [bool](Get-Process mysqld -ErrorAction SilentlyContinue)
