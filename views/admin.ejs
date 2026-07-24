@@ -1147,27 +1147,6 @@
                         </div>
                       </div>
                     </div>
-                    <div class="row g-2 mt-3">
-                      <div class="col-6">
-                        <label class="form-label" for="hibernateStartTime">Hibernate at</label>
-                        <input
-                          type="time"
-                          class="form-control form-control-sm"
-                          id="hibernateStartTime"
-                          value="<%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoHibernateSchedule && automationConfig.autoHibernateSchedule.startTime) ? automationConfig.autoHibernateSchedule.startTime : "22:00" %>">
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label" for="hibernateEndTime">Wake at</label>
-                        <input
-                          type="time"
-                          class="form-control form-control-sm"
-                          id="hibernateEndTime"
-                          value="<%= (typeof automationConfig !== "undefined" && automationConfig && automationConfig.autoHibernateSchedule && automationConfig.autoHibernateSchedule.endTime) ? automationConfig.autoHibernateSchedule.endTime : "07:00" %>">
-                      </div>
-                      <div class="col-12">
-                        <small class="text-muted">Save Schedule stores both Hibernate at and Wake at. The wake task uses the Wake at time.</small>
-                      </div>
-                    </div>
                     <div class="small text-muted mt-2" id="wakeTaskStatus"></div>
                     <div class="mt-3">
                       <label class="form-label">Weekly hibernate schedule</label>
@@ -2098,9 +2077,10 @@
     });
 
     function wakeSchedulePayload() {
+      const primaryDay = primaryHibernateDay();
       return {
         enabled: $("#autoWakeToggle").prop("checked"),
-        wakeTime: $("#hibernateEndTime").val()
+        wakeTime: primaryDay.endTime
       };
     }
 
@@ -2168,10 +2148,25 @@
       return days;
     }
 
-    function hibernateSchedulePayload() {
+    function primaryHibernateDay() {
+      const days = collectHibernateDays();
+      const orderedDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+      const firstEnabledDay = orderedDays.find(function(day) {
+        return days[day] && days[day].enabled;
+      });
+      const selectedDay = firstEnabledDay || orderedDays[0];
+      const selected = days[selectedDay] || {};
       return {
-        startTime: $("#hibernateStartTime").val(),
-        endTime: $("#hibernateEndTime").val(),
+        startTime: selected.startTime || "22:00",
+        endTime: selected.endTime || "07:00"
+      };
+    }
+
+    function hibernateSchedulePayload() {
+      const primaryDay = primaryHibernateDay();
+      return {
+        startTime: primaryDay.startTime,
+        endTime: primaryDay.endTime,
         days: collectHibernateDays()
       };
     }
@@ -2188,8 +2183,6 @@
 
     function applyHibernateAutomationToUi(automation) {
       const schedule = automation && automation.autoHibernateSchedule ? automation.autoHibernateSchedule : {};
-      if (schedule.startTime) $("#hibernateStartTime").val(schedule.startTime);
-      if (schedule.endTime) $("#hibernateEndTime").val(schedule.endTime);
       if (schedule.days) {
         Object.keys(schedule.days).forEach(function(day) {
           const item = schedule.days[day] || {};
@@ -2205,7 +2198,7 @@
     }
 
     let hibernateSettingsTimer = null;
-    $("#hibernateStartTime, #hibernateEndTime, .hibernate-day-enabled, .hibernate-day-start, .hibernate-day-end").on("input change", function() {
+    $(".hibernate-day-enabled, .hibernate-day-start, .hibernate-day-end").on("input change", function() {
       if (hibernateSettingsTimer) clearTimeout(hibernateSettingsTimer);
       hibernateSettingsTimer = setTimeout(async function() {
         try {
