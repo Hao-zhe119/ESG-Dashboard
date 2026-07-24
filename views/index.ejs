@@ -4951,7 +4951,7 @@ body.graph-bg-transparent .three-chart-wrap {
       }, 5000);
     }
 
-    ["mousemove", "mousedown", "keydown", "touchstart", "scroll"].forEach((eventName) => {
+    ["click", "pointerup", "touchend", "keydown"].forEach((eventName) => {
       window.addEventListener(eventName, markInteractiveActivityClient, { passive: true });
     });
 
