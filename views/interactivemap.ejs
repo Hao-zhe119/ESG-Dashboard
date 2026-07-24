@@ -555,9 +555,6 @@
     alt="RP Campus 3D Map"
     shadow-intensity="1"
     camera-controls
-    auto-rotate
-    auto-rotate-delay="4000"
-    rotation-per-second="5deg"
     min-camera-orbit="auto 20deg 60%"
     max-camera-orbit="auto 82deg 90%"
     min-field-of-view="25deg"
@@ -695,6 +692,18 @@
     }
 
     const viewer   = document.getElementById('campusViewer');
+
+    // The "wiggle" hand/finger prompt that model-viewer shows when idle to
+    // hint "drag to rotate" only makes sense where someone can actually
+    // touch/drag — the audience big-screen copy is not interactive, so hide it there.
+    viewer.setAttribute('interaction-prompt', MAP_MIRROR ? 'none' : 'when-focused');
+
+    // Live camera sync between the control panel (interactive) copy and the
+    // audience mirror copy — both are same-origin windows on the same
+    // machine, so a BroadcastChannel lets the control panel's drags/zooms/
+    // resets drive the big screen's camera in real time.
+    const mapCameraChannel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('rpMapCamera') : null;
+
     const overlay  = document.getElementById('loadingOverlay');
     const loadFill = document.getElementById('loadingFill');
     const infoPanel    = document.getElementById('infoPanel');
@@ -866,7 +875,6 @@
     function closePanel() {
       infoPanel.classList.remove('visible');
       setActiveHotspot(null);
-      if (!cycleRunning) viewer.autoRotate = true;
     }
 
     // ── HOTSPOT CLICKS ──
@@ -879,8 +887,8 @@
         const b = buildings.find(b => b.slug === slug);
         if (!b) return;
         pauseCycle();
-        viewer.autoRotate = false;
         openPanel(b);
+        scheduleIdleReturn();
         // Drive the big screen to this building's full data (Page 5).
         mapPostToParent({ type: 'MAP_SELECT_BUILDING', building: slug });
       });
@@ -951,7 +959,7 @@
       playPauseBtn.textContent = '⏸';
       playPauseBtn.classList.add('active-play');
       closePanel();
-      viewer.autoRotate = true;
+      cancelIdleReturn();
       showCycleBuilding();
     }
 
@@ -964,6 +972,7 @@
       cycleIdx = (cycleIdx - 1 + buildings.length) % buildings.length;
       showCycleBuilding();
       openPanel(buildings[cycleIdx]);
+      scheduleIdleReturn();
     });
 
     document.getElementById('cycleNext').addEventListener('click', () => {
@@ -971,6 +980,7 @@
       cycleIdx = (cycleIdx + 1) % buildings.length;
       showCycleBuilding();
       openPanel(buildings[cycleIdx]);
+      scheduleIdleReturn();
     });
 
     // ── ZOOM CONTROLS ──
@@ -983,6 +993,7 @@
       const o = getOrbit();
       const newR = Math.max(o.radius * 0.75, viewer.getDimensions ? 5 : 0.5);
       viewer.cameraOrbit = `${o.theta}rad ${o.phi}rad ${newR}m`;
+      scheduleIdleReturn();
     });
 
     document.getElementById('zoomOut').addEventListener('click', () => {
@@ -990,14 +1001,14 @@
       let newR = o.radius * 1.35;
       if (maxZoomRadius !== null) newR = Math.min(newR, maxZoomRadius);
       viewer.cameraOrbit = `${o.theta}rad ${o.phi}rad ${newR}m`;
+      scheduleIdleReturn();
     });
 
     let isResetting = false;
 
     function resetToHome() {
       isResetting = true;
-      clearTimeout(viewer._resumeTimer);
-      viewer.autoRotate = false;
+      cancelIdleReturn();
 
       const applyHome = () => {
         viewer.cameraTarget = originalTarget;
@@ -1008,36 +1019,73 @@
       setTimeout(applyHome, 50);    // 50ms
       setTimeout(applyHome, 600);   // 600ms
 
-    
       setTimeout(() => {
         isResetting = false;
-        viewer.autoRotate = false;
       }, 800);
-
-
-      viewer._resumeTimer = setTimeout(() => {
-        if (cycleRunning) viewer.autoRotate = true;
-      }, 3000);
     }
 
     document.getElementById('resetView').addEventListener('click', resetToHome);
 
-    // Pause auto-rotate on manual drag — ignore during reset
+    // ── IDLE RETURN ── no more continuous auto-rotate. Instead, once the
+    // camera has sat untouched for IDLE_RETURN_DELAY, it snaps back to the
+    // original home view. Any manual interaction (drag/zoom/hotspot/prev-next)
+    // resets the countdown.
+    const IDLE_RETURN_DELAY = 30000; // 30s
+    let idleReturnTimer = null;
+
+    function scheduleIdleReturn() {
+      if (MAP_MIRROR) return; // audience copy isn't interactive, nothing to schedule
+      clearTimeout(idleReturnTimer);
+      idleReturnTimer = setTimeout(resetToHome, IDLE_RETURN_DELAY);
+    }
+
+    function cancelIdleReturn() {
+      clearTimeout(idleReturnTimer);
+      idleReturnTimer = null;
+    }
+
+    // ── CAMERA BROADCAST (control panel → big screen) ──
+    let lastCameraBroadcast = 0;
+    const CAMERA_BROADCAST_MIN_INTERVAL = 30; // ms, keeps the channel from flooding during a drag
+
+    function broadcastCamera() {
+      if (!mapCameraChannel || MAP_MIRROR) return; // only the control panel copy drives the mirror
+      const now = Date.now();
+      if (now - lastCameraBroadcast < CAMERA_BROADCAST_MIN_INTERVAL) return;
+      lastCameraBroadcast = now;
+      const o = viewer.getCameraOrbit();
+      const t = viewer.getCameraTarget();
+      mapCameraChannel.postMessage({
+        orbit: `${o.theta}rad ${o.phi}rad ${o.radius}m`,
+        target: `${t.x}m ${t.y}m ${t.z}m`
+      });
+    }
+
+    // The mirror copy just applies whatever the control panel broadcasts —
+    // interpolation-decay on the element smooths each incoming update into
+    // a "following" motion rather than a hard jump-cut.
+    if (mapCameraChannel && MAP_MIRROR) {
+      mapCameraChannel.onmessage = (ev) => {
+        const data = ev.data || {};
+        if (data.orbit)  viewer.cameraOrbit  = data.orbit;
+        if (data.target) viewer.cameraTarget = data.target;
+      };
+    }
+
+    // Reschedule the idle-return countdown on manual drag/zoom, and mirror
+    // every camera change (drag, zoom, reset) to the big screen.
     viewer.addEventListener('camera-change', e => {
+      broadcastCamera();
       if (isResetting) return;
       if (e.detail.source === 'user-interaction') {
-        viewer.autoRotate = false;
-        clearTimeout(viewer._resumeTimer);
-        viewer._resumeTimer = setTimeout(() => {
-          if (cycleRunning) viewer.autoRotate = true;
-        }, 6000);
+        scheduleIdleReturn();
       }
     });
 
 
     // ── START ──
     viewer.addEventListener('load', () => {
-      if (MAP_MIRROR) { pauseCycle(); return; } // audience copy: just auto-rotate
+      if (MAP_MIRROR) { pauseCycle(); return; } // audience copy: stays on the home view, follows the control panel
       setTimeout(() => { showCycleBuilding(); }, 800);
     });
   </script>
@@ -1176,6 +1224,17 @@
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") panel.classList.remove("open");
+    });
+
+    // Live sync: the control panel copy and the audience "mirror" copy are
+    // two separate same-origin windows (the mirror overlay iframe is loaded
+    // once and kept alive), so a "storage" event fires here automatically
+    // whenever the OTHER copy writes to localStorage — pick it up and
+    // re-apply immediately instead of waiting for a reload.
+    window.addEventListener("storage", (e) => {
+      if (e.key && e.key !== KEY) return;
+      load();
+      apply();
     });
 
     load();

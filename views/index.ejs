@@ -132,6 +132,21 @@ html, body {
   align-items:center;
   gap:6px;
   color:#fff;
+  position:relative;
+}
+
+#page1 .kpi-year{
+  position:absolute;
+  top:10px;
+  right:12px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.03em;
+  color:rgba(255,255,255,0.75);
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.2);
+  border-radius:20px;
+  padding:2px 8px;
 }
 
 /* ---- KPI card animations ---- */
@@ -154,25 +169,30 @@ html, body {
 /* Idle float: inner wrapper floats so it doesn't fight the entrance */
 #page1 .kpi-card .kpi-icon,
 #page1 .kpi-card .kpi-value,
-#page1 .kpi-card .kpi-label{
+#page1 .kpi-card .kpi-label,
+#page1 .kpi-card .kpi-sub{
   animation: kpiWave 2.8s ease-in-out infinite;
 }
 /* Stagger the wave so cards float ONE BY ONE */
 #page1 .kpi-card:nth-child(1) .kpi-icon,
 #page1 .kpi-card:nth-child(1) .kpi-value,
-#page1 .kpi-card:nth-child(1) .kpi-label{ animation-delay: 0s; }
+#page1 .kpi-card:nth-child(1) .kpi-label,
+#page1 .kpi-card:nth-child(1) .kpi-sub{ animation-delay: 0s; }
 
 #page1 .kpi-card:nth-child(2) .kpi-icon,
 #page1 .kpi-card:nth-child(2) .kpi-value,
-#page1 .kpi-card:nth-child(2) .kpi-label{ animation-delay: 0.35s; }
+#page1 .kpi-card:nth-child(2) .kpi-label,
+#page1 .kpi-card:nth-child(2) .kpi-sub{ animation-delay: 0.35s; }
 
 #page1 .kpi-card:nth-child(3) .kpi-icon,
 #page1 .kpi-card:nth-child(3) .kpi-value,
-#page1 .kpi-card:nth-child(3) .kpi-label{ animation-delay: 0.7s; }
+#page1 .kpi-card:nth-child(3) .kpi-label,
+#page1 .kpi-card:nth-child(3) .kpi-sub{ animation-delay: 0.7s; }
 
 #page1 .kpi-card:nth-child(4) .kpi-icon,
 #page1 .kpi-card:nth-child(4) .kpi-value,
-#page1 .kpi-card:nth-child(4) .kpi-label{ animation-delay: 1.05s; }
+#page1 .kpi-card:nth-child(4) .kpi-label,
+#page1 .kpi-card:nth-child(4) .kpi-sub{ animation-delay: 1.05s; }
 
 @keyframes kpiWave{
   0%, 100%{ transform: translateY(0); }
@@ -199,6 +219,10 @@ html, body {
   font-weight:800;
   text-shadow:0 2px 8px rgba(0,0,0,0.5);
   line-height:1.1;
+}
+#page1 .kpi-sub{
+  font-size:clamp(10px, 0.8vw, 12px);
+  color:rgba(255,255,255,0.65);
 }
 #page1 .kpi-label{
   font-size:clamp(11px, 0.9vw, 13px);
@@ -2562,24 +2586,32 @@ body.graph-bg-transparent .three-chart-wrap {
     </h1>
     <div class="welcome-kpis" id="welcomeKpis">
       <div class="kpi-card">
+        <span class="kpi-year" id="kpiElecYear"></span>
         <div class="kpi-icon" style="background:rgba(37,99,235,0.18);">⚡</div>
         <div class="kpi-value" id="kpiElec">—</div>
-        <div class="kpi-label">Avg Monthly Electricity (kWh)</div>
+        <div class="kpi-label">Total Electricity (kWh)</div>
+        <div class="kpi-sub" id="kpiElecSub"></div>
       </div>
       <div class="kpi-card">
+        <span class="kpi-year" id="kpiWaterYear"></span>
         <div class="kpi-icon" style="background:rgba(8,145,178,0.18);">💧</div>
         <div class="kpi-value" id="kpiWater">—</div>
-        <div class="kpi-label">Avg Monthly Water (m³)</div>
+        <div class="kpi-label">Total Water (m³)</div>
+        <div class="kpi-sub" id="kpiWaterSub"></div>
       </div>
       <div class="kpi-card">
+        <span class="kpi-year" id="kpiSolarYear"></span>
         <div class="kpi-icon" style="background:rgba(34,197,94,0.18);">☀️</div>
         <div class="kpi-value" id="kpiSolar">—</div>
-        <div class="kpi-label">Avg Monthly Solar (kWh)</div>
+        <div class="kpi-label">Total Solar (kWh)</div>
+        <div class="kpi-sub" id="kpiSolarSub"></div>
       </div>
       <div class="kpi-card">
+        <span class="kpi-year" id="kpiWasteYear"></span>
         <div class="kpi-icon" style="background:rgba(100,116,139,0.20);">♻️</div>
         <div class="kpi-value" id="kpiWaste">—</div>
-        <div class="kpi-label">Avg Monthly Waste (kg)</div>
+        <div class="kpi-label">Total Waste (kg)</div>
+        <div class="kpi-sub" id="kpiWasteSub"></div>
       </div>
     </div>
   </div>
@@ -9192,12 +9224,16 @@ body.graph-bg-transparent .three-chart-wrap {
 
 
     // ============================================================
-    // WELCOME PAGE KPI SUMMARY (average monthly, latest year)
+    // WELCOME PAGE KPI SUMMARY (annual total, with monthly average as a
+    // sub-line). The year per category defaults to the latest year with
+    // data, but can be pinned by an admin in Admin > Dashboard Settings >
+    // Welcome Page Summary Year — see dashboard_data.welcomeKpiYears.
     // ============================================================
     (function setupWelcomeKpis(){
-      const overviewYear = latestOverviewYear || latestDataYear || newestYear;
-      const solarYear = latestSolarYear || latestDataYear || newestYear;
-      const wasteYear = latestWasteYear || latestDataYear || newestYear;
+      const kpiYearOverride = (dashboard_data && dashboard_data.welcomeKpiYears) || {};
+      const overviewYear = kpiYearOverride.overview || latestOverviewYear || latestDataYear || newestYear;
+      const solarYear = kpiYearOverride.solar || latestSolarYear || latestDataYear || newestYear;
+      const wasteYear = kpiYearOverride.waste || latestWasteYear || latestDataYear || newestYear;
       if (!overviewYear && !solarYear && !wasteYear) return;
 
       // Electricity + Water totals (sum all buildings for the year)
@@ -9230,11 +9266,32 @@ body.graph-bg-transparent .three-chart-wrap {
       const avgSolar = solarTotal / solarMonths;
       const avgWaste = wasteTotal / wasteMonths;
 
-      // Animate using the existing count-up helper
-      animateCountUp(document.getElementById("kpiElec"),  Math.round(avgElec),  1200);
-      animateCountUp(document.getElementById("kpiWater"), Math.round(avgWater), 1200);
-      animateCountUp(document.getElementById("kpiSolar"), Math.round(avgSolar), 1200);
-      animateCountUp(document.getElementById("kpiWaste"), Math.round(avgWaste), 1200);
+      function formatNumber(n) {
+        return Math.round(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+      }
+      function setYearBadge(elId, year) {
+        const el = document.getElementById(elId);
+        if (el) el.textContent = year ? String(year) : "";
+      }
+      setYearBadge("kpiElecYear", overviewYear);
+      setYearBadge("kpiWaterYear", overviewYear);
+      setYearBadge("kpiSolarYear", solarYear);
+      setYearBadge("kpiWasteYear", wasteYear);
+
+      const kpiElecSub = document.getElementById("kpiElecSub");
+      const kpiWaterSub = document.getElementById("kpiWaterSub");
+      const kpiSolarSub = document.getElementById("kpiSolarSub");
+      const kpiWasteSub = document.getElementById("kpiWasteSub");
+      if (kpiElecSub)  kpiElecSub.textContent  = "Avg " + formatNumber(avgElec)  + "/mo";
+      if (kpiWaterSub) kpiWaterSub.textContent = "Avg " + formatNumber(avgWater) + "/mo";
+      if (kpiSolarSub) kpiSolarSub.textContent = "Avg " + formatNumber(avgSolar) + "/mo";
+      if (kpiWasteSub) kpiWasteSub.textContent = "Avg " + formatNumber(avgWaste) + "/mo";
+
+      // Animate using the existing count-up helper — now the annual total.
+      animateCountUp(document.getElementById("kpiElec"),  Math.round(elecTotal),  1200);
+      animateCountUp(document.getElementById("kpiWater"), Math.round(waterTotal), 1200);
+      animateCountUp(document.getElementById("kpiSolar"), Math.round(solarTotal), 1200);
+      animateCountUp(document.getElementById("kpiWaste"), Math.round(wasteTotal), 1200);
     })();
   </script>
 

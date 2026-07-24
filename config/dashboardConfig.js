@@ -103,6 +103,14 @@ const DEFAULT_CONFIG = {
     lastScheduledHealthCheckDate: null
   },
   timerProfiles: [],
+  // Admin override for which year's data feeds the Welcome page KPI summary
+  // cards. null (the default) means "auto" — use the latest year that
+  // actually has data, same as before this setting existed.
+  welcomeKpiYear: {
+    overview: null,
+    solar: null,
+    waste: null
+  },
   buildingPageGroups: {
     3: ["E1", "E2", "E3", "E4", "E5", "E6"],
     4: ["W1", "W2", "W3", "W4", "W5", "W6"],

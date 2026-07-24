@@ -685,11 +685,58 @@
             <% if (hasTimers) { %>
               <div class="mt-3">
                 <small class="text-muted">
-                  <strong>Note:</strong> Minutes (MM) can be 0-99, Seconds (SS) must be 0-59. 
+                  <strong>Note:</strong> Minutes (MM) can be 0-99, Seconds (SS) must be 0-59.
                   Total duration is calculated as (MM × 60) + SS seconds.
                 </small>
               </div>
             <% } %>
+
+            <hr class="border-secondary my-4">
+
+            <!-- Welcome Page KPI Summary Year -->
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+              <h5 class="text-white mb-0">Welcome Page Summary Year</h5>
+              <span class="save-chip" id="welcomeKpiYearSaveChip">Auto-save enabled</span>
+            </div>
+
+            <div class="alert alert-secondary mb-3">
+              <strong>Choose the data year:</strong> The Welcome page's summary cards (Electricity, Water, Solar, Waste)
+              total up a single year of data. Leave a category on <strong>Auto</strong> to always follow the newest
+              uploaded year, or pin it to a specific year so the summary doesn't change until you update it.
+            </div>
+
+            <div class="row g-3">
+              <% const welcomeKpiYearConfig = (typeof runtimeConfig !== "undefined" && runtimeConfig && runtimeConfig.welcomeKpiYear) ? runtimeConfig.welcomeKpiYear : {}; %>
+              <% const welcomeKpiYearsSorted = (typeof allYears !== "undefined" ? allYears : []).slice().sort(function (a, b) { return b - a; }); %>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="welcomeKpiYearOverview">Electricity &amp; Water year</label>
+                <select class="form-select form-select-sm welcome-kpi-year-select" id="welcomeKpiYearOverview" data-key="overview">
+                  <option value="">Auto (latest available)</option>
+                  <% welcomeKpiYearsSorted.forEach(function (y) { %>
+                    <option value="<%= y %>" <%= Number(welcomeKpiYearConfig.overview) === Number(y) ? "selected" : "" %>><%= y %></option>
+                  <% }); %>
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="welcomeKpiYearSolar">Solar year</label>
+                <select class="form-select form-select-sm welcome-kpi-year-select" id="welcomeKpiYearSolar" data-key="solar">
+                  <option value="">Auto (latest available)</option>
+                  <% welcomeKpiYearsSorted.forEach(function (y) { %>
+                    <option value="<%= y %>" <%= Number(welcomeKpiYearConfig.solar) === Number(y) ? "selected" : "" %>><%= y %></option>
+                  <% }); %>
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="welcomeKpiYearWaste">Waste year</label>
+                <select class="form-select form-select-sm welcome-kpi-year-select" id="welcomeKpiYearWaste" data-key="waste">
+                  <option value="">Auto (latest available)</option>
+                  <% welcomeKpiYearsSorted.forEach(function (y) { %>
+                    <option value="<%= y %>" <%= Number(welcomeKpiYearConfig.waste) === Number(y) ? "selected" : "" %>><%= y %></option>
+                  <% }); %>
+                </select>
+              </div>
+            </div>
+            <div id="welcomeKpiYearStatus" class="small text-muted mt-2"></div>
           </section>
 
           <!-- Building Description -->
@@ -1926,6 +1973,38 @@
         toggle.checked = !enabled;
       } finally {
         toggle.disabled = false;
+      }
+    });
+
+    const $welcomeKpiYearChip = $("#welcomeKpiYearSaveChip");
+    function setWelcomeKpiYearChip(state) {
+      $welcomeKpiYearChip.removeClass("saving saved error");
+      if (state === "saving") {
+        $welcomeKpiYearChip.addClass("saving").text("Saving...");
+      } else if (state === "saved") {
+        $welcomeKpiYearChip.addClass("saved").text("Saved");
+      } else if (state === "error") {
+        $welcomeKpiYearChip.addClass("error").text("Error saving");
+      } else {
+        $welcomeKpiYearChip.text("Auto-save enabled");
+      }
+    }
+    $(".welcome-kpi-year-select").on("change", async function() {
+      setWelcomeKpiYearChip("saving");
+      const payload = {
+        overview: $("#welcomeKpiYearOverview").val(),
+        solar: $("#welcomeKpiYearSolar").val(),
+        waste: $("#welcomeKpiYearWaste").val()
+      };
+      try {
+        await postJson("/admin/welcome-kpi-year", payload);
+        setWelcomeKpiYearChip("saved");
+        $("#welcomeKpiYearStatus").text("Welcome page summary will use this on next load.").removeClass("text-danger").addClass("text-muted");
+        setTimeout(function() { setWelcomeKpiYearChip("idle"); }, 1500);
+      } catch (error) {
+        setWelcomeKpiYearChip("error");
+        $("#welcomeKpiYearStatus").text(error.message).removeClass("text-muted").addClass("text-danger");
+        setTimeout(function() { setWelcomeKpiYearChip("idle"); }, 3000);
       }
     });
 
