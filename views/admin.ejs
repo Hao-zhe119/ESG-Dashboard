@@ -495,7 +495,7 @@
                     min="1"
                     max="240"
                     value="<%= (typeof interactiveConfig !== 'undefined' && interactiveConfig && interactiveConfig.idleTimeoutMinutes) ? interactiveConfig.idleTimeoutMinutes : 15 %>">
-                  <small class="text-muted">Only active when Interactive Mode is selected.</small>
+                  <small class="text-muted">Used after the dashboard enters Interactive Mode.</small>
                 </div>
                 <div class="col-12">
                   <div class="form-check form-switch mb-2">
@@ -1766,8 +1766,8 @@
     let timerProfilesState = Array.isArray(TIMER_PROFILES_INITIAL) ? TIMER_PROFILES_INITIAL.slice() : [];
 
     function updateIdleTimeoutState() {
-      const isInteractive = $("#dashboardModeSelect").val() === "interactive";
-      $("#idleTimeoutMinutes").prop("disabled", !isInteractive).toggleClass("text-muted", !isInteractive);
+      const autoRevertEnabled = $("#interactiveAutoRevertToggle").prop("checked");
+      $("#idleTimeoutMinutes").prop("disabled", !autoRevertEnabled).toggleClass("text-muted", !autoRevertEnabled);
     }
 
     $("#dashboardModeSelect").on("change", updateIdleTimeoutState);

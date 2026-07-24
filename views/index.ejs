@@ -4902,6 +4902,8 @@ body.graph-bg-transparent .three-chart-wrap {
     let interactiveActivityPingTimer = null;
     let interactiveRevertTimer = null;
     let interactiveSwitchPending = false;
+    const interactiveInputReadyAt = Date.now() + 1500;
+    let lastInteractiveTouchAt = 0;
 
     async function pingInteractiveActivity() {
       if ((!is_auto_mode && !interactive_auto_revert_enabled) || interactiveSwitchPending) return;
@@ -4923,10 +4925,14 @@ body.graph-bg-transparent .three-chart-wrap {
       }
     }
 
-    function markInteractiveActivityClient() {
+    function markInteractiveActivityClient(event) {
+      const now = Date.now();
+      if (is_auto_mode && now < interactiveInputReadyAt) return;
+      if (event && event.type === "touchend") lastInteractiveTouchAt = now;
+      if (event && event.type === "click" && now - lastInteractiveTouchAt < 700) return;
       if (is_auto_mode && !interactive_auto_switch_enabled) return;
       if (!is_auto_mode && !interactive_auto_revert_enabled) return;
-      interactiveLastActivityAt = Date.now();
+      interactiveLastActivityAt = now;
       if (interactiveActivityPingTimer) return;
       interactiveActivityPingTimer = setTimeout(() => {
         interactiveActivityPingTimer = null;
@@ -4954,6 +4960,7 @@ body.graph-bg-transparent .three-chart-wrap {
     ["click", "pointerup", "touchend", "keydown"].forEach((eventName) => {
       window.addEventListener(eventName, markInteractiveActivityClient, { passive: true });
     });
+    startInteractiveAutoRevertWatcher();
 
     // ============================================================
     // ADMIN VIDEO SETTINGS
