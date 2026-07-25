@@ -3212,6 +3212,8 @@ body.graph-bg-transparent .three-chart-wrap {
 
     // Multi-year data structures
     let overviewByYear = {};
+    let elecCampusByYear = {};
+    let waterCampusByYear = {};
     let solarByYear = {};
     let wasteByYear = {};
     
@@ -3243,6 +3245,8 @@ body.graph-bg-transparent .three-chart-wrap {
       
       // Multi-year data
       overviewByYear = (data.overviewByYear && typeof data.overviewByYear === "object") ? data.overviewByYear : {};
+      elecCampusByYear = (data.elecCampusByYear && typeof data.elecCampusByYear === "object") ? data.elecCampusByYear : {};
+      waterCampusByYear = (data.waterCampusByYear && typeof data.waterCampusByYear === "object") ? data.waterCampusByYear : {};
       solarByYear = (data.solarByYear && typeof data.solarByYear === "object") ? data.solarByYear : {};
       wasteByYear = (data.wasteByYear && typeof data.wasteByYear === "object") ? data.wasteByYear : {};
       
@@ -9404,12 +9408,16 @@ body.graph-bg-transparent .three-chart-wrap {
       const wasteYear = kpiYearOverride.waste || latestWasteYear || latestDataYear || newestYear;
       if (!overviewYear && !solarYear && !wasteYear) return;
 
-      // Electricity + Water totals (sum all buildings for the year)
+      // Electricity + Water totals - from the campus-wide (SP-metered) monthly
+      // readings, not summed from per-building rows. Per-building uploads can
+      // have gaps for individual buildings/months that the single campus
+      // meter reading doesn't have, so per-building sums can under-count.
       let elecTotal = 0, waterTotal = 0;
-      const overview = overviewByYear[overviewYear] || [];
-      overview.forEach(b => {
-        elecTotal  += Number(b.electricity || 0);
-        waterTotal += Number(b.water || 0);
+      (elecCampusByYear[overviewYear] || []).forEach(m => {
+        elecTotal += Number(m.total || 0);
+      });
+      (waterCampusByYear[overviewYear] || []).forEach(m => {
+        waterTotal += Number(m.potable || 0) + Number(m.recycled || 0);
       });
 
       // Solar total (sum monthly urban + greenhouse)
@@ -9425,12 +9433,13 @@ body.graph-bg-transparent .three-chart-wrap {
       });
 
       // Count months that actually have data, for a fair monthly average
-      const elecMonths  = 12; // building totals are annual; divide by 12
+      const elecMonths  = (elecCampusByYear[overviewYear] || []).filter(m => Number(m.total||0) > 0).length || 12;
+      const waterMonths = (waterCampusByYear[overviewYear] || []).filter(m => (Number(m.potable||0)+Number(m.recycled||0)) > 0).length || 12;
       const solarMonths = (solarByYear[solarYear] || []).filter(m => (Number(m.urban||0)+Number(m.greenhouse||0)) > 0).length || 12;
       const wasteMonths = (wasteByYear[wasteYear] || []).filter(m => (Number(m.generalKg||0)+Number(m.recyclableKg||0)) > 0).length || 12;
 
       const avgElec  = elecTotal  / elecMonths;
-      const avgWater = waterTotal / elecMonths;
+      const avgWater = waterTotal / waterMonths;
       const avgSolar = solarTotal / solarMonths;
       const avgWaste = wasteTotal / wasteMonths;
 
