@@ -159,6 +159,28 @@ const connection = mysql.createPool(dbConfig);
 
 let databaseAvailable = false;
 let latestDatabaseError = databaseConfigError;
+const hibernateAttemptLogPath = path.join(__dirname, "config", "lastHibernateAttempt.log");
+
+function appendHibernateAttemptLog(message) {
+  try {
+    fs.mkdirSync(path.dirname(hibernateAttemptLogPath), { recursive: true });
+    fs.appendFileSync(hibernateAttemptLogPath, `${new Date().toISOString()} ${message}\n`);
+  } catch (error) {
+    console.warn("Could not write hibernate attempt log:", error.message);
+  }
+}
+
+function startWindowsHibernate(label) {
+  appendHibernateAttemptLog(`${label}: starting shutdown.exe /h /f.`);
+  const child = spawn("shutdown.exe", ["/h", "/f"], { stdio: "ignore", windowsHide: true });
+  child.on("error", (error) => {
+    appendHibernateAttemptLog(`${label}: shutdown.exe spawn failed: ${error.message}`);
+  });
+  child.on("exit", (code, signal) => {
+    appendHibernateAttemptLog(`${label}: shutdown.exe exited with code ${code}${signal ? `, signal ${signal}` : ""}.`);
+  });
+  return child;
+}
 
 if (databaseConfigError) {
   console.error("Database configuration error:", databaseConfigError);
@@ -516,7 +538,7 @@ function getValidYearsForBuilding(allYears, buildingKey, buildingYearRanges, dat
   }
   
   if (!startYear && !endYear) {
-    return allYears;
+    return [];
   }
   
   return allYears.filter(year => {
@@ -626,6 +648,13 @@ function emptyDashboardData() {
     latestYear: null,
     oldestYear: null,
     newestYear: null,
+    latestOverviewYear: null,
+    oldestOverviewYear: null,
+    latestSolarYear: null,
+    oldestSolarYear: null,
+    latestWasteYear: null,
+    oldestWasteYear: null,
+    welcomeKpiYears: { overview: null, solar: null, waste: null },
     overviewByYear: {},
     solarByYear: {},
     wasteByYear: {},
@@ -1340,6 +1369,29 @@ app.post("/admin/automation/toggle", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/admin/welcome-kpi-year", requireAuth, async (req, res) => {
+  try {
+    function normYear(value) {
+      if (value === null || value === undefined || value === "" || value === "auto") return null;
+      const year = Number(value);
+      return Number.isFinite(year) ? year : null;
+    }
+    const welcomeKpiYear = {
+      overview: normYear(req.body.overview),
+      solar: normYear(req.body.solar),
+      waste: normYear(req.body.waste)
+    };
+    const config = updateRuntimeConfig((nextConfig) => {
+      nextConfig.welcomeKpiYear = welcomeKpiYear;
+      return nextConfig;
+    });
+    res.json({ ok: true, welcomeKpiYear: config.welcomeKpiYear });
+  } catch (error) {
+    console.error("Failed to update welcome KPI year setting:", error);
+    res.status(500).json({ ok: false, error: "Failed to update welcome KPI year setting" });
+  }
+});
+
 app.post("/admin/automation/hibernate-settings", requireAuth, async (req, res) => {
   try {
     const startTime = String(req.body.startTime || req.body.start_time || "22:00");
@@ -1529,21 +1581,103 @@ app.post("/admin/automation/hibernate-dry-run", requireAuth, async (req, res) =>
 
 app.post("/admin/automation/hibernate-now", requireAuth, async (req, res) => {
   try {
+    appendHibernateAttemptLog("Hibernate Now route clicked.");
     const scriptPath = path.join(__dirname, "scripts", "hibernate.ps1");
+    const capabilityOutput = await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-CapabilityCheck"],
+        { timeout: 10000 },
+        (error, stdout, stderr) => {
+          const output = String(stdout || stderr || "").trim();
+          if (error) {
+            error.message = `${error.message}${output ? `: ${output}` : ""}`;
+            reject(error);
+            return;
+          }
+          resolve(output);
+        }
+      );
+    });
+    if (!/^\s*Hibernate\s*$/im.test(capabilityOutput)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Windows does not currently report Hibernate as available. Run powercfg /a for details."
+      });
+    }
+
     res.json({
       ok: true,
-      message: "Real Windows hibernate requested. The laptop may sleep immediately."
+      message: "Real Windows hibernate requested. The laptop should hibernate immediately. If it stays awake, check Windows power policy or run the app as administrator."
     });
     setTimeout(() => {
-      const child = spawn(
-        "powershell.exe",
-        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-ExecuteHibernate"],
-        { detached: true, stdio: "ignore", windowsHide: true }
-      );
-      child.unref();
+      startWindowsHibernate("Hibernate Now");
     }, 750);
   } catch (error) {
     console.error("Immediate hibernate failed:", error);
+    appendHibernateAttemptLog(`Hibernate Now route failed: ${error.message || "Immediate hibernate failed"}`);
+    res.status(500).json({ ok: false, error: error.message || "Immediate hibernate failed" });
+  }
+});
+
+app.post("/admin/automation/hibernate-wake-demo", requireAuth, async (req, res) => {
+  try {
+    appendHibernateAttemptLog("Live Demo route clicked.");
+    const config = readRuntimeConfig();
+    if (!config.automation.autoHibernateEnabled) {
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Hibernate before running the live demo" });
+    }
+    if (!config.automation.autoWakeEnabled) {
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Wake before running the live demo" });
+    }
+
+    const minutes = Math.max(1, Math.min(30, Number(req.body.wakeInMinutes || 2)));
+    const wakeScriptPath = path.join(__dirname, "scripts", "wake-dashboard.ps1");
+    const taskName = "ESG Dashboard Wake Demo";
+
+    const scriptOutput = await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          wakeScriptPath,
+          "-WakeInMinutes",
+          String(minutes),
+          "-TaskName",
+          taskName
+        ],
+        { timeout: 15000 },
+        (error, stdout, stderr) => {
+          if (error) {
+            error.message = `${error.message}${stderr ? `: ${stderr}` : ""}`;
+            reject(error);
+            return;
+          }
+          resolve(String(stdout || stderr || "").trim());
+        }
+      );
+    });
+
+    res.json({
+      ok: true,
+      wakeInMinutes: minutes,
+      message: `Wake demo task registered. This laptop will hibernate now and should wake in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      scriptOutput
+    });
+
+    setTimeout(() => {
+      startWindowsHibernate("Live Demo");
+    }, 1000);
+  } catch (error) {
+    console.error("Hibernate wake demo failed:", error);
+    appendHibernateAttemptLog(`Live Demo route failed: ${error.message || "Hibernate wake demo failed"}`);
+    res.status(500).json({
+      ok: false,
+      error: "Could not register the wake task, so hibernate was not started. Run the app as administrator and check Windows wake timers."
+    });
   }
 });
 
@@ -1967,6 +2101,32 @@ async function getBuildingMonthlyDetail(accountId, year, buildingNameRaw) {
   return { year, elec, water, building: buildingName };
 }
 
+function latestYearWithData(years, byYear, hasData) {
+  return (years || []).find((year) => hasData(byYear[year])) || null;
+}
+
+function oldestYearWithData(years, byYear, hasData) {
+  return (years || []).slice().reverse().find((year) => hasData(byYear[year])) || null;
+}
+
+function overviewRowsHaveData(rows) {
+  return Array.isArray(rows) && rows.some((row) =>
+    Number(row.electricity || 0) > 0 || Number(row.water || 0) > 0
+  );
+}
+
+function solarMonthsHaveData(months) {
+  return Array.isArray(months) && months.some((month) =>
+    Number(month.urban || 0) > 0 || Number(month.greenhouse || 0) > 0
+  );
+}
+
+function wasteMonthsHaveData(months) {
+  return Array.isArray(months) && months.some((month) =>
+    Number(month.generalKg || 0) > 0 || Number(month.recyclableKg || 0) > 0
+  );
+}
+
 /* ==============================
    VIEW ENGINE & STATIC FILES
 ============================== */
@@ -2040,14 +2200,17 @@ app.get("/", async (req, res) => {
       overviewByYear[year] = rows;
     }
 
+    const latestOverviewYear = latestYearWithData(allYears, overviewByYear, overviewRowsHaveData) || newestYear;
+    const oldestOverviewYear = oldestYearWithData(allYears, overviewByYear, overviewRowsHaveData) || oldestYear;
+
     let overviewOldestRows = [];
     let overviewNewestRows = [];
     
-    if (oldestYear && overviewByYear[oldestYear]) {
-      overviewOldestRows = overviewByYear[oldestYear];
+    if (oldestOverviewYear && overviewByYear[oldestOverviewYear]) {
+      overviewOldestRows = overviewByYear[oldestOverviewYear];
     }
-    if (newestYear && overviewByYear[newestYear]) {
-      overviewNewestRows = overviewByYear[newestYear];
+    if (latestOverviewYear && overviewByYear[latestOverviewYear]) {
+      overviewNewestRows = overviewByYear[latestOverviewYear];
     }
 
     // Fetch solar data for ALL years
@@ -2057,14 +2220,17 @@ app.get("/", async (req, res) => {
       solarByYear[year] = months;
     }
 
+    const latestSolarYear = latestYearWithData(allYears, solarByYear, solarMonthsHaveData) || newestYear;
+    const oldestSolarYear = oldestYearWithData(allYears, solarByYear, solarMonthsHaveData) || oldestYear;
+
     let solarOldestMonths = [];
     let solarNewestMonths = [];
     
-    if (oldestYear && solarByYear[oldestYear]) {
-      solarOldestMonths = solarByYear[oldestYear];
+    if (oldestSolarYear && solarByYear[oldestSolarYear]) {
+      solarOldestMonths = solarByYear[oldestSolarYear];
     }
-    if (newestYear && solarByYear[newestYear]) {
-      solarNewestMonths = solarByYear[newestYear];
+    if (latestSolarYear && solarByYear[latestSolarYear]) {
+      solarNewestMonths = solarByYear[latestSolarYear];
     }
 
     // Fetch waste data for ALL years
@@ -2074,14 +2240,38 @@ app.get("/", async (req, res) => {
       wasteByYear[year] = months;
     }
 
+    const latestWasteYear = latestYearWithData(allYears, wasteByYear, wasteMonthsHaveData) || newestYear;
+    const oldestWasteYear = oldestYearWithData(allYears, wasteByYear, wasteMonthsHaveData) || oldestYear;
+
+    // Welcome page KPI summary year — admins can pin this to a specific
+    // year per category (see /admin/welcome-kpi-year). Left on "auto", all
+    // three categories share the single overall newest year (not each
+    // category's own latest-year-with-data), so they always stay in sync —
+    // a category with nothing uploaded yet for that year just shows 0
+    // instead of quietly falling back to an older year on its own.
+    // A pinned year is likewise honored as-is, even if it has no data yet.
+    const welcomeKpiYearConfig = runtimeConfig.welcomeKpiYear || {};
+    function resolveWelcomeKpiYear(overrideYear, fallbackYear) {
+      // Number(null) is 0, which Number.isFinite() treats as a valid year —
+      // guard explicitly so "auto" (null/undefined) actually falls through.
+      if (overrideYear === null || overrideYear === undefined || overrideYear === "") return fallbackYear;
+      const year = Number(overrideYear);
+      return Number.isFinite(year) ? year : fallbackYear;
+    }
+    const welcomeKpiYears = {
+      overview: resolveWelcomeKpiYear(welcomeKpiYearConfig.overview, newestYear),
+      solar: resolveWelcomeKpiYear(welcomeKpiYearConfig.solar, newestYear),
+      waste: resolveWelcomeKpiYear(welcomeKpiYearConfig.waste, newestYear)
+    };
+
     let wasteOldestMonths = [];
     let wasteNewestMonths = [];
     
-    if (oldestYear && wasteByYear[oldestYear]) {
-      wasteOldestMonths = wasteByYear[oldestYear];
+    if (oldestWasteYear && wasteByYear[oldestWasteYear]) {
+      wasteOldestMonths = wasteByYear[oldestWasteYear];
     }
-    if (newestYear && wasteByYear[newestYear]) {
-      wasteNewestMonths = wasteByYear[newestYear];
+    if (latestWasteYear && wasteByYear[latestWasteYear]) {
+      wasteNewestMonths = wasteByYear[latestWasteYear];
     }
 
     // Building monthly data
@@ -2217,6 +2407,13 @@ app.get("/", async (req, res) => {
       latestYear,
       oldestYear,
       newestYear,
+      latestOverviewYear,
+      oldestOverviewYear,
+      latestSolarYear,
+      oldestSolarYear,
+      latestWasteYear,
+      oldestWasteYear,
+      welcomeKpiYears,
       overviewByYear,
       solarByYear,
       wasteByYear,
@@ -2342,15 +2539,29 @@ app.get('/interactivemap', (req, res) => {res.render('interactivemap');});
 const OLLAMA_HOST  = process.env.OLLAMA_HOST  || "http://127.0.0.1:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2:3b";
 
+const OFF_TOPIC_REPLY = "I can only help with ESG and sustainability topics for RP — try asking about electricity, water, solar, waste, or ESG in general.";
+
 const ASSISTANT_SYSTEM_PROMPT =
   "You are the assistant for the Republic Polytechnic (RP) ESG Sustainability Dashboard. " +
   "ESG stands for Environmental, Social, and Governance. Help visitors understand " +
   "sustainability topics such as electricity use, water use, solar energy, and waste. " +
   "Keep answers short, clear, and friendly. " +
   "A section titled 'REAL DASHBOARD DATA' is provided below with the actual figures. " +
-  "When asked about specific numbers, buildings, years, or trends, use ONLY the figures in that " +
+  "When asked about a specific building's electricity or water (e.g. RPC, ECMC, E1, W3, Sports Complex), " +
+  "look it up in the PER-BUILDING USAGE section and report that building's own figure — never the campus total. " +
+  "Use ONLY the figures in that " +
   "section. Do NOT invent or estimate numbers. If a requested figure is not in the data, say you " +
-  "don't have that figure rather than guessing.";
+  "don't have that figure rather than guessing. " +
+  "NEVER report a figure from one year as another year's data. If the exact year requested is not " +
+  "present in the data, say you don't have that year rather than substituting a different year. " +
+  "RP'S SUSTAINABILITY GOALS: RP aims to reduce campus electricity and water " +
+  "consumption year on year, expand solar energy generation, increase recycling " +
+  "rates, and raise environmental awareness among staff and students. " +
+  "STAY ON TOPIC: only answer questions about ESG, sustainability, or the topics above (electricity, " +
+  "water, solar, waste, recycling, RP's environmental/social/governance practices). If the user asks " +
+  "about anything else — general knowledge, other companies, coding, personal advice, entertainment, " +
+  "or any unrelated subject — do NOT answer it. Reply with EXACTLY this sentence and nothing else: " +
+  "\"" + OFF_TOPIC_REPLY + "\"";
 
 // ---- Real ESG data context (the model phrases these; it never computes them) ----
 const fmtNum = n => Number(n || 0).toLocaleString("en-US");
@@ -2365,50 +2576,102 @@ async function buildEsgDataContext(accountId) {
     return _esgCtxCache.text;
   }
 
-  const [years, elecYear, elecTop, waterYear, solarYear, wasteYear, bldgCount] = await Promise.all([
-    db.query("SELECT year FROM year_range WHERE account_id=? ORDER BY year", [accountId]),
-    db.query("SELECT YEAR(bill_month) y, SUM(total_bill) v FROM total_ebills WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
-    db.query("SELECT building_name, SUM(bill_amount) v FROM building_ebills WHERE account_id=? GROUP BY building_name ORDER BY v DESC LIMIT 6", [accountId]),
-    db.query("SELECT YEAR(bill_month) y, SUM(portable_water) p, SUM(recycled_water) r FROM total_waterusage WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
-    db.query("SELECT YEAR(bill_month) y, SUM(urban_renewables) u, SUM(green_house) g FROM total_solardata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
-    db.query("SELECT YEAR(bill_month) y, SUM(general_kg) gen, SUM(recyclable_kg) rec FROM total_wastedata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
-    db.query("SELECT COUNT(*) n FROM building_info WHERE account_id=?", [accountId]),
-  ]);
+  // Use the SAME helpers the dashboard uses, so the assistant's figures
+  // always match what's shown on screen (esp. waste = fiscal year Apr–Mar,
+  // and per-building electricity/water totals from getOverviewByBuilding).
+  const { allYears } = await getYearsForAccount(accountId);
+  const [bldgCountRows] = await db.query(
+    "SELECT COUNT(*) n FROM building_info WHERE account_id=?", [accountId]
+  );
+  const bldgCount = bldgCountRows[0] ? bldgCountRows[0].n : 0;
 
-  const yearList = years[0].map(r => r.year);
+  const elecByYear = {};
+  const waterByYear = {};
+  const solarByYear = {};
+  const wasteByYear = {};
+  const buildingElecTotals = {}; // building -> total electricity across all years
+
+  for (const year of allYears) {
+    const overview = await getOverviewByBuilding(accountId, year); // [{building, electricity, water}]
+    let elecTotal = 0, waterTotal = 0;
+    overview.forEach(b => {
+      elecTotal  += Number(b.electricity || 0);
+      waterTotal += Number(b.water || 0);
+      buildingElecTotals[b.building] = (buildingElecTotals[b.building] || 0) + Number(b.electricity || 0);
+    });
+    elecByYear[year]  = elecTotal;
+    waterByYear[year] = waterTotal;
+
+    const solarMonths = await getSolarForYear(accountId, year);
+    solarByYear[year] = solarMonths.reduce(
+      (s, m) => s + Number(m.urban || 0) + Number(m.greenhouse || 0), 0
+    );
+
+    const wasteMonths = await getWasteForFiscalYear(accountId, year); // fiscal Apr–Mar
+    wasteByYear[year] = wasteMonths.reduce(
+      (s, m) => ({
+        gen: s.gen + Number(m.generalKg || 0),
+        rec: s.rec + Number(m.recyclableKg || 0)
+      }), { gen: 0, rec: 0 }
+    );
+  }
+
   const L = [];
   L.push("===== REAL DASHBOARD DATA =====");
   L.push("Units: electricity & solar in kWh, water in m³ (cubic metres), waste in kg.");
-  L.push("Reporting years available: " + (yearList.length ? yearList.join(", ") : "none") + ". " +
-         "Buildings tracked: " + fmtNum(bldgCount[0][0].n) + ".");
+  L.push("Waste years are FISCAL years (April to March), matching the dashboard.");
+  L.push("Reporting years available: " + (allYears.length ? allYears.join(", ") : "none") + ". " +
+         "Buildings tracked: " + fmtNum(bldgCount) + ".");
 
   L.push("\nELECTRICITY USE — total campus (kWh):");
-  elecYear[0].forEach(r => L.push(`  ${r.y}: ${fmtNum(r.v)} kWh`));
+  allYears.forEach(y => { if (elecByYear[y] > 0) L.push(`  ${y}: ${fmtNum(elecByYear[y])} kWh`); });
 
   L.push("Top buildings by electricity use (all available years combined):");
-  elecTop[0].forEach((r, i) => L.push(`  ${i + 1}. ${r.building_name}: ${fmtNum(r.v)} kWh`));
+  Object.entries(buildingElecTotals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .forEach(([name, v], i) => L.push(`  ${i + 1}. ${name}: ${fmtNum(v)} kWh`));
+
+// Per-building usage for EVERY year, so the assistant can answer
+  // "electricity/water for <building> in <year>" and match the dashboard's
+  // per-year cards. Sorted years ascending for readability.
+  const yearsAsc = [...allYears].map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+  for (const yr of yearsAsc) {
+    const overviewForYear = await getOverviewByBuilding(accountId, yr);
+    if (!overviewForYear.length) continue;
+    L.push(`\nPER-BUILDING USAGE for ${yr} (electricity kWh, water m³):`);
+    overviewForYear
+      .sort((a, b) => String(a.building).localeCompare(String(b.building)))
+      .forEach(b => {
+        L.push(`  ${b.building} (${yr}): electricity ${fmtNum(b.electricity)} kWh, water ${fmtNum(b.water)} m³`);
+      });
+  }
 
   L.push("\nWATER USE — total campus (m³):");
-  waterYear[0].forEach(r => {
-    const tot = Number(r.p || 0) + Number(r.r || 0);
-    L.push(`  ${r.y}: ${fmtNum(tot)} m³ total (potable ${fmtNum(r.p)}, recycled ${fmtNum(r.r)})`);
-  });
+  allYears.forEach(y => { if (waterByYear[y] > 0) L.push(`  ${y}: ${fmtNum(waterByYear[y])} m³`); });
 
   L.push("\nSOLAR ENERGY GENERATED (kWh):");
-  solarYear[0].forEach(r => {
-    const tot = Number(r.u || 0) + Number(r.g || 0);
-    L.push(`  ${r.y}: ${fmtNum(tot)} kWh (urban renewables ${fmtNum(r.u)}, green house ${fmtNum(r.g)})`);
-  });
+  allYears.forEach(y => { if (solarByYear[y] > 0) L.push(`  ${y}: ${fmtNum(solarByYear[y])} kWh`); });
 
-  L.push("\nWASTE (kg):");
-  wasteYear[0].forEach(r => {
-    const gen = Number(r.gen || 0), rec = Number(r.rec || 0), tot = gen + rec;
-    if (tot === 0) return; // skip years with no waste data yet
-    const pct = ((rec / tot) * 100).toFixed(1);
-    L.push(`  ${r.y}: general ${fmtNum(gen)} kg, recyclable ${fmtNum(rec)} kg (recycled share ${pct}%)`);
+  L.push("\nWASTE — fiscal year Apr–Mar (kg):");
+  allYears.forEach(y => {
+    const w = wasteByYear[y] || { gen: 0, rec: 0 };
+    const tot = w.gen + w.rec;
+    if (tot === 0) return;
+    const pct = ((w.rec / tot) * 100).toFixed(1);
+    L.push(`  FY${y}: general ${fmtNum(w.gen)} kg, recyclable ${fmtNum(w.rec)} kg (recycled share ${pct}%)`);
   });
 
   L.push("===== END DATA =====");
+  L.push("\nBUILDING NAME ALIASES (same building, different names visitors may use):");
+  L.push("  'SIT' is the same building as 'BLK 43' (also written 'Block 43').");
+  L.push("  'Sports Hall' is the same as 'Sports Complex'.");
+  L.push("  'Greenhouse' is the same as 'Green House'.");
+  L.push("  'RIPC' is the same as 'RPIC'.");
+  L.push("  'The Arch (1&2)' is the same as 'The Arch'.");
+  L.push("  E-block buildings are E1, E2, E3, E4, E5, E6.");
+  L.push("  W-block buildings are W1, W2, W3, W4, W5, W6.");
+  L.push("  Dashboard cards may show a department suffix (e.g. 'E1 - CED', 'E3 - SBZ'); the building is still E1, E3, etc.");
 
   const text = L.join("\n");
   _esgCtxCache = { ts: Date.now(), accountId, text };
