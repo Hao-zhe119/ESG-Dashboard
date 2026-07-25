@@ -23,6 +23,32 @@ npm.cmd run devStart
 
 Open `http://localhost:3000/`.
 
+## Ollama Setup (Ask AI Assistant)
+
+The dashboard's "Ask AI" chat assistant (in the Building Controls panel) runs entirely on your local machine using [Ollama](https://ollama.com) — no data leaves the machine, and no API key is required.
+
+1. Download and install Ollama for Windows from https://ollama.com/download.
+2. Pull the model the app uses by default:
+
+```powershell
+ollama pull llama3.2:3b
+```
+
+3. Ollama normally starts automatically in the background after install. If the Ask AI chat shows "Assistant unavailable", start the server manually:
+
+```powershell
+ollama serve
+```
+
+4. (Optional) To use a different model or a remote Ollama host, add these to `databaseinfo.env`:
+
+```
+OLLAMA_HOST=http://127.0.0.1:11434
+OLLAMA_MODEL=llama3.2:3b
+```
+
+If you change `OLLAMA_MODEL`, pull that model first with `ollama pull <model-name>` — otherwise the assistant will fail with a "model not found" error.
+
 ## Useful Commands
 
 Run checks:
