@@ -159,6 +159,28 @@ const connection = mysql.createPool(dbConfig);
 
 let databaseAvailable = false;
 let latestDatabaseError = databaseConfigError;
+const hibernateAttemptLogPath = path.join(__dirname, "config", "lastHibernateAttempt.log");
+
+function appendHibernateAttemptLog(message) {
+  try {
+    fs.mkdirSync(path.dirname(hibernateAttemptLogPath), { recursive: true });
+    fs.appendFileSync(hibernateAttemptLogPath, `${new Date().toISOString()} ${message}\n`);
+  } catch (error) {
+    console.warn("Could not write hibernate attempt log:", error.message);
+  }
+}
+
+function startWindowsHibernate(label) {
+  appendHibernateAttemptLog(`${label}: starting shutdown.exe /h /f.`);
+  const child = spawn("shutdown.exe", ["/h", "/f"], { stdio: "ignore", windowsHide: true });
+  child.on("error", (error) => {
+    appendHibernateAttemptLog(`${label}: shutdown.exe spawn failed: ${error.message}`);
+  });
+  child.on("exit", (code, signal) => {
+    appendHibernateAttemptLog(`${label}: shutdown.exe exited with code ${code}${signal ? `, signal ${signal}` : ""}.`);
+  });
+  return child;
+}
 
 if (databaseConfigError) {
   console.error("Database configuration error:", databaseConfigError);
@@ -1559,21 +1581,103 @@ app.post("/admin/automation/hibernate-dry-run", requireAuth, async (req, res) =>
 
 app.post("/admin/automation/hibernate-now", requireAuth, async (req, res) => {
   try {
+    appendHibernateAttemptLog("Hibernate Now route clicked.");
     const scriptPath = path.join(__dirname, "scripts", "hibernate.ps1");
+    const capabilityOutput = await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-CapabilityCheck"],
+        { timeout: 10000 },
+        (error, stdout, stderr) => {
+          const output = String(stdout || stderr || "").trim();
+          if (error) {
+            error.message = `${error.message}${output ? `: ${output}` : ""}`;
+            reject(error);
+            return;
+          }
+          resolve(output);
+        }
+      );
+    });
+    if (!/^\s*Hibernate\s*$/im.test(capabilityOutput)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Windows does not currently report Hibernate as available. Run powercfg /a for details."
+      });
+    }
+
     res.json({
       ok: true,
-      message: "Real Windows hibernate requested. The laptop may sleep immediately."
+      message: "Real Windows hibernate requested. The laptop should hibernate immediately. If it stays awake, check Windows power policy or run the app as administrator."
     });
     setTimeout(() => {
-      const child = spawn(
-        "powershell.exe",
-        ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, "-ExecuteHibernate"],
-        { detached: true, stdio: "ignore", windowsHide: true }
-      );
-      child.unref();
+      startWindowsHibernate("Hibernate Now");
     }, 750);
   } catch (error) {
     console.error("Immediate hibernate failed:", error);
+    appendHibernateAttemptLog(`Hibernate Now route failed: ${error.message || "Immediate hibernate failed"}`);
+    res.status(500).json({ ok: false, error: error.message || "Immediate hibernate failed" });
+  }
+});
+
+app.post("/admin/automation/hibernate-wake-demo", requireAuth, async (req, res) => {
+  try {
+    appendHibernateAttemptLog("Live Demo route clicked.");
+    const config = readRuntimeConfig();
+    if (!config.automation.autoHibernateEnabled) {
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Hibernate before running the live demo" });
+    }
+    if (!config.automation.autoWakeEnabled) {
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Wake before running the live demo" });
+    }
+
+    const minutes = Math.max(1, Math.min(30, Number(req.body.wakeInMinutes || 2)));
+    const wakeScriptPath = path.join(__dirname, "scripts", "wake-dashboard.ps1");
+    const taskName = "ESG Dashboard Wake Demo";
+
+    const scriptOutput = await new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          wakeScriptPath,
+          "-WakeInMinutes",
+          String(minutes),
+          "-TaskName",
+          taskName
+        ],
+        { timeout: 15000 },
+        (error, stdout, stderr) => {
+          if (error) {
+            error.message = `${error.message}${stderr ? `: ${stderr}` : ""}`;
+            reject(error);
+            return;
+          }
+          resolve(String(stdout || stderr || "").trim());
+        }
+      );
+    });
+
+    res.json({
+      ok: true,
+      wakeInMinutes: minutes,
+      message: `Wake demo task registered. This laptop will hibernate now and should wake in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      scriptOutput
+    });
+
+    setTimeout(() => {
+      startWindowsHibernate("Live Demo");
+    }, 1000);
+  } catch (error) {
+    console.error("Hibernate wake demo failed:", error);
+    appendHibernateAttemptLog(`Live Demo route failed: ${error.message || "Hibernate wake demo failed"}`);
+    res.status(500).json({
+      ok: false,
+      error: "Could not register the wake task, so hibernate was not started. Run the app as administrator and check Windows wake timers."
+    });
   }
 });
 
