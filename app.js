@@ -194,6 +194,31 @@ if (databaseConfigError) {
       databaseAvailable = true;
       latestDatabaseError = null;
       console.log('Connected to MySQL as', process.env.DB_USER);
+      ensureAssistantQuestionsTable();
+    }
+  });
+}
+
+// Self-healing schema check: creates the assistant_questions table on first
+// run against any database that predates it, instead of relying on everyone
+// who pulls this code to remember to run scripts/migrate-assistant-questions.sql
+// by hand. Safe to run every startup - CREATE TABLE IF NOT EXISTS is a no-op
+// once the table is there.
+function ensureAssistantQuestionsTable() {
+  const sql = `
+    CREATE TABLE IF NOT EXISTS assistant_questions (
+      id int(11) NOT NULL AUTO_INCREMENT,
+      account_id int(11) NOT NULL,
+      question text NOT NULL,
+      asked_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY account_id (account_id),
+      KEY asked_at (asked_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+  connection.query(sql, (err) => {
+    if (err) {
+      console.error("Could not ensure assistant_questions table exists:", err.message);
     }
   });
 }
@@ -656,6 +681,8 @@ function emptyDashboardData() {
     oldestWasteYear: null,
     welcomeKpiYears: { overview: null, solar: null, waste: null },
     overviewByYear: {},
+    elecCampusByYear: {},
+    waterCampusByYear: {},
     solarByYear: {},
     wasteByYear: {},
     overviewYear1Rows: [],
@@ -1978,6 +2005,67 @@ async function getOverviewByBuilding(accountId, year) {
   );
 }
 
+// Campus-wide (SP-metered) electricity, for totals that must not depend on
+// per-building sub-meter uploads being complete for every building/month -
+// see getOverviewByBuilding above, whose building_ebills source can have
+// per-building gaps that don't exist in this single campus meter reading.
+async function getElectricityCampusForYear(accountId, year) {
+  if (!year) return [];
+
+  const sql = `
+    SELECT MONTH(bill_month) AS m, total_bill
+    FROM total_ebills
+    WHERE account_id = ? AND YEAR(bill_month) = ?
+    ORDER BY bill_month
+  `;
+
+  const [rows] = await db.query(sql, [accountId, year]);
+
+  const months = Array.from({ length: 12 }, (_, index) => ({
+    month: index + 1,
+    total: 0,
+  }));
+
+  rows.forEach((row) => {
+    const monthIndex = row.m - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      months[monthIndex].total = Number(row.total_bill || 0);
+    }
+  });
+
+  return months;
+}
+
+// Campus-wide water, for the same reason as getElectricityCampusForYear above.
+async function getWaterCampusForYear(accountId, year) {
+  if (!year) return [];
+
+  const sql = `
+    SELECT MONTH(bill_month) AS m, portable_water, recycled_water
+    FROM total_waterusage
+    WHERE account_id = ? AND YEAR(bill_month) = ?
+    ORDER BY bill_month
+  `;
+
+  const [rows] = await db.query(sql, [accountId, year]);
+
+  const months = Array.from({ length: 12 }, (_, index) => ({
+    month: index + 1,
+    potable: 0,
+    recycled: 0,
+  }));
+
+  rows.forEach((row) => {
+    const monthIndex = row.m - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      months[monthIndex].potable = Number(row.portable_water || 0);
+      months[monthIndex].recycled = Number(row.recycled_water || 0);
+    }
+  });
+
+  return months;
+}
+
 async function getSolarForYear(accountId, year) {
   if (!year) return [];
 
@@ -2213,6 +2301,17 @@ app.get("/", async (req, res) => {
       overviewNewestRows = overviewByYear[latestOverviewYear];
     }
 
+    // Campus-wide (SP-metered) electricity & water totals, for the Welcome
+    // page KPI cards - kept separate from overviewByYear (per-building) since
+    // that source can have per-building upload gaps that this single-meter
+    // reading does not.
+    const elecCampusByYear = {};
+    const waterCampusByYear = {};
+    for (const year of allYears) {
+      elecCampusByYear[year] = await getElectricityCampusForYear(accountId, year);
+      waterCampusByYear[year] = await getWaterCampusForYear(accountId, year);
+    }
+
     // Fetch solar data for ALL years
     const solarByYear = {};
     for (const year of allYears) {
@@ -2415,6 +2514,8 @@ app.get("/", async (req, res) => {
       oldestWasteYear,
       welcomeKpiYears,
       overviewByYear,
+      elecCampusByYear,
+      waterCampusByYear,
       solarByYear,
       wasteByYear,
       overviewYear1Rows: overviewOldestRows,
