@@ -2569,7 +2569,7 @@ async function buildEsgDataContext(accountId) {
     return _esgCtxCache.text;
   }
 
-  const [years, elecYear, elecTop, waterYear, solarYear, wasteYear, bldgCount] = await Promise.all([
+  const [years, elecYear, elecTop, waterYear, solarYear, wasteYear, bldgCount, elecByBuildingYear, waterByBuildingYear] = await Promise.all([
     db.query("SELECT year FROM year_range WHERE account_id=? ORDER BY year", [accountId]),
     db.query("SELECT YEAR(bill_month) y, SUM(total_bill) v FROM total_ebills WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
     db.query("SELECT building_name, SUM(bill_amount) v FROM building_ebills WHERE account_id=? GROUP BY building_name ORDER BY v DESC LIMIT 6", [accountId]),
@@ -2577,6 +2577,9 @@ async function buildEsgDataContext(accountId) {
     db.query("SELECT YEAR(bill_month) y, SUM(urban_renewables) u, SUM(green_house) g FROM total_solardata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
     db.query("SELECT YEAR(bill_month) y, SUM(general_kg) gen, SUM(recyclable_kg) rec FROM total_wastedata WHERE account_id=? GROUP BY y ORDER BY y", [accountId]),
     db.query("SELECT COUNT(*) n FROM building_info WHERE account_id=?", [accountId]),
+    // Per-building drill-down (only electricity & water are metered per-building - solar/waste are campus-wide only)
+    db.query("SELECT building_name, YEAR(bill_month) y, SUM(bill_amount) v FROM building_ebills WHERE account_id=? GROUP BY building_name, y ORDER BY y DESC, v DESC", [accountId]),
+    db.query("SELECT building_name, YEAR(bill_month) y, SUM(water_used) v FROM building_waterusage WHERE account_id=? GROUP BY building_name, y ORDER BY y DESC, v DESC", [accountId]),
   ]);
 
   const yearList = years[0].map(r => r.year);
@@ -2586,17 +2589,33 @@ async function buildEsgDataContext(accountId) {
   L.push("Reporting years available: " + (yearList.length ? yearList.join(", ") : "none") + ". " +
          "Buildings tracked: " + fmtNum(bldgCount[0][0].n) + ".");
 
+  // Per-building breakdown for the single most recent year only, to keep the
+  // prompt bounded regardless of how many buildings/years are on file. Lets
+  // the assistant answer "what's <building>'s usage" questions with real
+  // figures instead of only campus-wide totals.
+  function perBuildingSection(title, unit, rows) {
+    if (!rows.length) return;
+    const latestYear = rows[0].y; // rows are ORDER BY y DESC, v DESC
+    const rowsForYear = rows.filter(r => r.y === latestYear);
+    L.push(`\n${title} BY BUILDING — ${latestYear} (${unit}):`);
+    rowsForYear.forEach(r => L.push(`  ${r.building_name}: ${fmtNum(r.v)} ${unit}`));
+  }
+
   L.push("\nELECTRICITY USE — total campus (kWh):");
   elecYear[0].forEach(r => L.push(`  ${r.y}: ${fmtNum(r.v)} kWh`));
 
   L.push("Top buildings by electricity use (all available years combined):");
   elecTop[0].forEach((r, i) => L.push(`  ${i + 1}. ${r.building_name}: ${fmtNum(r.v)} kWh`));
 
+  perBuildingSection("ELECTRICITY", "kWh", elecByBuildingYear[0]);
+
   L.push("\nWATER USE — total campus (m³):");
   waterYear[0].forEach(r => {
     const tot = Number(r.p || 0) + Number(r.r || 0);
     L.push(`  ${r.y}: ${fmtNum(tot)} m³ total (potable ${fmtNum(r.p)}, recycled ${fmtNum(r.r)})`);
   });
+
+  perBuildingSection("WATER", "m³", waterByBuildingYear[0]);
 
   L.push("\nSOLAR ENERGY GENERATED (kWh):");
   solarYear[0].forEach(r => {
@@ -2639,6 +2658,16 @@ app.post("/api/chat", async (req, res) => {
 
     if (history.length === 0) {
       return res.status(400).json({ error: "No message provided." });
+    }
+
+    // Log the visitor's question for admin analytics. Fire-and-forget - a
+    // logging failure should never block the actual chat response.
+    const lastUserTurn = [...history].reverse().find(m => m.role === "user");
+    if (lastUserTurn) {
+      db.query(
+        "INSERT INTO assistant_questions (account_id, question) VALUES (?, ?)",
+        [getAccountId(req), lastUserTurn.content]
+      ).catch(e => console.error("[/api/chat] could not log question:", e.message));
     }
 
     // Build the system prompt with the account's real ESG figures injected.
@@ -2690,6 +2719,34 @@ app.post("/api/chat", async (req, res) => {
     } else {
       res.end();
     }
+  }
+});
+
+// Admin view of what visitors have been asking the assistant - recent
+// questions plus a daily volume count, so ESG Centre staff can see what
+// topics people actually care about.
+app.get("/admin/assistant/questions/json", requireAuth, async (req, res) => {
+  try {
+    const accountId = getAccountId(req);
+    const [recent, daily, total] = await Promise.all([
+      db.query(
+        "SELECT question, asked_at FROM assistant_questions WHERE account_id=? ORDER BY asked_at DESC LIMIT 50",
+        [accountId]
+      ),
+      db.query(
+        "SELECT DATE(asked_at) d, COUNT(*) n FROM assistant_questions WHERE account_id=? AND asked_at >= (NOW() - INTERVAL 14 DAY) GROUP BY d ORDER BY d",
+        [accountId]
+      ),
+      db.query("SELECT COUNT(*) n FROM assistant_questions WHERE account_id=?", [accountId]),
+    ]);
+    res.json({
+      totalQuestions: total[0][0].n,
+      dailyCounts: daily[0].map(r => ({ date: r.d, count: r.n })),
+      recentQuestions: recent[0].map(r => ({ question: r.question, askedAt: r.asked_at })),
+    });
+  } catch (err) {
+    console.error("[/admin/assistant/questions/json] error:", err.message);
+    res.status(500).json({ error: "Could not load assistant question history." });
   }
 });
 

@@ -49,6 +49,19 @@ INSERT INTO `accounts` (`id`, `account`, `password`, `dashboard_mode`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `assistant_questions`
+--
+
+CREATE TABLE `assistant_questions` (
+  `id` int(11) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `question` text NOT NULL,
+  `asked_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `building_ebills`
 --
 
@@ -260,6 +273,14 @@ ALTER TABLE `accounts`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `assistant_questions`
+--
+ALTER TABLE `assistant_questions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `account_id` (`account_id`),
+  ADD KEY `asked_at` (`asked_at`);
+
+--
 -- Indexes for table `building_ebills`
 --
 ALTER TABLE `building_ebills`
@@ -339,6 +360,12 @@ ALTER TABLE `year_range`
 --
 ALTER TABLE `accounts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `assistant_questions`
+--
+ALTER TABLE `assistant_questions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- AUTO_INCREMENT for table `building_ebills`
