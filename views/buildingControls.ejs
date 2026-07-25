@@ -8,16 +8,12 @@
 
   <style>
     :root{
-      --bg:#0a0e12;
+      --bg:#0f1318;
       --text:#e5e7eb;
       --muted:#9ca3af;
       --cardBg:#ffffff;
       --cardText:#111827;
       --active:#60a5fa;
-
-      /* Paper tone for light cards (building/year) - a whisper of green instead of flat white */
-      --paper: #eef3f0;
-      --paper2: #dbe6e0;
 
       /* Side navigation rails width */
       --sideRail: 110px;
@@ -45,18 +41,10 @@
       --glassBlur: blur(16px) saturate(140%);
       --glassShadow: 0 14px 40px rgba(0,0,0,0.45), inset 0 0 14px rgba(255,255,255,0.04);
       --glassRadius: 20px;
-      /* Accent (RP green) - selection / primary */
+      /* Accent (RP green) */
       --accentGreen: #34d399;
-      --accentGreenDeep: #0ea56f;
       --accentGreenDim: rgba(52,211,153,0.18);
       --accentGreenBorder: rgba(52,211,153,0.55);
-      --accentBlue: #2563eb;
-      /* Secondary "data" accent - distinct role from brand green */
-      --signal: #3b82f6;
-      --signalDim: rgba(59,130,246,0.16);
-
-      --fontSans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --fontMono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, monospace;
     }
 
     html,body{
@@ -65,8 +53,7 @@
       height:100%;
       background:var(--bg);
       color:var(--text);
-      font-family:var(--fontSans);
-      -webkit-font-smoothing:antialiased;
+      font-family:Arial,sans-serif;
       overflow:hidden;
     }
 
@@ -76,25 +63,7 @@
       flex-direction:column;
       gap:10px;
       box-sizing:border-box;
-      background:
-        radial-gradient(circle at 12% -10%, rgba(52,211,153,0.10), transparent 42%),
-        radial-gradient(circle at 88% 0%, rgba(37,99,235,0.10), transparent 46%),
-        var(--bg);
-      background-attachment:fixed;
     }
-
-    ::selection{ background:rgba(52,211,153,0.35); color:#fff; }
-
-    /* Consistent thin accent scrollbars wherever content overflows */
-    .control-wrap::-webkit-scrollbar,
-    .ai-messages::-webkit-scrollbar{ width:8px; }
-    .control-wrap::-webkit-scrollbar-track{ background:transparent; }
-    .control-wrap::-webkit-scrollbar-thumb{
-      background:rgba(255,255,255,0.14);
-      border-radius:999px;
-    }
-    .control-wrap::-webkit-scrollbar-thumb:hover{ background:rgba(52,211,153,0.45); }
-    .control-wrap{ scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.18) transparent; }
 
     /* ============================================================
        HEADER
@@ -105,41 +74,39 @@
       justify-content:space-between;
       gap:12px;
       flex: 0 0 auto;
-      padding:14px 18px;
-      background: var(--glassBg);
-      -webkit-backdrop-filter: var(--glassBlur);
-      backdrop-filter: var(--glassBlur);
-      border: var(--glassBorder);
-      border-radius: var(--glassRadius);
-      box-shadow: var(--glassShadow);
-      box-sizing:border-box;
     }
 
     .header h2{
       margin:0;
       font-size:22px;
       font-weight:700;
-      letter-spacing:0.01em;
     }
 
     .subtitle{
-      font-size:12.5px;
-      font-family:var(--fontMono);
+      font-size:14px;
       color:var(--muted);
-      margin-top:3px;
-      letter-spacing:0.01em;
-      font-variant-numeric:tabular-nums;
+      margin-top:2px;
     }
-
+/* 
     .nav-btn{
+      background:var(--btnBg);
+      border:1px solid var(--btnBd);
+      color:#fff;
+      padding:10px 18px;
+      border-radius:999px;
+      font-size:16px;
+      cursor:pointer;
+      user-select:none;
+      transition: background .12s ease, border-color .12s ease, transform .12s ease;
+    } */
+
+     .nav-btn{
       background: linear-gradient(to bottom, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
       border:1px solid var(--btnBd);
       color:#fff;
       padding:10px 18px;
       border-radius:999px;
       font-size:16px;
-      font-weight:600;
-      letter-spacing:0.01em;
       cursor:pointer;
       user-select:none;
       transition: background .12s ease, border-color .12s ease, transform .12s ease, box-shadow .12s ease;
@@ -244,12 +211,23 @@
       flex-wrap:wrap;
       align-items:center;
     }
+/* 
     .pill{
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:14px;
+      border:1px solid rgba(255,255,255,0.20);
+      background: rgba(255,255,255,0.08);
+      color:#fff;
+      cursor:pointer;
+      user-select:none;
+      transition: background .12s ease, border-color .12s ease, transform .12s ease, opacity .12s ease;
+      outline:none;
+    } */
+     .pill{
       padding:9px 14px;
       border-radius:999px;
       font-size:14px;
-      font-weight:600;
-      letter-spacing:0.01em;
       border:1px solid rgba(255,255,255,0.16);
       background: linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
       color:#fff;
@@ -259,12 +237,24 @@
       outline:none;
       box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
+    
+    /* .pill:hover{
+      background: rgba(96,165,250,0.18);
+      border-color: rgba(96,165,250,0.45);
+      transform: translateY(-1px);
+    } */
 
-    .pill:hover{
+     .pill:hover{
       background: linear-gradient(to bottom, rgba(52,211,153,0.20), rgba(52,211,153,0.08));
       border-color: var(--accentGreenBorder);
       transform: translateY(-1px);
     }
+
+    /* .pill.active{
+      background: rgba(96,165,250,0.25);
+      border-color: rgba(96,165,250,0.70);
+      box-shadow: 0 0 0 2px rgba(96,165,250,0.18);
+    } */
 
     .pill.active{
       background: linear-gradient(to bottom, rgba(52,211,153,0.35), rgba(52,211,153,0.18));
@@ -421,8 +411,24 @@
     /* ============================================================
        BUILDING CARD
     ============================================================ */
-    .building-card{
-      background: linear-gradient(160deg, var(--paper), var(--paper2));
+    /* .building-card{
+      background:var(--cardBg);
+      color:var(--cardText);
+      border-radius:14px;
+      padding:10px 12px;
+      min-height: 72px;
+      box-shadow:0 10px 22px rgba(0,0,0,.18);
+      border:2px solid transparent;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      user-select:none;
+      min-width:0;
+      transition: transform .12s ease, box-shadow .12s ease;
+    } */
+     .building-card{
+      background: linear-gradient(to bottom, #ffffff, #f1f5f9);
       color:var(--cardText);
       border-radius:16px;
       padding:14px 16px;
@@ -437,7 +443,7 @@
       min-width:0;
       transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
     }
-
+    
     /* Card becomes a horizontal row: badge + text */
     .building-card{
       flex-direction: row !important;
@@ -452,11 +458,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family:var(--fontMono);
       font-weight: 800;
-      font-size: 14px;
+      font-size: 15px;
       color: #fff;
-      letter-spacing: 0.01em;
+      letter-spacing: 0.02em;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.25);
     }
     .card-text{
@@ -478,7 +483,17 @@
       font-size:13px;
       margin-top:2px;
     }
+/* 
     .building-card.active{
+      border-color:var(--active);
+      box-shadow:0 0 0 2px rgba(96,165,250,.25), 0 10px 22px rgba(0,0,0,.18);
+    }
+
+    .building-card:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 28px rgba(0,0,0,.25);
+    } */
+     .building-card.active{
       border-color: var(--accentGreen);
       box-shadow:0 0 0 3px var(--accentGreenDim), 0 10px 26px rgba(52,211,153,.30);
     }
@@ -495,8 +510,7 @@
       overflow:hidden;
       text-overflow:ellipsis;
       margin:0 0 2px 0;
-      font-weight:600;
-      letter-spacing:0.005em;
+      font-weight:400;
     }
 
     .building-metric{
@@ -528,56 +542,30 @@
       backdrop-filter: var(--glassBlur);
       border: var(--glassBorder);
       border-radius: 16px;
-      padding: 14px 16px;
+      padding: 12px;
       box-sizing:border-box;
-      box-shadow: 0 10px 26px rgba(0,0,0,0.30), inset 0 0 12px rgba(255,255,255,0.03);
     }
 
-    .control-title{
+    /* .control-title{
       font-weight:800;
-      font-size:14px;
-      letter-spacing:0.04em;
-      text-transform:uppercase;
-      margin:0 0 12px 0;
+      font-size:16px;
+      margin:0 0 8px 0;
+    } */
+     .control-title{
+      font-weight:800;
+      font-size:16px;
+      margin:0 0 8px 0;
       display:flex;
       align-items:center;
-      gap:9px;
+      gap:8px;
     }
 
     .control-title::before{
       content:"";
       width:3px;
-      height:15px;
+      height:16px;
       border-radius:3px;
-      background: linear-gradient(to bottom, var(--accentGreen), var(--signal));
-    }
-
-    /* Empty-state for nav-only pages (Welcome, Overview, Electricity, Water, Campus Analytics, Thank You) */
-    .nav-empty{
-      flex:1;
-      min-height:220px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:14px;
-      text-align:center;
-      padding:24px;
-    }
-    .nav-empty-big{
-      font-family:var(--fontMono);
-      font-size:clamp(24px, 4vw, 36px);
-      font-weight:800;
-      letter-spacing:0.02em;
-      color:#5b6870;
-      font-variant-numeric:tabular-nums;
-    }
-    .nav-empty-desc{
-      margin:0;
-      max-width:440px;
-      font-size:14px;
-      line-height:1.6;
-      color:var(--muted);
+      background: linear-gradient(to bottom, #34d399, #2563eb);
     }
 
     .control-row{
@@ -602,50 +590,17 @@
     .range{
       width: 260px;
       max-width: 100%;
-      -webkit-appearance:none;
-      appearance:none;
-      height:6px;
-      border-radius:999px;
-      background:linear-gradient(to right, var(--accentGreen) 0%, var(--accentGreen) var(--rangeFill, 0%), rgba(255,255,255,0.14) var(--rangeFill, 0%), rgba(255,255,255,0.14) 100%);
-      outline:none;
-      cursor:pointer;
     }
-    .range::-webkit-slider-runnable-track{ height:6px; border-radius:999px; background:transparent; }
-    .range::-webkit-slider-thumb{
-      -webkit-appearance:none;
-      appearance:none;
-      width:18px; height:18px;
-      border-radius:50%;
-      background:linear-gradient(to bottom, #6ee7b7, var(--accentGreen));
-      border:2px solid rgba(8,12,16,0.6);
-      box-shadow:0 2px 8px rgba(52,211,153,0.5);
-      margin-top:-6px;
-      transition:transform .12s ease, box-shadow .12s ease;
-    }
-    .range::-webkit-slider-thumb:hover{ transform:scale(1.12); box-shadow:0 3px 12px rgba(52,211,153,0.7); }
-    .range::-moz-range-track{ height:6px; border-radius:999px; background:rgba(255,255,255,0.14); }
-    .range::-moz-range-progress{ height:6px; border-radius:999px; background:var(--accentGreen); }
-    .range::-moz-range-thumb{
-      width:16px; height:16px; border-radius:50%; border:2px solid rgba(8,12,16,0.6);
-      background:linear-gradient(to bottom, #6ee7b7, var(--accentGreen));
-      box-shadow:0 2px 8px rgba(52,211,153,0.5);
-      transition:transform .12s ease, box-shadow .12s ease;
-    }
-    .range::-moz-range-thumb:hover{ transform:scale(1.12); }
 
     .value-chip{
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      padding: 7px 12px;
+      padding: 6px 10px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,0.18);
       background: rgba(255,255,255,0.08);
-      font-family:var(--fontMono);
-      font-size: 12.5px;
-      font-weight:600;
-      font-variant-numeric: tabular-nums;
-      letter-spacing:0.02em;
+      font-size: 13px;
       color:#fff;
     }
 
@@ -656,8 +611,24 @@
       gap:12px;
     }
 
+    /* .year-card{
+      background:var(--cardBg);
+      color:var(--cardText);
+      border-radius:14px;
+      padding:14px 16px;
+      min-height: 70px;
+      box-shadow:0 10px 22px rgba(0,0,0,.18);
+      border:2px solid transparent;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      user-select:none;
+      min-width:0;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    } */
     .year-card{
-      background: linear-gradient(160deg, var(--paper), var(--paper2));
+      background: linear-gradient(to bottom, #ffffff, #f1f5f9);
       color:var(--cardText);
       border-radius:16px;
       padding:16px 18px;
@@ -672,6 +643,16 @@
       min-width:0;
       transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
     }
+/*     
+    .year-card.active{
+      border-color:var(--active);
+      box-shadow:0 0 0 2px rgba(96,165,250,.25), 0 10px 22px rgba(0,0,0,.18);
+    }
+
+    .year-card:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 28px rgba(0,0,0,.25);
+    } */
 
     .year-card.active{
       border-color: var(--accentGreen);
@@ -685,20 +666,14 @@
     }
 
     .year-card .year-title{
-      font-family:var(--fontMono);
       font-size:20px;
-      font-weight:800;
-      font-variant-numeric:tabular-nums;
-      letter-spacing:0.01em;
+      font-weight:600;
       margin:0;
     }
 
     .year-card .year-subtitle{
-      font-size:11.5px;
-      font-weight:600;
-      letter-spacing:0.04em;
-      text-transform:uppercase;
-      color:rgba(17,24,39,.6);
+      font-size:13px;
+      color:rgba(17,24,39,.65);
       margin:0;
     }
 
@@ -924,75 +899,33 @@
       border-color:var(--aiAccent); color:var(--aiAccent); transform:translateY(-1px);
     }
 
-    .ai-typeToggle{
-      display:block; width:100%; margin-top:10px;
-      background:rgba(255,255,255,0.05);
-      border:var(--aiGlassBorder); color:var(--muted);
-      padding:10px 14px; border-radius:12px; font-size:13px; font-weight:700;
-      cursor:pointer; text-align:center; transition:all .15s ease;
-      -webkit-tap-highlight-color:transparent;
-    }
-    .ai-typeToggle:hover{ border-color:var(--aiAccent); color:var(--aiAccent); }
-
-    .ai-backBtn{
-      flex:0 0 auto; width:40px; height:48px;
-      background:rgba(255,255,255,0.05); border:var(--aiGlassBorder); color:var(--text);
-      border-radius:12px; font-size:20px; line-height:1; cursor:pointer;
-      display:flex; align-items:center; justify-content:center;
-      transition:border-color .15s ease, color .15s ease;
-      -webkit-tap-highlight-color:transparent;
-    }
-    .ai-backBtn:hover{ border-color:var(--aiAccent); color:var(--aiAccent); }
-
-    /* ── On-screen keyboard (touch-only, no-keyboard kiosk use) ── */
-    .ai-keyboard{
-      margin-top:10px;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-    .ai-kbRow{
-      display:flex;
-      gap:6px;
-    }
-    .ai-key{
-      flex:1 1 0;
-      min-width:0;
-      height:42px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:rgba(255,255,255,0.06);
-      border:1px solid rgba(255,255,255,0.12);
-      color:var(--text);
-      border-radius:9px;
-      font-size:14px;
-      font-weight:600;
-      font-family:inherit;
-      cursor:pointer;
-      user-select:none;
-      -webkit-tap-highlight-color:transparent;
-      transition:background .1s ease, border-color .1s ease, transform .08s ease;
-    }
-    .ai-key:hover{ border-color:rgba(52,211,153,0.45); }
-    .ai-key:active{ background:rgba(52,211,153,0.20); transform:scale(0.94); }
-    .ai-key.active{ background:var(--aiAccent); color:#06210f; border-color:transparent; }
-    .ai-key-wide{ flex:1.6 1 0; }
-    .ai-key-space{ flex:6 1 0; }
-    .ai-key-accent{ background:var(--aiGrad); color:#06210f; font-weight:800; border-color:transparent; }
-    .ai-key-accent:hover{ border-color:transparent; filter:brightness(1.08); }
-
     /* ============================================================
-       PAGE RAIL - eleven stations.
+       PAGE RAIL - ten stations, Leo the lion rides it.
        Stations reuse .pill/.active/.disabled so the existing JS is untouched.
     ============================================================ */
     .rail{
       position:relative;
       display:grid;
-      grid-template-columns:repeat(11, 1fr);
+      grid-template-columns:repeat(10, 1fr);
       align-items:end;
-      padding:14px 4px 4px;
+      padding:44px 0 4px;
       margin:0 6px;
+    }
+
+    .rail-line,
+    .rail-line-travelled{
+      position:absolute;
+      left:5%; right:5%;
+      bottom:42px;
+      height:3px;
+      border-radius:999px;
+    }
+    .rail-line{ background:#1f2a33; }
+    .rail-line-travelled{
+      right:auto;
+      width:0;
+      background:linear-gradient(90deg, #2563eb, var(--accentGreen));
+      box-shadow:0 0 10px rgba(52,211,153,.5);
     }
 
     /* ---- STATION ---- */
@@ -1022,33 +955,35 @@
 
     .rail .pill::before{
       content:"";
-      width:11px; height:11px;
-      border-radius:2px;
+      width:14px; height:14px;
+      border-radius:50%;
       background:#1f2a33;
       border:2px solid #35414d;
-      margin-bottom:14px;
-      transform:rotate(45deg);
+      margin-bottom:13px;
       transition:background .25s ease, border-color .25s ease, transform .25s ease, box-shadow .25s ease;
     }
     .rail .pill:hover::before{
       border-color:var(--accentGreen);
-      transform:rotate(45deg) scale(1.25);
+      transform:scale(1.25);
     }
     .rail .pill.active::before{
       background:var(--accentGreen);
       border-color:var(--accentGreen);
-      transform:rotate(45deg) scale(1.35);
+      transform:scale(1.35);
       box-shadow:0 0 0 5px rgba(52,211,153,.18), 0 0 14px rgba(52,211,153,.7);
     }
+    .rail .pill.visited::before{
+      background:#2563eb;
+      border-color:#2563eb;
+    }
+
     .st-num{
       font-size:11px;
-      font-family:var(--fontMono);
-      font-weight:700;
-      font-variant-numeric:tabular-nums;
+      font-weight:800;
       color:#64748b;
-      letter-spacing:.03em;
+      letter-spacing:.06em;
       line-height:1;
-      margin-bottom:4px;
+      margin-bottom:3px;
       transition:color .25s ease;
     }
     .st-name{
@@ -1063,7 +998,7 @@
     .rail .pill.active .st-num{ color:var(--accentGreen); }
     .rail .pill.active .st-name{ color:#ffffff; font-weight:700; }
 
-    /* Skipped stations: hollow. */
+    /* Skipped stations: hollow. Leo walks straight past them. */
     .rail .pill.disabled{
       opacity:.45;
       pointer-events:none;
@@ -1077,9 +1012,72 @@
     }
     .rail .pill.disabled .st-name{ text-decoration:line-through; }
 
+    /* ============================================================
+       LEO - the RP lion. SVG, so he actually reads as a lion.
+       Green, smiling, walks the rail.
+    ============================================================ */
+    .lion{
+      position:absolute;
+      bottom:50px;
+      left:0;
+      width:32px; height:30px;
+      z-index:4;
+      transform:translateX(-50%);
+      pointer-events:none;
+      filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));
+    }
+    .lion.flip{ transform:translateX(-50%) scaleX(-1); }
+
+    .lion-sprite{
+      display:block;
+      width:32px; height:30px;
+      overflow:visible;
+    }
+
+    /* Bob while walking */
+    .lion.walking .lion-sprite{ animation:leoBob .28s steps(2) infinite; }
+    @keyframes leoBob{
+      0%   { transform:translateY(0); }
+      100% { transform:translateY(-1.5px); }
+    }
+
+    /* Mane turns slowly while he rests */
+    .lion-mane{ transform-origin:16px 14px; }
+    .lion:not(.walking) .lion-mane{ animation:leoMane 7s linear infinite; }
+    @keyframes leoMane{
+      to { transform:rotate(360deg); }
+    }
+
+    /* Legs alternate */
+    .lion.walking .lion-leg.front{ animation:leoStepA .28s steps(2) infinite; }
+    .lion.walking .lion-leg.back { animation:leoStepB .28s steps(2) infinite; }
+    @keyframes leoStepA{
+      0%   { transform:translateY(0);    }
+      100% { transform:translateY(-2px); }
+    }
+    @keyframes leoStepB{
+      0%   { transform:translateY(-2px); }
+      100% { transform:translateY(0);    }
+    }
+
+    /* Tail flicks when resting */
+    .lion-tail{ transform-origin:27px 16px; }
+    .lion:not(.walking) .lion-tail{ animation:leoTail 2s ease-in-out infinite; }
+    @keyframes leoTail{
+      0%, 100% { transform:rotate(0deg);  }
+      50%      { transform:rotate(14deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .lion{ transition:none !important; }
+      .rail-line-travelled{ transition:none !important; }
+      .lion *, .lion-sprite{ animation:none !important; }
+    }
+
     /* Narrow panels: drop the station names, keep the numbers */
     @media (max-width:1100px){
       .st-name{ display:none; }
+      .rail{ padding-top:40px; }
     }
   </style>
 </head>
@@ -1088,18 +1086,26 @@
   <!-- ============================================================
        HEADER
   ============================================================ -->
+  <!-- <div class="header">
+    <div>
+      <h2>Controls</h2>
+      <div class="subtitle" id="headerSubtitle">Control the main dashboard (Pages 1-10)</div>
+    </div>
+    <button id="askAiBtn" class="ask-ai-btn" type="button" aria-label="Ask the AI assistant">
+      <span aria-hidden="true">&#128172;</span> Ask AI
+    </button>
+  </div> -->
   <div class="header">
     <div style="display:flex; align-items:center; gap:12px;">
-      <div style="width:5px; height:44px; border-radius:4px; background:linear-gradient(to bottom, var(--accentGreen), var(--signal)); box-shadow:0 0 14px rgba(52,211,153,0.35); flex:0 0 auto;"></div>
+      <div style="width:4px; height:42px; border-radius:4px; background:linear-gradient(to bottom, #34d399, #2563eb); flex:0 0 auto;"></div>
       <div>
-        <h2 style="display:flex; align-items:baseline; gap:11px; margin:0;">
+        <h2 style="display:flex; align-items:center; gap:10px; margin:0;">
           Controls
-          <span style="font-family:var(--fontMono); font-size:12px; font-weight:600; letter-spacing:0.08em; color:#5b6870; text-transform:uppercase;">RP · ESG OPS</span>
-          <span style="display:inline-flex; align-items:center; gap:7px; font-family:var(--fontMono); font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#34d399; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.35); padding:5px 12px 5px 9px; border-radius:999px;">
-            <span style="width:6px; height:6px; border-radius:50%; background:#34d399; box-shadow:0 0 0 0 rgba(52,211,153,0.6); animation:aiPulse 2.4s ease-out infinite;"></span>Live
+          <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#34d399; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.35); padding:3px 10px; border-radius:999px;">
+            <span style="width:7px; height:7px; border-radius:50%; background:#34d399; box-shadow:0 0 8px #34d399;"></span>Live
           </span>
         </h2>
-        <div class="subtitle" id="headerSubtitle">Control the main dashboard (Pages 1-11)</div>
+        <div class="subtitle" id="headerSubtitle">Control the main dashboard (Pages 1-10)</div>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:10px;">
@@ -1125,20 +1131,67 @@
         <div class="mini-label">Jump to page</div>
       </div>
 
-      <!-- Page rail. Stations keep .pill + data-page so all
+      <!-- Page rail. Leo rides this. Stations keep .pill + data-page so all
            existing JS (setActivePill, pagePills, click handlers) still works. -->
       <div class="rail" id="pageRail" aria-label="Dashboard pages">
-        <button class="pill" data-page="1"  type="button"><span class="st-num">01</span><span class="st-name">Welcome</span></button>
-        <button class="pill" data-page="2"  type="button"><span class="st-num">02</span><span class="st-name">Overview</span></button>
-        <button class="pill" data-page="3"  type="button"><span class="st-num">03</span><span class="st-name">Electricity</span></button>
-        <button class="pill" data-page="4"  type="button"><span class="st-num">04</span><span class="st-name">Water</span></button>
-        <button class="pill" data-page="11" type="button"><span class="st-num">05</span><span class="st-name">Campus Analytics</span></button>
-        <button class="pill" data-page="5"  type="button"><span class="st-num">06</span><span class="st-name">Infographics</span></button>
-        <button class="pill" data-page="6"  type="button"><span class="st-num">07</span><span class="st-name">Solar</span></button>
-        <button class="pill" data-page="7"  type="button"><span class="st-num">08</span><span class="st-name">Waste</span></button>
-        <button class="pill" data-page="8"  type="button"><span class="st-num">09</span><span class="st-name">Video</span></button>
-        <button class="pill" data-page="9"  type="button"><span class="st-num">10</span><span class="st-name">Images</span></button>
-        <button class="pill" data-page="10" type="button"><span class="st-num">11</span><span class="st-name">Thank You</span></button>
+        <div class="rail-line"></div>
+        <div class="rail-line-travelled" id="railTravelled"></div>
+
+        <div class="lion" id="lion" aria-hidden="true">
+          <svg class="lion-sprite" viewBox="0 0 32 30" xmlns="http://www.w3.org/2000/svg">
+            <!-- Mane: spiked ring, two greens -->
+            <g class="lion-mane">
+              <path d="M16 1 L18 5 L22 3 L22 7 L27 7 L24 11 L28 14 L24 17 L27 21 L22 21 L22 25 L18 23 L16 27 L14 23 L10 25 L10 21 L5 21 L8 17 L4 14 L8 11 L5 7 L10 7 L10 3 L14 5 Z"
+                    fill="#059669"/>
+              <path d="M16 3 L17 6 L21 5 L21 8 L25 8 L23 11 L26 14 L23 16 L25 20 L21 20 L21 23 L17 22 L16 25 L15 22 L11 23 L11 20 L7 20 L9 16 L6 14 L9 11 L7 8 L11 8 L11 5 L15 6 Z"
+                    fill="#10b981"/>
+            </g>
+
+            <!-- Ears -->
+            <circle cx="10" cy="7" r="2.5" fill="#047857"/>
+            <circle cx="22" cy="7" r="2.5" fill="#047857"/>
+            <circle cx="10" cy="7" r="1.2" fill="#34d399"/>
+            <circle cx="22" cy="7" r="1.2" fill="#34d399"/>
+
+            <!-- Face -->
+            <circle cx="16" cy="14" r="7.5" fill="#6ee7b7"/>
+
+            <!-- Happy closed eyes -->
+            <path d="M11.5 12.5 q1.5 -1.8 3 0" stroke="#064e3b" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+            <path d="M17.5 12.5 q1.5 -1.8 3 0" stroke="#064e3b" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+
+            <!-- Muzzle + nose + smile -->
+            <ellipse cx="16" cy="17" rx="4.5" ry="3.2" fill="#d1fae5"/>
+            <path d="M14.6 15.4 L17.4 15.4 L16 16.9 Z" fill="#065f46"/>
+            <path d="M16 16.9 L16 17.6 M16 17.6 q-1.8 1.6 -3.2 0 M16 17.6 q1.8 1.6 3.2 0"
+                  stroke="#065f46" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+
+            <!-- Whiskers -->
+            <path d="M11 16.5 L8 16 M11 17.8 L8 18.2 M21 16.5 L24 16 M21 17.8 L24 18.2"
+                  stroke="#065f46" stroke-width="0.7" stroke-linecap="round" opacity="0.55"/>
+
+            <!-- Legs -->
+            <rect class="lion-leg front" x="10" y="25" width="4" height="4" rx="1.2" fill="#047857"/>
+            <rect class="lion-leg back"  x="18" y="25" width="4" height="4" rx="1.2" fill="#047857"/>
+
+            <!-- Tail -->
+            <g class="lion-tail">
+              <path d="M27 16 q4 -1 4 -5" stroke="#047857" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+              <circle cx="31" cy="10.5" r="1.8" fill="#10b981"/>
+            </g>
+          </svg>
+        </div>
+
+        <button class="pill" data-page="1"  type="button"><span class="st-num">1</span><span class="st-name">Welcome</span></button>
+        <button class="pill" data-page="2"  type="button"><span class="st-num">2</span><span class="st-name">Overview</span></button>
+        <button class="pill" data-page="3"  type="button"><span class="st-num">3</span><span class="st-name">Electricity</span></button>
+        <button class="pill" data-page="4"  type="button"><span class="st-num">4</span><span class="st-name">Water</span></button>
+        <button class="pill" data-page="5"  type="button"><span class="st-num">5</span><span class="st-name">Infographics</span></button>
+        <button class="pill" data-page="6"  type="button"><span class="st-num">6</span><span class="st-name">Solar</span></button>
+        <button class="pill" data-page="7"  type="button"><span class="st-num">7</span><span class="st-name">Waste</span></button>
+        <button class="pill" data-page="8"  type="button"><span class="st-num">8</span><span class="st-name">Video</span></button>
+        <button class="pill" data-page="9"  type="button"><span class="st-num">9</span><span class="st-name">Images</span></button>
+        <button class="pill" data-page="10" type="button"><span class="st-num">10</span><span class="st-name">Thank You</span></button>
       </div>
 
       <div class="hint" id="topHint">
@@ -1156,9 +1209,11 @@
       ========================== -->
       <div id="view-nav" class="view">
         <div class="control-wrap">
-          <div class="nav-empty">
-            <div class="nav-empty-big" id="navEmptyBig">01 / WELCOME</div>
-            <p class="nav-empty-desc" id="navEmptyDesc">Opening screen for the big display. Use Prev / Next or a station above to jump to any part of the dashboard.</p>
+          <div class="control-card">
+            <div class="control-title">Navigation</div>
+            <div class="hint">
+              This page has no extra controls. Use <b>Prev/Next Page</b> or <b>Quick Page</b> above.
+            </div>
           </div>
         </div>
       </div>
@@ -1288,7 +1343,7 @@
     // ============================================================
     let hasVideos = true;  
     let hasImages = true;  
-    let enabledPages = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; // Default all enabled
+    let enabledPages = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // Default all enabled
 
     // ============================================================
     // POSTMESSAGE HELPERS (to main dashboard)
@@ -1354,11 +1409,11 @@
       // Update header subtitle
       if (headerSubtitle) {
         const totalPages = enabledPages.length;
-        const skippedCount = RAIL_ORDER.length - totalPages;
+        const skippedCount = 10 - totalPages;
         if (skippedCount > 0) {
           headerSubtitle.textContent = "Control the main dashboard (" + totalPages + " pages active, " + skippedCount + " skipped)";
         } else {
-          headerSubtitle.textContent = "Control the main dashboard (Pages 1-11)";
+          headerSubtitle.textContent = "Control the main dashboard (Pages 1-10)";
         }
       }
 
@@ -1373,10 +1428,6 @@
     const dashNextPageBtn = document.getElementById("dashNextPageBtn");
     const topHint = document.getElementById("topHint");
     const pagePills = Array.from(document.querySelectorAll(".pill[data-page]"));
-
-    // Rail order (Campus Analytics/page 11 sits between Water/4 and Infographics/5) -
-    // used instead of raw numeric comparison anywhere "which page comes first" matters.
-    const RAIL_ORDER = pagePills.map(pill => Number(pill.dataset.page));
 
     let selectedDashboardPage = 1;
 
@@ -1460,48 +1511,25 @@
         7: "Waste",
         8: "Video",
         9: "Images",
-        10: "Thank You",
-        11: "Campus Analytics"
+        10: "Thank You"
       };
       return names[page] || "Unknown";
     }
 
-    const NAV_EMPTY_DESC = {
-      1:  "Opening screen for the big display. Use Prev / Next or a station above to jump to any part of the dashboard.",
-      2:  "Campus-wide summary page. No extra controls here — jump to another station to keep steering the big screen.",
-      3:  "Campus-wide electricity metrics. No extra controls on this page.",
-      4:  "Campus-wide water metrics. No extra controls on this page.",
-      11: "Comparative view across all buildings and periods. No extra controls — jump elsewhere with a station above.",
-      10: "Closing screen for the big display. Use Prev / Next or a station above to move to another part of the dashboard."
-    };
-
-    function updateNavEmptyState(page, displayNumber, name){
-      const navBig = document.getElementById("navEmptyBig");
-      const navDesc = document.getElementById("navEmptyDesc");
-      if (!navBig || !navDesc) return;
-      navBig.textContent = String(displayNumber).padStart(2, "0") + " / " + name.toUpperCase();
-      navDesc.textContent = NAV_EMPTY_DESC[page] || "No extra controls on this page.";
-    }
-
     function selectDashboardPage(page, alsoTellMain){
-      const requestedPage = Number(page || 1);
-      selectedDashboardPage = RAIL_ORDER.includes(requestedPage) ? requestedPage : 1;
+      selectedDashboardPage = Math.max(1, Math.min(10, Number(page || 1)));
 
       setActivePill(selectedDashboardPage);
       showViewForPage(selectedDashboardPage);
 
-      const name = getPageName(selectedDashboardPage);
-      const displayNumber = RAIL_ORDER.indexOf(selectedDashboardPage) + 1;
-
-      updateNavEmptyState(selectedDashboardPage, displayNumber, name);
-
       if (topHint) {
+        const name = getPageName(selectedDashboardPage);
         const isEnabled = enabledPages.includes(selectedDashboardPage);
-
+        
         if (isEnabled) {
-          topHint.textContent = "Selected Page " + displayNumber + " - " + name + ".";
+          topHint.textContent = "Selected Page " + selectedDashboardPage + " - " + name + ".";
         } else {
-          topHint.textContent = "Page " + displayNumber + " (" + name + ") is skipped (no content).";
+          topHint.textContent = "Page " + selectedDashboardPage + " (" + name + ") is skipped (no content).";
         }
       }
 
@@ -1630,6 +1658,8 @@
       const title = uiTitleFor(buildingCode);
       const desc = uiDescFor(buildingCode);
 
+      // card.innerHTML = '<div class="building-name">' + title + '</div>' +
+      //   (desc ? '<p class="building-metric">' + desc + '</p>' : '');
       card.innerHTML = badgeForBuilding(buildingCode) +
         '<div class="card-text">' +
           '<div class="building-name">' + title + '</div>' +
@@ -1658,6 +1688,8 @@
         ? "Select from the East buildings"
         : "Select from the West buildings";
 
+      // card.innerHTML = '<div class="building-name">' + label + '</div>' +
+      //   '<p class="building-metric">' + description + '</p>';
       const groupColor = groupKey === "E" ? "#ef4444" : "#f59e0b";
       card.innerHTML = '<div class="card-badge" style="background:' + groupColor + '">' + groupKey + '</div>' +
         '<div class="card-text">' +
@@ -1872,15 +1904,6 @@
     const vidSeek = document.getElementById("vidSeek");
     const vidTimeChip = document.getElementById("vidTimeChip");
 
-    function syncRangeFill(rangeEl){
-      if (!rangeEl) return;
-      const min = Number(rangeEl.min || 0);
-      const max = Number(rangeEl.max || 100);
-      const value = Number(rangeEl.value || 0);
-      const pct = max > min ? ((value - min) / (max - min)) * 100 : 0;
-      rangeEl.style.setProperty("--rangeFill", Math.max(0, Math.min(100, pct)) + "%");
-    }
-
     let userIsSeeking = false;
     let seekLockUntil = 0;
     let nextVideoLockUntil = 0;
@@ -1920,7 +1943,6 @@
 
     if (vidSeek) {
       vidSeek.value = "0";
-      syncRangeFill(vidSeek);
 
       const beginSeek = () => { userIsSeeking = true; };
       const endSeek = () => { userIsSeeking = false; };
@@ -1934,7 +1956,6 @@
       vidSeek.addEventListener("touchend", endSeek, { passive: true });
 
       vidSeek.addEventListener("input", () => {
-        syncRangeFill(vidSeek);
         lockSeekUi(350);
       });
 
@@ -2030,7 +2051,7 @@
           clearPendingNav();
         }
 
-        if (RAIL_ORDER.includes(currentPage)) {
+        if (currentPage >= 1 && currentPage <= 10) {
           selectDashboardPage(currentPage, false);
         }
         return;
@@ -2091,7 +2112,7 @@
           clearPendingNav();
         }
 
-        if (RAIL_ORDER.includes(currentPage)) {
+        if (currentPage >= 1 && currentPage <= 10) {
           selectDashboardPage(currentPage, false);
         }
         return;
@@ -2125,7 +2146,6 @@
         if (allowSeekUiUpdate && isFinite(currentTime) && isFinite(duration) && duration > 0 && vidSeek) {
           const seekRatio = Math.max(0, Math.min(1, currentTime / duration));
           vidSeek.value = String(Math.round(seekRatio * 1000));
-          syncRangeFill(vidSeek);
           if (vidTimeChip) vidTimeChip.textContent = formatTimeAsMinutesSeconds(currentTime) + " / " + formatTimeAsMinutesSeconds(duration);
         } else {
           if (isFinite(currentTime) && isFinite(duration) && duration > 0 && vidTimeChip) {
@@ -2160,6 +2180,85 @@
       }
       postToMain({ type: "REQUEST_STATE" });
     }, 450);
+
+    // ============================================================
+    // LEO - rides the page rail to whichever page the dashboard is on.
+    // Reads real station positions from the DOM so it survives any window
+    // width. Walks straight past skipped stations without stopping.
+    // Wraps selectDashboardPage rather than editing it, so no existing
+    // behaviour changes: if Leo fails, the panel still works.
+    // ============================================================
+    const lionEl      = document.getElementById("lion");
+    const railEl      = document.getElementById("pageRail");
+    const travelledEl = document.getElementById("railTravelled");
+
+    const LION_SPEED = 260;   // px per second - a long journey visibly takes longer
+    let lionWalkTimer = null;
+    let lionAtPage = null;
+
+    function stationCenter(page){
+      const station = document.querySelector('.rail .pill[data-page="' + page + '"]');
+      if (!station || !railEl) return null;
+      const stationBox = station.getBoundingClientRect();
+      const railBox = railEl.getBoundingClientRect();
+      return (stationBox.left - railBox.left) + (stationBox.width / 2);
+    }
+
+    function moveLionTo(page, animate){
+      if (!lionEl || !railEl) return;
+
+      const targetX = stationCenter(page);
+      if (targetX == null) return;
+
+      // Face the way he is travelling
+      if (lionAtPage != null && Number(page) < Number(lionAtPage)) {
+        lionEl.classList.add("flip");
+      } else if (lionAtPage != null && Number(page) > Number(lionAtPage)) {
+        lionEl.classList.remove("flip");
+      }
+
+      // Distance sets the walk duration
+      const fromX = (lionAtPage != null ? stationCenter(lionAtPage) : targetX);
+      const distance = Math.abs(targetX - (fromX == null ? targetX : fromX));
+      const durationMs = (animate === false) ? 0 : Math.min(1600, (distance / LION_SPEED) * 1000);
+
+      lionEl.style.transition = durationMs ? ("left " + durationMs + "ms cubic-bezier(.4,0,.2,1)") : "none";
+      lionEl.style.left = targetX + "px";
+
+      // Walk cycle only runs while he is actually moving
+      clearTimeout(lionWalkTimer);
+      if (durationMs > 0) {
+        lionEl.classList.add("walking");
+        lionWalkTimer = setTimeout(() => lionEl.classList.remove("walking"), durationMs);
+      } else {
+        lionEl.classList.remove("walking");
+      }
+
+      // Rail fills in behind him
+      if (travelledEl) {
+        const railStart = railEl.clientWidth * 0.05;
+        travelledEl.style.transition = durationMs ? ("width " + durationMs + "ms cubic-bezier(.4,0,.2,1)") : "none";
+        travelledEl.style.width = Math.max(0, targetX - railStart) + "px";
+      }
+
+      // Stations he has already passed
+      document.querySelectorAll('.rail .pill[data-page]').forEach(station => {
+        station.classList.toggle("visited", Number(station.dataset.page) < Number(page));
+      });
+
+      lionAtPage = Number(page);
+    }
+
+    // Observe page selection without changing it
+    const originalSelectDashboardPage = selectDashboardPage;
+    selectDashboardPage = function(page, alsoTellMain){
+      originalSelectDashboardPage(page, alsoTellMain);
+      moveLionTo(Math.max(1, Math.min(10, Number(page || 1))), true);
+    };
+
+    // Put him in place on load, and keep him aligned if the window changes size
+    requestAnimationFrame(() => moveLionTo(selectedDashboardPage, false));
+    window.addEventListener("resize", () => moveLionTo(lionAtPage || 1, false));
 
     console.log("Building Controls initialized");
   </script>
