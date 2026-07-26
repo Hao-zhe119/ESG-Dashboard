@@ -218,7 +218,17 @@ function ensureAssistantQuestionsTable() {
   `;
   connection.query(sql, (err) => {
     if (err) {
-      console.error("Could not ensure assistant_questions table exists:", err.message);
+      if (err.code === "ER_TABLEACCESS_DENIED_ERROR" || err.errno === 1142) {
+        console.error(
+          "Could not create assistant_questions table: the '" + process.env.DB_USER +
+          "' MySQL user is missing CREATE privilege on this database.\n" +
+          "  Fix (run once): scripts\\setup-esgadmin-user.sql via phpMyAdmin's SQL tab, or\n" +
+          "  C:\\xampp\\mysql\\bin\\mysql.exe -u root < scripts\\setup-esgadmin-user.sql\n" +
+          "  Then restart the app."
+        );
+      } else {
+        console.error("Could not ensure assistant_questions table exists:", err.message);
+      }
     }
   });
 }
