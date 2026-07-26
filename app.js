@@ -194,6 +194,31 @@ if (databaseConfigError) {
       databaseAvailable = true;
       latestDatabaseError = null;
       console.log('Connected to MySQL as', process.env.DB_USER);
+      ensureAssistantQuestionsTable();
+    }
+  });
+}
+
+// Self-healing schema check: creates the assistant_questions table on first
+// run against any database that predates it, instead of relying on everyone
+// who pulls this code to remember to run scripts/migrate-assistant-questions.sql
+// by hand. Safe to run every startup - CREATE TABLE IF NOT EXISTS is a no-op
+// once the table is there.
+function ensureAssistantQuestionsTable() {
+  const sql = `
+    CREATE TABLE IF NOT EXISTS assistant_questions (
+      id int(11) NOT NULL AUTO_INCREMENT,
+      account_id int(11) NOT NULL,
+      question text NOT NULL,
+      asked_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY account_id (account_id),
+      KEY asked_at (asked_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  `;
+  connection.query(sql, (err) => {
+    if (err) {
+      console.error("Could not ensure assistant_questions table exists:", err.message);
     }
   });
 }
@@ -656,6 +681,8 @@ function emptyDashboardData() {
     oldestWasteYear: null,
     welcomeKpiYears: { overview: null, solar: null, waste: null },
     overviewByYear: {},
+    elecCampusByYear: {},
+    waterCampusByYear: {},
     solarByYear: {},
     wasteByYear: {},
     overviewYear1Rows: [],
@@ -1978,6 +2005,67 @@ async function getOverviewByBuilding(accountId, year) {
   );
 }
 
+// Campus-wide (SP-metered) electricity, for totals that must not depend on
+// per-building sub-meter uploads being complete for every building/month -
+// see getOverviewByBuilding above, whose building_ebills source can have
+// per-building gaps that don't exist in this single campus meter reading.
+async function getElectricityCampusForYear(accountId, year) {
+  if (!year) return [];
+
+  const sql = `
+    SELECT MONTH(bill_month) AS m, total_bill
+    FROM total_ebills
+    WHERE account_id = ? AND YEAR(bill_month) = ?
+    ORDER BY bill_month
+  `;
+
+  const [rows] = await db.query(sql, [accountId, year]);
+
+  const months = Array.from({ length: 12 }, (_, index) => ({
+    month: index + 1,
+    total: 0,
+  }));
+
+  rows.forEach((row) => {
+    const monthIndex = row.m - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      months[monthIndex].total = Number(row.total_bill || 0);
+    }
+  });
+
+  return months;
+}
+
+// Campus-wide water, for the same reason as getElectricityCampusForYear above.
+async function getWaterCampusForYear(accountId, year) {
+  if (!year) return [];
+
+  const sql = `
+    SELECT MONTH(bill_month) AS m, portable_water, recycled_water
+    FROM total_waterusage
+    WHERE account_id = ? AND YEAR(bill_month) = ?
+    ORDER BY bill_month
+  `;
+
+  const [rows] = await db.query(sql, [accountId, year]);
+
+  const months = Array.from({ length: 12 }, (_, index) => ({
+    month: index + 1,
+    potable: 0,
+    recycled: 0,
+  }));
+
+  rows.forEach((row) => {
+    const monthIndex = row.m - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      months[monthIndex].potable = Number(row.portable_water || 0);
+      months[monthIndex].recycled = Number(row.recycled_water || 0);
+    }
+  });
+
+  return months;
+}
+
 async function getSolarForYear(accountId, year) {
   if (!year) return [];
 
@@ -2213,6 +2301,17 @@ app.get("/", async (req, res) => {
       overviewNewestRows = overviewByYear[latestOverviewYear];
     }
 
+    // Campus-wide (SP-metered) electricity & water totals, for the Welcome
+    // page KPI cards - kept separate from overviewByYear (per-building) since
+    // that source can have per-building upload gaps that this single-meter
+    // reading does not.
+    const elecCampusByYear = {};
+    const waterCampusByYear = {};
+    for (const year of allYears) {
+      elecCampusByYear[year] = await getElectricityCampusForYear(accountId, year);
+      waterCampusByYear[year] = await getWaterCampusForYear(accountId, year);
+    }
+
     // Fetch solar data for ALL years
     const solarByYear = {};
     for (const year of allYears) {
@@ -2415,6 +2514,8 @@ app.get("/", async (req, res) => {
       oldestWasteYear,
       welcomeKpiYears,
       overviewByYear,
+      elecCampusByYear,
+      waterCampusByYear,
       solarByYear,
       wasteByYear,
       overviewYear1Rows: overviewOldestRows,
@@ -2544,16 +2645,24 @@ const OFF_TOPIC_REPLY = "I can only help with ESG and sustainability topics for 
 const ASSISTANT_SYSTEM_PROMPT =
   "You are the assistant for the Republic Polytechnic (RP) ESG Sustainability Dashboard. " +
   "ESG stands for Environmental, Social, and Governance. Help visitors understand " +
-  "sustainability topics such as electricity use, water use, solar energy, and waste. " +
+  "sustainability topics such as electricity use, water use, solar energy, waste, and RP's " +
+  "broader environmental, social, and governance goals and initiatives. " +
   "Keep answers short, clear, and friendly. " +
-  "A section titled 'REAL DASHBOARD DATA' is provided below with the actual figures. " +
-  "When asked about specific numbers, buildings, years, or trends, use ONLY the figures in that " +
-  "section. Do NOT invent or estimate numbers. If a requested figure is not in the data, say you " +
-  "don't have that figure rather than guessing. " +
-  "STAY ON TOPIC: only answer questions about ESG, sustainability, or the topics above (electricity, " +
-  "water, solar, waste, recycling, RP's environmental/social/governance practices). If the user asks " +
-  "about anything else — general knowledge, other companies, coding, personal advice, entertainment, " +
-  "or any unrelated subject — do NOT answer it. Reply with EXACTLY this sentence and nothing else: " +
+  "\n\n" +
+  "GENERAL QUESTIONS vs DATA QUESTIONS: General questions about ESG concepts, RP's sustainability " +
+  "goals, or why sustainability matters are ALWAYS on-topic - answer these using your own knowledge, " +
+  "even though no exact figure for them exists in the data below. Only for questions asking about a " +
+  "SPECIFIC NUMBER (e.g. how much electricity/water/solar/waste for a particular year or building) " +
+  "must you rely strictly on the 'REAL DASHBOARD DATA' section provided below, and only that section - " +
+  "never invent or estimate a number. If a specific figure is asked for and it is not in that data " +
+  "section, say you don't have that particular figure. This is NOT the same as being off-topic, so " +
+  "keep helping with whatever else you can about the question. " +
+  "\n\n" +
+  "STAY ON TOPIC: only decline questions that are genuinely unrelated to ESG or sustainability - " +
+  "general knowledge outside sustainability, other companies, coding, personal advice, entertainment, " +
+  "or similar. Questions about ESG in general, or about RP's sustainability practices, goals, or why " +
+  "they matter, are always on-topic even without an exact figure to cite. For genuinely off-topic " +
+  "questions only, reply with EXACTLY this sentence and nothing else: " +
   "\"" + OFF_TOPIC_REPLY + "\"";
 
 // ---- Real ESG data context (the model phrases these; it never computes them) ----

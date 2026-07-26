@@ -454,6 +454,152 @@ html, body {
 }
 
 /* ========================================
+   PAGE 10: THANK YOU
+   ======================================== */
+#page10 {
+  gap: clamp(14px, 2.4vh, 26px);
+}
+
+/* Ambient drifting specks - needs !important for the same reason .bg-particles does above */
+.ty-particle {
+  position: absolute !important;
+  z-index: 0 !important;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(143,209,79,0.55), transparent 70%);
+  filter: blur(1px);
+  animation: tyDrift 9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes tyDrift {
+  0%, 100% { transform: translateY(0) scale(1); opacity: .5; }
+  50%      { transform: translateY(-22px) scale(1.15); opacity: .9; }
+}
+
+.ty-waypoint {
+  width: clamp(56px, 7vh, 72px);
+  height: clamp(56px, 7vh, 72px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #b6e27a, #7eae33 65%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 8px rgba(126,174,51,0.14), 0 10px 30px rgba(0,0,0,0.4);
+  animation: tyPopIn .6s cubic-bezier(0.22,1,0.36,1) both, tyWaypointBob 2.2s ease-in-out 1s infinite;
+}
+.ty-waypoint svg { width: 28px; height: 28px; }
+@keyframes tyPopIn { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes tyWaypointBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.ty-title {
+  font-size: clamp(2.2rem, 5.5vw, 4.6rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  margin: 0;
+  line-height: 1.08;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  animation: titleRise 1s cubic-bezier(0.22,1,0.36,1) both;
+}
+.ty-shimmer {
+  display: inline-block;
+  background: linear-gradient(100deg, #8fd14f 0%, #ffffff 45%, #7eae33 70%, #ffffff 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 14px rgba(126,174,51,0.45));
+  animation: rpShimmer 5s linear infinite;
+}
+
+.ty-subtext {
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
+  color: rgba(255,255,255,0.85);
+  max-width: 620px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0 clamp(10px, 2vw, 24px);
+  animation: tyFadeUp .8s ease .2s both;
+}
+.ty-subtext b { color: #fff; }
+@keyframes tyFadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+.ty-recap {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 4px;
+}
+.ty-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  padding: 10px 18px;
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.88);
+  opacity: 0;
+  transform: translateY(14px);
+  animation: tyChipIn .6s cubic-bezier(0.22,1,0.36,1) forwards;
+  animation-delay: .45s;
+}
+.ty-chip:nth-child(2) { animation-delay: .58s; }
+.ty-chip:nth-child(3) { animation-delay: .71s; }
+.ty-chip:nth-child(4) { animation-delay: .84s; }
+@keyframes tyChipIn { to { opacity: 1; transform: translateY(0); } }
+.ty-ic {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.ty-cta {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 28px;
+  border-radius: 999px;
+  background: linear-gradient(100deg, rgba(143,209,79,0.22), rgba(52,211,153,0.14));
+  border: 1.5px solid rgba(143,209,79,0.55);
+  box-shadow: 0 10px 30px rgba(126,174,51,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: clamp(15px, 1.5vw, 18px);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  animation: tyFadeUp .8s ease .95s both, tySoftPulse 2.6s ease-in-out 1.8s infinite;
+}
+@keyframes tySoftPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(126,174,51,0.35), 0 10px 30px rgba(126,174,51,0.18); }
+  50%      { box-shadow: 0 0 0 12px rgba(126,174,51,0), 0 10px 30px rgba(126,174,51,0.18); }
+}
+.ty-pin { font-size: 20px; }
+.ty-arrow { display: inline-block; animation: tyArrowNudge 1.4s ease-in-out infinite; }
+@keyframes tyArrowNudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+
+.ty-reset-note {
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.01em;
+  animation: tyFadeUp .8s ease 1.2s both;
+}
+
+@media (max-width: 600px) {
+  .ty-subtext { font-size: 0.95rem; }
+  .ty-chip { padding: 8px 14px; font-size: 13px; }
+}
+
+/* ========================================
    NAVBAR
    ======================================== */
 .navbar {
@@ -2541,12 +2687,6 @@ body.graph-bg-transparent .three-chart-wrap {
             <a class="btn btn-outline-secondary" href="/admin">Admin Dashboard</a>
             <% } %>
           </li>
-          <li class="nav-item me-2">
-            <a class="btn btn-outline-secondary" href="/?page=campus-analytics">Campus Analytics</a>
-          </li>
-          <li class="nav-item me-2">
-            <a class="btn btn-outline-secondary" href="/interactivemap">🗺 Campus Map</a>
-          </li>
           <li class="nav-item">
             <% if (user) { %>
               <a class="btn btn-outline-secondary" href="/logout">Logout (<%= user.account %>)</a>
@@ -2919,10 +3059,31 @@ body.graph-bg-transparent .three-chart-wrap {
 
   <!-- PAGE 10: THANK YOU -->
   <div id="page10" class="page">
-    <h1 style="color:var(--text)">THANK YOU FOR VISITING</h1>
-    <p class="animate__animated animate__pulse animate__infinite" style="color:var(--muted)">
-      Tap to return to Welcome Page
-    </p>
+    <div class="ty-particle" style="top:8%; left:10%; width:10px; height:10px;"></div>
+    <div class="ty-particle" style="top:75%; left:85%; width:14px; height:14px; animation-delay:0.6s;"></div>
+    <div class="ty-particle" style="top:20%; left:88%; width:8px; height:8px; animation-delay:1.2s;"></div>
+    <div class="ty-particle" style="top:85%; left:10%; width:12px; height:12px; animation-delay:1.8s;"></div>
+    <div class="ty-particle" style="top:50%; left:4%; width:7px; height:7px; animation-delay:2.4s;"></div>
+    <div class="ty-particle" style="top:6%; left:70%; width:9px; height:9px; animation-delay:3s;"></div>
+
+    <div class="ty-waypoint">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z" stroke="#0d1a06" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.4" fill="#0d1a06"/></svg>
+    </div>
+
+    <h1 class="ty-title">THANK YOU<br><span class="ty-shimmer">FOR EXPLORING</span></h1>
+
+    <p class="ty-subtext">You've seen the data — <b>now come see it in action</b>. Step inside the ESG Centre to explore our sustainability initiatives up close.</p>
+
+    <div class="ty-recap">
+      <div class="ty-chip"><span class="ty-ic" style="background:rgba(37,99,235,0.22);">⚡</span><span>Electricity</span></div>
+      <div class="ty-chip"><span class="ty-ic" style="background:rgba(8,145,178,0.22);">💧</span><span>Water</span></div>
+      <div class="ty-chip"><span class="ty-ic" style="background:rgba(217,119,6,0.22);">☀️</span><span>Solar</span></div>
+      <div class="ty-chip"><span class="ty-ic" style="background:rgba(100,116,139,0.25);">♻️</span><span>Waste</span></div>
+    </div>
+
+    <div class="ty-cta"><span class="ty-pin">📍</span>Continue your visit inside the ESG Centre <span class="ty-arrow">→</span></div>
+
+    <p class="ty-reset-note">Tap anywhere to return to the Welcome page</p>
   </div>
 
   <button id="backArrowButton" class="arrow-btn" onclick="navigateToPreviousPage()">&#8592;</button>
@@ -3051,6 +3212,8 @@ body.graph-bg-transparent .three-chart-wrap {
 
     // Multi-year data structures
     let overviewByYear = {};
+    let elecCampusByYear = {};
+    let waterCampusByYear = {};
     let solarByYear = {};
     let wasteByYear = {};
     
@@ -3082,6 +3245,8 @@ body.graph-bg-transparent .three-chart-wrap {
       
       // Multi-year data
       overviewByYear = (data.overviewByYear && typeof data.overviewByYear === "object") ? data.overviewByYear : {};
+      elecCampusByYear = (data.elecCampusByYear && typeof data.elecCampusByYear === "object") ? data.elecCampusByYear : {};
+      waterCampusByYear = (data.waterCampusByYear && typeof data.waterCampusByYear === "object") ? data.waterCampusByYear : {};
       solarByYear = (data.solarByYear && typeof data.solarByYear === "object") ? data.solarByYear : {};
       wasteByYear = (data.wasteByYear && typeof data.wasteByYear === "object") ? data.wasteByYear : {};
       
@@ -4819,6 +4984,7 @@ body.graph-bg-transparent .three-chart-wrap {
     let progressActivePage = 1;
     let pageTransitionSeq = 0;
     let pageTransitionBusy = false;
+    let pendingNavDirection = null;
 
     function hardResetProgressBar() {
       if (progressIntervalId) clearInterval(progressIntervalId);
@@ -5327,15 +5493,23 @@ body.graph-bg-transparent .three-chart-wrap {
         nextElement.style.transform = "";
         nextElement.style.opacity = "";
         if (!is_auto_mode) pageTransitionBusy = false;
+        if (pendingNavDirection) {
+          const queuedDirection = pendingNavDirection;
+          pendingNavDirection = null;
+          if (queuedDirection === "left") navigateToNextPage();
+          else navigateToPreviousPage();
+        }
       }, 500);
     }
 
     function navigateToNextPage() {
+      if (!is_auto_mode && pageTransitionBusy) { pendingNavDirection = "left"; return; }
       const next = nextEnabledPage(currentPageNumber, 1);
       showPageByNumber(next, "left");
     }
 
     function navigateToPreviousPage() {
+      if (!is_auto_mode && pageTransitionBusy) { pendingNavDirection = "right"; return; }
       const previous = nextEnabledPage(currentPageNumber, -1);
       showPageByNumber(previous, "right");
     }
@@ -9243,12 +9417,16 @@ body.graph-bg-transparent .three-chart-wrap {
       const wasteYear = kpiYearOverride.waste || latestWasteYear || latestDataYear || newestYear;
       if (!overviewYear && !solarYear && !wasteYear) return;
 
-      // Electricity + Water totals (sum all buildings for the year)
+      // Electricity + Water totals - from the campus-wide (SP-metered) monthly
+      // readings, not summed from per-building rows. Per-building uploads can
+      // have gaps for individual buildings/months that the single campus
+      // meter reading doesn't have, so per-building sums can under-count.
       let elecTotal = 0, waterTotal = 0;
-      const overview = overviewByYear[overviewYear] || [];
-      overview.forEach(b => {
-        elecTotal  += Number(b.electricity || 0);
-        waterTotal += Number(b.water || 0);
+      (elecCampusByYear[overviewYear] || []).forEach(m => {
+        elecTotal += Number(m.total || 0);
+      });
+      (waterCampusByYear[overviewYear] || []).forEach(m => {
+        waterTotal += Number(m.potable || 0) + Number(m.recycled || 0);
       });
 
       // Solar total (sum monthly urban + greenhouse)
@@ -9264,12 +9442,13 @@ body.graph-bg-transparent .three-chart-wrap {
       });
 
       // Count months that actually have data, for a fair monthly average
-      const elecMonths  = 12; // building totals are annual; divide by 12
+      const elecMonths  = (elecCampusByYear[overviewYear] || []).filter(m => Number(m.total||0) > 0).length || 12;
+      const waterMonths = (waterCampusByYear[overviewYear] || []).filter(m => (Number(m.potable||0)+Number(m.recycled||0)) > 0).length || 12;
       const solarMonths = (solarByYear[solarYear] || []).filter(m => (Number(m.urban||0)+Number(m.greenhouse||0)) > 0).length || 12;
       const wasteMonths = (wasteByYear[wasteYear] || []).filter(m => (Number(m.generalKg||0)+Number(m.recyclableKg||0)) > 0).length || 12;
 
       const avgElec  = elecTotal  / elecMonths;
-      const avgWater = waterTotal / elecMonths;
+      const avgWater = waterTotal / waterMonths;
       const avgSolar = solarTotal / solarMonths;
       const avgWaste = wasteTotal / wasteMonths;
 
