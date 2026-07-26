@@ -7,15 +7,16 @@ Republic Polytechnic ESG dashboard built with Node.js, Express, EJS, MySQL/XAMPP
 1. Install Node.js and XAMPP.
 2. Start MySQL from XAMPP.
 3. Import `esgdashboard.sql` into a MySQL database named `esgdashboard`.
-4. Copy `databaseinfo.env.example` to `databaseinfo.env`.
-5. Update `databaseinfo.env` if your MySQL username or password is different.
-6. Install dependencies:
+4. Create the `ESGAdmin` database user with the correct privileges by running `scripts/setup-esgadmin-user.sql` (via phpMyAdmin's SQL tab, or `C:\xampp\mysql\bin\mysql.exe -u root < scripts\setup-esgadmin-user.sql`). This is required — without it, the app can connect but features that create/alter tables (like Assistant Insights) will fail with a `CREATE command denied` error. Safe to re-run any time, on any machine.
+5. Copy `databaseinfo.env.example` to `databaseinfo.env`.
+6. Update `databaseinfo.env` if your MySQL username or password is different.
+7. Install dependencies:
 
 ```powershell
 npm.cmd install
 ```
 
-7. Start the dashboard:
+8. Start the dashboard:
 
 ```powershell
 npm.cmd run devStart
