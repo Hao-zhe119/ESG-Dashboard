@@ -4984,6 +4984,7 @@ body.graph-bg-transparent .three-chart-wrap {
     let progressActivePage = 1;
     let pageTransitionSeq = 0;
     let pageTransitionBusy = false;
+    let pendingNavDirection = null;
 
     function hardResetProgressBar() {
       if (progressIntervalId) clearInterval(progressIntervalId);
@@ -5492,15 +5493,23 @@ body.graph-bg-transparent .three-chart-wrap {
         nextElement.style.transform = "";
         nextElement.style.opacity = "";
         if (!is_auto_mode) pageTransitionBusy = false;
+        if (pendingNavDirection) {
+          const queuedDirection = pendingNavDirection;
+          pendingNavDirection = null;
+          if (queuedDirection === "left") navigateToNextPage();
+          else navigateToPreviousPage();
+        }
       }, 500);
     }
 
     function navigateToNextPage() {
+      if (!is_auto_mode && pageTransitionBusy) { pendingNavDirection = "left"; return; }
       const next = nextEnabledPage(currentPageNumber, 1);
       showPageByNumber(next, "left");
     }
 
     function navigateToPreviousPage() {
+      if (!is_auto_mode && pageTransitionBusy) { pendingNavDirection = "right"; return; }
       const previous = nextEnabledPage(currentPageNumber, -1);
       showPageByNumber(previous, "right");
     }
