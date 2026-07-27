@@ -8,6 +8,8 @@ const os = require("os");
 const { execFile, spawn } = require("child_process");
 const XLSX = require("xlsx");
 const bcrypt = require("bcrypt");
+const { readNumericCell } = require("./lib/excelCell");
+const { BuildingNameStandardized } = require("./lib/buildingNames");
 const {
   DEFAULT_CONFIG,
   readRuntimeConfig,
@@ -398,27 +400,6 @@ async function saveYearsForAccount(accountId, yearsArray) {
    BUILDING NAME HELPERS
    (Moved up before getBuildingYearRanges since it uses normalizeBuildingKey)
 ============================== */
-
-function BuildingNameStandardized(name) {
-  const cleanName = String(name ?? "").trim();
-  if (!cleanName) return "";
-
-  const upper = cleanName.toUpperCase();
-
-  if (upper === "SPORT HALL" || upper === "SPORTS COMPLEX") return "Sports Complex";
-  if (upper === "GREEN HOUSE" || upper === "GREENHOUSE") return "Green House";
-
-  if (upper === "THE ARCH" || upper === "THE ARCH (1&2)" || upper.startsWith("THE ARCH")) {
-    return "The Arch";
-  }
-
-  if (upper === "SIT" || upper === "BLK 43" || upper === "BLOCK 43") return "Blk 43";
-
-  if (/^E[1-6]\b/.test(upper)) return upper.slice(0, 2);
-  if (/^W[1-6]\b/.test(upper)) return upper.slice(0, 2);
-
-  return cleanName;
-}
 
 function normalizeBuildingKey(name) {
   if (!name) return "";
@@ -4145,6 +4126,15 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
   // Track incomplete data warnings
   const incompleteDataWarnings = [];
 
+  // Cells that held something other than a parseable number - surfaced so a
+  // malformed sheet is visible instead of quietly importing as zero.
+  const unparseableCells = [];
+  const noteBadCell = (tabLabel) => (address, value) => {
+    const message = `${tabLabel} cell ${address} is not a number: "${String(value).trim()}"`;
+    console.warn(`WARNING: ${message}`);
+    unparseableCells.push(message);
+  };
+
   try {
     const workbook = XLSX.readFile(req.file.path);
 
@@ -4241,7 +4231,7 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
 
       for (let month = 1; month <= 12; month++) {
         const dataRow = startRow + (month - 1);
-        const billValue = sheet1[`D${dataRow}`] ? Number(sheet1[`D${dataRow}`].v) || 0 : 0;
+        const billValue = readNumericCell(sheet1, `D${dataRow}`, noteBadCell("Tab 1 Total Electric"));
         const billMonth = `${year}-${String(month).padStart(2, "0")}-01`;
 
         if (billValue > 0) {
@@ -4318,7 +4308,7 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
 
         for (let month = 1; month <= 12; month++) {
           const dataRow = startRow + (month - 1);
-          const billValue = sheet2[`${col}${dataRow}`] ? Number(sheet2[`${col}${dataRow}`].v) || 0 : 0;
+          const billValue = readNumericCell(sheet2, `${col}${dataRow}`, noteBadCell("Tab 2 Building Electric"));
           const billMonth = `${year}-${String(month).padStart(2, "0")}-01`;
 
           if (billValue > 0) {
@@ -4376,8 +4366,8 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
 
       for (let month = 1; month <= 12; month++) {
         const dataRow = startRow + (month - 1);
-        const potable = sheet3[`D${dataRow}`] ? Number(sheet3[`D${dataRow}`].v) || 0 : 0;
-        const recycled = sheet3[`E${dataRow}`] ? Number(sheet3[`E${dataRow}`].v) || 0 : 0;
+        const potable = readNumericCell(sheet3, `D${dataRow}`, noteBadCell("Tab 3 Total Water"));
+        const recycled = readNumericCell(sheet3, `E${dataRow}`, noteBadCell("Tab 3 Total Water"));
         const billMonth = `${year}-${String(month).padStart(2, "0")}-01`;
 
         if (potable > 0 || recycled > 0) {
@@ -4458,8 +4448,9 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
       for (let testCol = 2; testCol <= 5 && !hasData; testCol++) {
         const col = XLSX.utils.encode_col(testCol);
         for (let testRow = startRow; testRow < startRow + 3; testRow++) {
-          const cell = sheet4[`${col}${testRow}`];
-          if (cell && cell.v !== undefined && cell.v !== null && Number(cell.v) > 0) {
+          // Probe only - a text-formatted number here still means the block
+          // exists, so parse it the same way the real read does.
+          if (readNumericCell(sheet4, `${col}${testRow}`) > 0) {
             hasData = true;
             break;
           }
@@ -4487,7 +4478,7 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
 
         for (let month = 1; month <= 12; month++) {
           const dataRow = startRow + (month - 1);
-          const waterUsed = sheet4[`${building.col}${dataRow}`] ? Number(sheet4[`${building.col}${dataRow}`].v) || 0 : 0;
+          const waterUsed = readNumericCell(sheet4, `${building.col}${dataRow}`, noteBadCell("Tab 4 Building Water"));
           const billMonth = `${year}-${String(month).padStart(2, "0")}-01`;
 
           if (waterUsed > 0) {
@@ -4524,8 +4515,8 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
 
       for (let month = 1; month <= 12; month++) {
         const dataRow = startRow + (month - 1);
-        const urbanRenewables = sheet5[`D${dataRow}`] ? Number(sheet5[`D${dataRow}`].v) || 0 : 0;
-        const greenHouse = sheet5[`E${dataRow}`] ? Number(sheet5[`E${dataRow}`].v) || 0 : 0;
+        const urbanRenewables = readNumericCell(sheet5, `D${dataRow}`, noteBadCell("Tab 5 Solar"));
+        const greenHouse = readNumericCell(sheet5, `E${dataRow}`, noteBadCell("Tab 5 Solar"));
         const billMonth = `${year}-${String(month).padStart(2, "0")}-01`;
 
         if (urbanRenewables > 0 || greenHouse > 0) {
@@ -4580,9 +4571,9 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
       
       for (let i = 0; i < 12; i++) {
         const dataRow = dataStartRow + i;
-        const generalKg = sheet[`B${dataRow}`] ? Number(sheet[`B${dataRow}`].v) || 0 : 0;
-        const recycleKg = sheet[`C${dataRow}`] ? Number(sheet[`C${dataRow}`].v) || 0 : 0;
-        
+        const generalKg = readNumericCell(sheet, `B${dataRow}`);
+        const recycleKg = readNumericCell(sheet, `C${dataRow}`);
+
         if (generalKg > 0 || recycleKg > 0) {
           monthsWithData++;
         }
@@ -4649,10 +4640,10 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
         const calendarMonth = fiscalMonthOrder[i];
         const calendarYear = calendarMonth >= 4 ? fyStartYear : fyStartYear + 1;
         
-        const generalKg = sheet6[`B${dataRow}`] ? Number(sheet6[`B${dataRow}`].v) || 0 : 0;
-        const recycleKg = sheet6[`C${dataRow}`] ? Number(sheet6[`C${dataRow}`].v) || 0 : 0;
-        const generalPct = sheet6[`D${dataRow}`] ? Number(sheet6[`D${dataRow}`].v) || 0 : 0;
-        const recyclePct = sheet6[`E${dataRow}`] ? Number(sheet6[`E${dataRow}`].v) || 0 : 0;
+        const generalKg = readNumericCell(sheet6, `B${dataRow}`, noteBadCell("Tab 6 Waste"));
+        const recycleKg = readNumericCell(sheet6, `C${dataRow}`, noteBadCell("Tab 6 Waste"));
+        const generalPct = readNumericCell(sheet6, `D${dataRow}`, noteBadCell("Tab 6 Waste"));
+        const recyclePct = readNumericCell(sheet6, `E${dataRow}`, noteBadCell("Tab 6 Waste"));
         
         const billMonth = `${calendarYear}-${String(calendarMonth).padStart(2, "0")}-01`;
         
@@ -4753,6 +4744,15 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
       console.warn("====================================================================\n");
     }
 
+    if (unparseableCells.length > 0) {
+      console.warn("\n==================== UNPARSEABLE CELLS ====================");
+      console.warn(`These cells were imported as 0 - check their formatting in Excel:`);
+      unparseableCells.forEach((warning, index) => {
+        console.warn(`${index + 1}. ${warning}`);
+      });
+      console.warn("===========================================================\n");
+    }
+
     // ===================== CLEANUP =====================
     try {
       if (fs.existsSync(req.file.path)) {
@@ -4772,8 +4772,12 @@ app.post("/upload/xlsx", uploadExcel.single("xlsxFile"), async (req, res) => {
     // Signal open dashboard screens to reload with the new data.
     bumpDataVersion();
 
+    const cellWarningSuffix = unparseableCells.length > 0
+      ? ` | WARNING: ${unparseableCells.length} cell(s) could not be read as numbers and were imported as 0 - see server log`
+      : "";
+
     res.send(
-      `Data successfully uploaded! Years: ${yearsArray.join(", ")} | Buildings: ${buildingsList}`
+      `Data successfully uploaded! Years: ${yearsArray.join(", ")} | Buildings: ${buildingsList}${cellWarningSuffix}`
     );
 
   } catch (error) {
