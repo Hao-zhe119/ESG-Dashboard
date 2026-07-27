@@ -1357,7 +1357,8 @@ body.mode-interactive #page7 .three-panel {
 .analytics-navigator {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: minmax(100px, auto) minmax(180px, 1fr) minmax(100px, auto);
+  /* label | scrubber | range readout | Play/Reset */
+  grid-template-columns: minmax(100px, auto) minmax(180px, 1fr) minmax(100px, auto) auto;
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
@@ -1373,6 +1374,12 @@ body.mode-interactive #page7 .three-panel {
   color: #475569;
   font: 650 12px/1.2 var(--chartFont);
   white-space: nowrap;
+}
+
+/* Play/Reset, relocated out of the header toolbar to sit with the scrubber
+   they actually drive. */
+.analytics-navigator-actions {
+  justify-self: end;
 }
 
 .analytics-range-track {
@@ -2619,6 +2626,9 @@ body.graph-bg-transparent .three-chart-wrap {
       .compare-color-controls{ justify-content:flex-start; max-width:100%; }
       .analytics-intelligence{ grid-template-columns:1fr; }
       .analytics-stats-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+      /* Two columns: label + scrubber on top, readout + Play/Reset beneath. */
+      .analytics-navigator{ grid-template-columns:auto minmax(140px, 1fr); }
+      .analytics-range-value{ justify-self:start; }
     }
 
     /* Pop-up colour grid picker */
@@ -3719,56 +3729,39 @@ body.graph-bg-transparent .three-chart-wrap {
             ctx.fillText(label, left + 9, top + 16, w - 16);
           }
 
-          function drawLineThrough(points, color, dash) {
-            if (!points || points.length < 2) return;
+          function drawHorizontalRule(value, color, dash, label, anchorX) {
+            const y = pyForValue(value);
             ctx.save();
             ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.setLineDash(dash || []);
-            ctx.beginPath();
-            points.forEach((point, index) => {
-              const x = pxForIndex(point.index);
-              const y = pyForValue(point.value);
-              if (index === 0) ctx.moveTo(x, y);
-              else ctx.lineTo(x, y);
-            });
-            ctx.stroke();
-            ctx.restore();
-          }
-
-          if (overlays.benchmark != null) {
-            const y = pyForValue(overlays.benchmark);
-            ctx.save();
-            ctx.strokeStyle = "rgba(15,23,42,0.46)";
             ctx.lineWidth = 1.5;
-            ctx.setLineDash([6, 6]);
+            ctx.setLineDash(dash);
             ctx.beginPath();
             ctx.moveTo(area.left, y);
             ctx.lineTo(area.right, y);
             ctx.stroke();
-            drawTextPill("Benchmark " + formatAxisNumber(overlays.benchmark), area.left + 8, y, "rgba(15,23,42,0.46)");
+            drawTextPill(label, anchorX, y, color);
             ctx.restore();
+          }
+
+          // "Display Average" from the chart toolbar.
+          if (overlays.average != null) {
+            drawHorizontalRule(overlays.average, "rgba(15,23,42,0.55)", [6, 6],
+              "Average " + formatAxisNumber(overlays.average), area.left + 8);
+          }
+
+          // Campus Analytics (page 11) sets benchmark/target directly rather
+          // than through the toolbar, so both rules stay supported.
+          if (overlays.benchmark != null) {
+            drawHorizontalRule(overlays.benchmark, "rgba(15,23,42,0.46)", [6, 6],
+              "Benchmark " + formatAxisNumber(overlays.benchmark), area.left + 8);
           }
 
           if (overlays.target != null) {
-            const y = pyForValue(overlays.target);
-            ctx.save();
-            ctx.strokeStyle = "rgba(22,101,52,0.72)";
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([3, 5]);
-            ctx.beginPath();
-            ctx.moveTo(area.left, y);
-            ctx.lineTo(area.right, y);
-            ctx.stroke();
             // Anchored at the right edge so it never collides with the
             // benchmark pill, whose value (and therefore y position) is close.
-            drawTextPill("Target " + formatAxisNumber(overlays.target), area.right - 190, y, "rgba(22,101,52,0.72)");
-            ctx.restore();
+            drawHorizontalRule(overlays.target, "rgba(22,101,52,0.72)", [3, 5],
+              "Target " + formatAxisNumber(overlays.target), area.right - 190);
           }
-
-          drawLineThrough(overlays.movingAverage, "rgba(124,58,237,0.72)", [3, 4]);
-          drawLineThrough(overlays.trendLine, "rgba(234,88,12,0.72)", [8, 5]);
-          drawLineThrough(overlays.forecast, "rgba(8,145,178,0.62)", [2, 5]);
 
           events.forEach((item) => {
             const index = Number(item.index);
@@ -3803,31 +3796,8 @@ body.graph-bg-transparent .three-chart-wrap {
               const x2 = pxForIndex(Math.min(labels.length - 1, Number(annotation.xIndex || 0) + Math.max(1, Math.round(labels.length / 8))));
               ctx.fillStyle = "rgba(37,99,235,0.10)";
               ctx.fillRect(Math.min(x, x2), area.top, Math.abs(x2 - x), area.bottom - area.top);
-            } else if (annotation.type === "event") {
-              ctx.setLineDash([4, 5]);
-              ctx.beginPath();
-              ctx.moveTo(x, area.top);
-              ctx.lineTo(x, area.bottom);
-              ctx.stroke();
-            } else if (annotation.type === "arrow") {
-              ctx.beginPath();
-              ctx.moveTo(x - 34, y - 28);
-              ctx.lineTo(x, y);
-              ctx.stroke();
-              ctx.beginPath();
-              ctx.moveTo(x, y);
-              ctx.lineTo(x - 8, y - 2);
-              ctx.lineTo(x - 2, y - 9);
-              ctx.closePath();
-              ctx.fill();
-            } else if (annotation.type === "trend") {
-              const x2 = pxForIndex(Math.min(labels.length - 1, Number(annotation.xIndex || 0) + Math.max(2, Math.round(labels.length / 5))));
-              const y2 = pyForValue(Number(annotation.yValue || 0) * 1.08);
-              ctx.beginPath();
-              ctx.moveTo(x, y);
-              ctx.lineTo(x2, y2);
-              ctx.stroke();
             } else {
+              // marker / note
               ctx.beginPath();
               ctx.arc(x, y, annotation.type === "note" ? 5 : 4, 0, Math.PI * 2);
               ctx.fill();
@@ -4074,9 +4044,25 @@ body.graph-bg-transparent .three-chart-wrap {
       return [lineA, lineB];
     }
 
+    const MONTH_LABEL_SET = new Set(["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"]);
+
+    function allLabelsAreMonths(labels, minimumLength) {
+      return Array.isArray(labels)
+        && labels.length >= minimumLength
+        && labels.every(label => MONTH_LABEL_SET.has(String(label || "").toLowerCase()));
+    }
+
+    // Near-complete month axis. The length floor exists because this drives
+    // tick thinning, which only matters once the axis is crowded.
     function isMonthAxis(labels) {
-      const months = new Set(["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"]);
-      return Array.isArray(labels) && labels.length >= 10 && labels.every(label => months.has(String(label || "").toLowerCase()));
+      return allLabelsAreMonths(labels, 10);
+    }
+
+    // "Is the x axis a measurement of time?" - decides whether a chart gets the
+    // Timeline scrubber and Play control. No length floor here: a partial year
+    // (solar currently stops at May 2026) is still a time axis, it is just short.
+    function isTimeAxis(labels) {
+      return allLabelsAreMonths(labels, 2);
     }
 
     function shouldHideIntermediateMonthTick(labels, index, chart) {
@@ -5614,39 +5600,50 @@ body.graph-bg-transparent .three-chart-wrap {
         .filter(Boolean);
     }
 
-    function createAnalyticsToolbar(header, legendElement, accent) {
+    // Annotation tools kept deliberately small. Marker pins a single reading,
+    // Note drops a labelled callout, Region shades a span - between them they
+    // cover everything this dashboard is actually annotated for. The old
+    // Event/Arrow/Trend tools duplicated those three visually, and Brush was a
+    // range-selection mode filed under "Annotate" (shift-drag still does it).
+    function analyticsToolbarMarkup(timeAxis) {
+      return '' +
+        '<div class="analytics-control-group analytics-view-switch" aria-label="Visualization type">' +
+          '<button type="button" class="analytics-segment active" data-analytics-mode="combined">Combined</button>' +
+          '<button type="button" class="analytics-segment" data-analytics-mode="bar">Bar</button>' +
+          '<button type="button" class="analytics-segment" data-analytics-mode="line">Line</button>' +
+        '</div>' +
+        '<div class="analytics-control-group" aria-label="Analysis overlay">' +
+          '<button type="button" class="analytics-tool-btn" data-analytics-toggle="average">Display Average</button>' +
+        '</div>' +
+        '<div class="analytics-control-group" aria-label="Annotations">' +
+          '<span class="analytics-toolbar-label">Annotate</span>' +
+          '<button type="button" class="analytics-tool-btn" data-analytics-annotation="marker">Marker</button>' +
+          '<button type="button" class="analytics-tool-btn" data-analytics-annotation="note">Note</button>' +
+          '<button type="button" class="analytics-tool-btn" data-analytics-annotation="region">Region</button>' +
+        '</div>' +
+        // Play/Reset live next to the Timeline scrubber on time-axis charts.
+        // Categorical charts have no timeline, so Reset stays here - without it
+        // annotations and the average line would have no way back off the chart.
+        (timeAxis ? '' :
+          '<div class="analytics-control-group" aria-label="Reset">' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-reset="true">Reset</button>' +
+          '</div>');
+    }
+
+    function createAnalyticsToolbar(header, legendElement, accent, timeAxis) {
       let toolbar = header.querySelector(".analytics-toolbar");
+      const axisKey = timeAxis ? "time" : "category";
       if (!toolbar) {
         toolbar = document.createElement("div");
         toolbar.className = "analytics-toolbar";
-        toolbar.innerHTML =
-          '<div class="analytics-control-group analytics-view-switch" aria-label="Visualization type">' +
-            '<button type="button" class="analytics-segment active" data-analytics-mode="combined">Combined</button>' +
-            '<button type="button" class="analytics-segment" data-analytics-mode="bar">Bar</button>' +
-            '<button type="button" class="analytics-segment" data-analytics-mode="line">Line</button>' +
-          '</div>' +
-          '<div class="analytics-control-group" aria-label="Analysis overlays">' +
-            '<span class="analytics-toolbar-label">Overlay</span>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-toggle="movingAverage">MA</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-toggle="trendLine">Trend</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-toggle="benchmark">Bench</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-toggle="forecast">Forecast</button>' +
-          '</div>' +
-          '<div class="analytics-control-group" aria-label="Annotations">' +
-            '<span class="analytics-toolbar-label">Annotate</span>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="marker">Marker</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="note">Note</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="region">Region</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="event">Event</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="arrow">Arrow</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-annotation="trend">Trend</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-brush="true">Brush</button>' +
-          '</div>' +
-          '<div class="analytics-control-group" aria-label="Playback">' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-play="true">Play</button>' +
-            '<button type="button" class="analytics-tool-btn" data-analytics-reset="true">Reset</button>' +
-          '</div>';
+        toolbar.dataset.analyticsAxis = axisKey;
+        toolbar.innerHTML = analyticsToolbarMarkup(timeAxis);
         header.appendChild(toolbar);
+      } else if (toolbar.dataset.analyticsAxis !== axisKey) {
+        // Axis kind changed under us - rebuild the buttons. The click handler is
+        // delegated on the toolbar element itself, so it survives this.
+        toolbar.dataset.analyticsAxis = axisKey;
+        toolbar.innerHTML = analyticsToolbarMarkup(timeAxis);
       }
       if (legendElement && legendElement.parentNode !== toolbar) {
         legendElement.dataset.analyticsLegend = "true";
@@ -5656,9 +5653,20 @@ body.graph-bg-transparent .three-chart-wrap {
       return toolbar;
     }
 
-    function ensureAnalyticsPanels(body, wrap) {
+    // The Timeline scrubber only means anything when the x axis is a period
+    // axis (months / fiscal months). On the building-comparison charts the x
+    // axis is an alphabetical list of buildings, where "drag to narrow the
+    // range" and "play through the window" are meaningless - so those charts
+    // get no navigator at all, and the insight panel moves up under the chart.
+    function ensureAnalyticsPanels(body, wrap, timeAxis) {
       let navigator = body.querySelector(".analytics-navigator");
-      if (!navigator) {
+
+      if (!timeAxis) {
+        if (navigator) {
+          navigator.remove();
+          navigator = null;
+        }
+      } else if (!navigator) {
         navigator = document.createElement("div");
         navigator.className = "analytics-navigator";
         navigator.innerHTML =
@@ -5667,7 +5675,11 @@ body.graph-bg-transparent .three-chart-wrap {
             '<input class="analytics-range-input analytics-range-start" type="range" min="0" max="0" value="0" aria-label="Range start">' +
             '<input class="analytics-range-input analytics-range-end" type="range" min="0" max="0" value="0" aria-label="Range end">' +
           '</div>' +
-          '<span class="analytics-range-value">All periods</span>';
+          '<span class="analytics-range-value">All periods</span>' +
+          '<div class="analytics-control-group analytics-navigator-actions" aria-label="Playback">' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-play="true">Play</button>' +
+            '<button type="button" class="analytics-tool-btn" data-analytics-reset="true">Reset</button>' +
+          '</div>';
         wrap.insertAdjacentElement("afterend", navigator);
       }
 
@@ -5684,6 +5696,9 @@ body.graph-bg-transparent .three-chart-wrap {
             '<div class="analytics-stats-title">Selected interval</div>' +
             '<div class="analytics-stats-grid"></div>' +
           '</div>';
+        (navigator || wrap).insertAdjacentElement("afterend", intelligence);
+      } else if (navigator && intelligence.previousElementSibling !== navigator) {
+        // Navigator was added back after the panel already existed.
         navigator.insertAdjacentElement("afterend", intelligence);
       }
 
@@ -5718,17 +5733,6 @@ body.graph-bg-transparent .three-chart-wrap {
       return { index: primary.index, dataset: primary.dataset, values };
     }
 
-    function computeMovingAverage(values, windowSize) {
-      const output = [];
-      for (let index = 0; index < values.length; index++) {
-        const start = Math.max(0, index - windowSize + 1);
-        const slice = values.slice(start, index + 1).filter(Number.isFinite);
-        if (!slice.length) continue;
-        output.push({ index, value: slice.reduce((sum, value) => sum + value, 0) / slice.length });
-      }
-      return output;
-    }
-
     function computeLinearTrend(values, start, end) {
       const points = [];
       for (let index = start; index <= end; index++) {
@@ -5753,27 +5757,18 @@ body.graph-bg-transparent .three-chart-wrap {
 
     function updateAnalyticsOverlays(state) {
       state.charts.forEach((chart) => {
-        const series = chartPrimarySeries(chart);
-        const labels = chart.data && chart.data.labels ? chart.data.labels : [];
         const range = getVisibleRange(chart);
-        const values = series ? series.values : [];
-        const visibleValues = values.slice(range.start, range.end + 1).filter(Number.isFinite);
-        const stats = summarizeValues(visibleValues);
         const overlays = {};
-        if (state.toggles.movingAverage && values.length) overlays.movingAverage = computeMovingAverage(values, 3);
-        if (state.toggles.trendLine && values.length) overlays.trendLine = computeLinearTrend(values, range.start, range.end);
-        if (state.toggles.benchmark && stats) overlays.benchmark = stats.average;
-        if (state.toggles.forecast && values.length) {
-          const trend = computeLinearTrend(values, Math.max(0, range.end - 4), range.end);
-          if (trend.length === 2) {
-            const slope = (trend[1].value - trend[0].value) / Math.max(1, trend[1].index - trend[0].index);
-            overlays.forecast = [];
-            for (let index = range.end; index <= Math.min(labels.length - 1, range.end + 3); index++) {
-              overlays.forecast.push({ index, value: Number(values[range.end] || 0) + slope * (index - range.end) });
-            }
-          }
+        if (state.toggles.average) {
+          // Averaged across every visible series in the visible range, so the
+          // rule always matches the "Avg" figure in the stats panel below.
+          const values = [];
+          chart.data.datasets.forEach((dataset, datasetIndex) => {
+            values.push(...visibleDatasetValues(chart, datasetIndex, range.start, range.end));
+          });
+          const stats = summarizeValues(values.filter(Number.isFinite));
+          if (stats) overlays.average = stats.average;
         }
-        if (state.toggles.target && stats) overlays.target = stats.average * 0.92;
         chart.$analyticsOverlays = overlays;
         chart.update("none");
       });
@@ -5793,7 +5788,7 @@ body.graph-bg-transparent .three-chart-wrap {
       const rangeText = labels.length
         ? String(labels[range.start]) + " to " + String(labels[range.end])
         : "All periods";
-      state.rangeValue.textContent = rangeText;
+      if (state.rangeValue) state.rangeValue.textContent = rangeText;
       const grid = state.statsGrid;
       if (!grid) return;
 
@@ -5904,7 +5899,7 @@ body.graph-bg-transparent .three-chart-wrap {
       const safeEnd = Math.max(safeStart, Math.min(labels.length - 1, Math.round(end)));
       state.range = { start: safeStart, end: safeEnd };
       state.charts.forEach(chart => setChartRange(chart, safeStart, safeEnd));
-      if (updateInputs !== false) {
+      if (updateInputs !== false && state.rangeStart && state.rangeEnd) {
         state.rangeStart.value = String(safeStart);
         state.rangeEnd.value = String(safeEnd);
       }
@@ -5916,8 +5911,10 @@ body.graph-bg-transparent .three-chart-wrap {
       state.selection = null;
       state.range = { start: 0, end: Math.max(0, state.labels.length - 1) };
       state.charts.forEach(resetChartRange);
-      state.rangeStart.value = "0";
-      state.rangeEnd.value = String(Math.max(0, state.labels.length - 1));
+      if (state.rangeStart && state.rangeEnd) {
+        state.rangeStart.value = "0";
+        state.rangeEnd.value = String(Math.max(0, state.labels.length - 1));
+      }
       updateAnalyticsOverlays(state);
       updateAnalyticsStats(state);
     }
@@ -5933,10 +5930,7 @@ body.graph-bg-transparent .three-chart-wrap {
       const yScale = chart.scales.y;
       const xIndex = Math.round(Number(xScale.getValueForPixel(x)));
       const yValue = Number(yScale.getValueForPixel(y));
-      const defaultNote = state.annotationType === "event" ? "ESG event" :
-        state.annotationType === "region" ? "Highlighted period" :
-        state.annotationType === "trend" ? "Trend annotation" :
-        state.annotationType === "arrow" ? "Consumption spike" :
+      const defaultNote = state.annotationType === "region" ? "Highlighted period" :
         state.annotationType === "note" ? "Operational note" : "Marker";
       const note = window.prompt("Annotation label", defaultNote) || defaultNote;
       state.charts.forEach(targetChart => {
@@ -6051,11 +6045,14 @@ body.graph-bg-transparent .three-chart-wrap {
       if (!body || !header) return;
       const legendElement = options && options.legendId ? document.getElementById(options.legendId) : null;
       const accent = card ? getComputedStyle(card).getPropertyValue("--chartAccent") : "";
-      const toolbar = createAnalyticsToolbar(header, legendElement, accent);
-      const panels = ensureAnalyticsPanels(body, wrap);
       const charts = chartsInsideWrap(wrap);
       if (!charts.length) return;
       const labels = (charts[0].data && charts[0].data.labels) || [];
+      // Drives both which toolbar groups render and whether this chart gets a
+      // Timeline scrubber at all, so it has to be resolved before either is built.
+      const timeAxis = isTimeAxis(labels);
+      const toolbar = createAnalyticsToolbar(header, legendElement, accent, timeAxis);
+      const panels = ensureAnalyticsPanels(body, wrap, timeAxis);
 
       let state = analyticsModuleState.get(wrap);
       if (!state) {
@@ -6071,10 +6068,6 @@ body.graph-bg-transparent .three-chart-wrap {
           toggles: {},
           annotationType: null,
           brushMode: false,
-          navigator: panels.navigator,
-          rangeStart: panels.navigator.querySelector(".analytics-range-start"),
-          rangeEnd: panels.navigator.querySelector(".analytics-range-end"),
-          rangeValue: panels.navigator.querySelector(".analytics-range-value"),
           statsGrid: panels.intelligence.querySelector(".analytics-stats-grid"),
           insightBody: panels.intelligence.querySelector(".analytics-insights-body")
         };
@@ -6086,60 +6079,77 @@ body.graph-bg-transparent .three-chart-wrap {
         state.labels = labels;
       }
 
-      state.rangeStart.max = String(Math.max(0, labels.length - 1));
-      state.rangeEnd.max = String(Math.max(0, labels.length - 1));
-      state.rangeStart.value = String(state.range.start || 0);
-      state.rangeEnd.value = String(state.range.end || Math.max(0, labels.length - 1));
+      // Null on categorical charts, which have no Timeline row - every read of
+      // these is guarded.
+      state.navigator = panels.navigator;
+      state.rangeStart = panels.navigator ? panels.navigator.querySelector(".analytics-range-start") : null;
+      state.rangeEnd = panels.navigator ? panels.navigator.querySelector(".analytics-range-end") : null;
+      state.rangeValue = panels.navigator ? panels.navigator.querySelector(".analytics-range-value") : null;
+
+      if (state.rangeStart && state.rangeEnd) {
+        state.rangeStart.max = String(Math.max(0, labels.length - 1));
+        state.rangeEnd.max = String(Math.max(0, labels.length - 1));
+        state.rangeStart.value = String(state.range.start || 0);
+        state.rangeEnd.value = String(state.range.end || Math.max(0, labels.length - 1));
+      }
+
+      // Shared by the toolbar and the navigator, since Play/Reset live in the
+      // navigator on time-axis charts and in the toolbar otherwise.
+      const controlClickHandler = function (event) {
+        const button = event.target.closest("button");
+        if (!button) return;
+        if (button.dataset.analyticsMode) setAnalyticsMode(state, button.dataset.analyticsMode);
+        if (button.dataset.analyticsToggle) {
+          const key = button.dataset.analyticsToggle;
+          state.toggles[key] = !state.toggles[key];
+          button.classList.toggle("active", !!state.toggles[key]);
+          updateAnalyticsOverlays(state);
+        }
+        if (button.dataset.analyticsAnnotation) {
+          state.annotationType = state.annotationType === button.dataset.analyticsAnnotation ? null : button.dataset.analyticsAnnotation;
+          toolbar.querySelectorAll("[data-analytics-annotation]").forEach(item => item.classList.toggle("active", item.dataset.analyticsAnnotation === state.annotationType));
+        }
+        if (button.dataset.analyticsPlay) {
+          state.playButton = button;
+          toggleAnalyticsPlayback(state);
+        }
+        if (button.dataset.analyticsReset) {
+          stopAnalyticsPlayback(state);
+          state.annotationType = null;
+          state.brushMode = false;
+          state.toggles = {};
+          state.charts.forEach(chart => {
+            chart.$analyticsAnnotations = [];
+            chart.$analyticsOverlays = {};
+            chart.update("none");
+          });
+          toolbar.querySelectorAll(".analytics-tool-btn.active").forEach(item => item.classList.remove("active"));
+          if (state.navigator) {
+            state.navigator.querySelectorAll(".analytics-tool-btn.active").forEach(item => item.classList.remove("active"));
+          }
+          resetAnalyticsRange(state);
+        }
+      };
 
       if (toolbar.dataset.analyticsBound !== "true") {
         toolbar.dataset.analyticsBound = "true";
-        toolbar.addEventListener("click", function (event) {
-          const button = event.target.closest("button");
-          if (!button) return;
-          if (button.dataset.analyticsMode) setAnalyticsMode(state, button.dataset.analyticsMode);
-          if (button.dataset.analyticsToggle) {
-            const key = button.dataset.analyticsToggle;
-            state.toggles[key] = !state.toggles[key];
-            if (key === "benchmark") state.toggles.target = false;
-            button.classList.toggle("active", !!state.toggles[key]);
-            updateAnalyticsOverlays(state);
-          }
-          if (button.dataset.analyticsAnnotation) {
-            state.annotationType = state.annotationType === button.dataset.analyticsAnnotation ? null : button.dataset.analyticsAnnotation;
-            toolbar.querySelectorAll("[data-analytics-annotation]").forEach(item => item.classList.toggle("active", item.dataset.analyticsAnnotation === state.annotationType));
-          }
-          if (button.dataset.analyticsBrush) {
-            state.brushMode = !state.brushMode;
-            button.classList.toggle("active", state.brushMode);
-          }
-          if (button.dataset.analyticsPlay) {
-            state.playButton = button;
-            toggleAnalyticsPlayback(state);
-          }
-          if (button.dataset.analyticsReset) {
-            stopAnalyticsPlayback(state);
-            state.annotationType = null;
-            state.brushMode = false;
-            state.toggles = {};
-            state.charts.forEach(chart => {
-              chart.$analyticsAnnotations = [];
-              chart.$analyticsOverlays = {};
-              chart.update("none");
-            });
-            toolbar.querySelectorAll(".analytics-tool-btn.active").forEach(item => item.classList.remove("active"));
-            resetAnalyticsRange(state);
-          }
-        });
+        toolbar.addEventListener("click", controlClickHandler);
+      }
+
+      if (state.navigator && state.navigator.dataset.analyticsBound !== "true") {
+        state.navigator.dataset.analyticsBound = "true";
+        state.navigator.addEventListener("click", controlClickHandler);
       }
 
       const rangeHandler = function () {
+        if (!state.rangeStart || !state.rangeEnd) return;
         let start = Number(state.rangeStart.value);
         let end = Number(state.rangeEnd.value);
         if (start > end) [start, end] = [end, start];
         state.selection = null;
         setStateRange(state, start, end, false);
       };
-      if (state.rangeStart.dataset.analyticsBound !== "true") {
+      if (state.rangeStart && state.rangeStart.dataset.analyticsBound !== "true") {
         state.rangeStart.dataset.analyticsBound = "true";
         state.rangeEnd.dataset.analyticsBound = "true";
         state.rangeStart.addEventListener("input", rangeHandler);
