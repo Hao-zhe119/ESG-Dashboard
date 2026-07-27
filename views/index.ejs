@@ -4979,7 +4979,10 @@ body.graph-bg-transparent .three-chart-wrap {
     const hasImages = Array.isArray(mediaImages) && mediaImages.length > 0;
 
     function buildEnabledPages() {
-      const pages = [1, 2, 3, 4, 11, 5, 6, 7];
+      // Display order, not raw page ids: Campus Analytics is internally page
+      // 11 but shows 2nd, directly after Welcome. Keep in sync with
+      // TIMER_DISPLAY_ORDER in app.js and the .pill rail in buildingControls.ejs.
+      const pages = [1, 11, 2, 3, 4, 5, 6, 7];
       if (hasVideos) pages.push(8);
       if (hasImages) pages.push(9);
       pages.push(10);

@@ -1172,10 +1172,10 @@
            existing JS (setActivePill, pagePills, click handlers) still works. -->
       <div class="rail" id="pageRail" aria-label="Dashboard pages">
         <button class="pill" data-page="1"  type="button"><span class="st-num">01</span><span class="st-name">Welcome</span></button>
-        <button class="pill" data-page="2"  type="button"><span class="st-num">02</span><span class="st-name">Overview</span></button>
-        <button class="pill" data-page="3"  type="button"><span class="st-num">03</span><span class="st-name">Electricity</span></button>
-        <button class="pill" data-page="4"  type="button"><span class="st-num">04</span><span class="st-name">Water</span></button>
-        <button class="pill" data-page="11" type="button"><span class="st-num">05</span><span class="st-name">Campus Analytics</span></button>
+        <button class="pill" data-page="11" type="button"><span class="st-num">02</span><span class="st-name">Campus Analytics</span></button>
+        <button class="pill" data-page="2"  type="button"><span class="st-num">03</span><span class="st-name">Overview</span></button>
+        <button class="pill" data-page="3"  type="button"><span class="st-num">04</span><span class="st-name">Electricity</span></button>
+        <button class="pill" data-page="4"  type="button"><span class="st-num">05</span><span class="st-name">Water</span></button>
         <button class="pill" data-page="5"  type="button"><span class="st-num">06</span><span class="st-name">Infographics</span></button>
         <button class="pill" data-page="6"  type="button"><span class="st-num">07</span><span class="st-name">Solar</span></button>
         <button class="pill" data-page="7"  type="button"><span class="st-num">08</span><span class="st-name">Waste</span></button>
@@ -1417,8 +1417,9 @@
     const topHint = document.getElementById("topHint");
     const pagePills = Array.from(document.querySelectorAll(".pill[data-page]"));
 
-    // Rail order (Campus Analytics/page 11 sits between Water/4 and Infographics/5) -
+    // Rail order (Campus Analytics/page 11 sits between Welcome/1 and Overview/2) -
     // used instead of raw numeric comparison anywhere "which page comes first" matters.
+    // Derived from the pill DOM order above, so reordering the rail reorders navigation.
     const RAIL_ORDER = pagePills.map(pill => Number(pill.dataset.page));
 
     let selectedDashboardPage = 1;

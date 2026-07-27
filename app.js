@@ -658,13 +658,13 @@ function normalizeAnimationValue(value) {
 }
 
 // The order pages actually display in on the main dashboard (matches
-// buildEnabledPages() in index.ejs and RAIL_ORDER in buildingControls.ejs).
+// buildEnabledPages() in index.ejs and the .pill rail in buildingControls.ejs).
 // Campus Analytics is internally page_number 11 (added after the original
-// 10-page numbering, never renumbered), but it displays 5th, right after
-// Water — so admin lists must be sorted/labeled by THIS order, not raw
+// 10-page numbering, never renumbered), but it displays 2nd, right after
+// Welcome — so admin lists must be sorted/labeled by THIS order, not raw
 // page_number, or Campus Analytics appears last and mislabeled "11" instead
-// of "05".
-const TIMER_DISPLAY_ORDER = [1, 2, 3, 4, 11, 5, 6, 7, 8, 9, 10];
+// of "02".
+const TIMER_DISPLAY_ORDER = [1, 11, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function sortTimersForDisplay(rows) {
   const sorted = (rows || []).slice().sort((a, b) => {
