@@ -18,7 +18,8 @@ const DEFAULT_CONFIG = {
     7: 60,
     8: 4,
     9: 30,
-    10: 15
+    10: 15,
+    11: 75
   },
   defaultAnimations: {
     1: "rain",
@@ -30,7 +31,8 @@ const DEFAULT_CONFIG = {
     7: "leaves",
     8: "particles",
     9: "particles",
-    10: "particles"
+    10: "particles",
+    11: "particles"
   },
   interactiveMode: {
     autoSwitchOnActivity: true,

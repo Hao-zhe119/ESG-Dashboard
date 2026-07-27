@@ -195,6 +195,7 @@ if (databaseConfigError) {
       latestDatabaseError = null;
       console.log('Connected to MySQL as', process.env.DB_USER);
       ensureAssistantQuestionsTable();
+      ensureCampusAnalyticsTimerRow();
     }
   });
 }
@@ -228,6 +229,33 @@ function ensureAssistantQuestionsTable() {
         );
       } else {
         console.error("Could not ensure assistant_questions table exists:", err.message);
+      }
+    }
+  });
+}
+
+// Self-healing schema check: Campus Analytics (page 11) was added after the
+// original 10-page `timers` seed data, so any database created before that
+// change is missing its row and the admin panel can't show duration/animation
+// controls for it. INSERT IGNORE is a no-op once every account already has a
+// page_number=11 row (unique key on account_id+page_number enforces that).
+function ensureCampusAnalyticsTimerRow() {
+  const sql = `
+    INSERT IGNORE INTO timers (account_id, page_number, page_name, duration_seconds, background_animation)
+    SELECT id, 11, 'Campus Analytics', 75, 'particles' FROM accounts
+  `;
+  connection.query(sql, (err) => {
+    if (err) {
+      if (err.code === "ER_TABLEACCESS_DENIED_ERROR" || err.errno === 1142) {
+        console.error(
+          "Could not create the Campus Analytics timer row: the '" + process.env.DB_USER +
+          "' MySQL user is missing CREATE/INSERT privilege on this database.\n" +
+          "  Fix (run once): scripts\\setup-esgadmin-user.sql via phpMyAdmin's SQL tab, or\n" +
+          "  C:\\xampp\\mysql\\bin\\mysql.exe -u root < scripts\\setup-esgadmin-user.sql\n" +
+          "  Then restart the app."
+        );
+      } else {
+        console.error("Could not ensure Campus Analytics timer row exists:", err.message);
       }
     }
   });
@@ -648,6 +676,24 @@ function normalizeAnimationValue(value) {
   return BACKGROUND_ANIMATION_OPTIONS.includes(value) ? value : "particles";
 }
 
+// The order pages actually display in on the main dashboard (matches
+// buildEnabledPages() in index.ejs and RAIL_ORDER in buildingControls.ejs).
+// Campus Analytics is internally page_number 11 (added after the original
+// 10-page numbering, never renumbered), but it displays 5th, right after
+// Water — so admin lists must be sorted/labeled by THIS order, not raw
+// page_number, or Campus Analytics appears last and mislabeled "11" instead
+// of "05".
+const TIMER_DISPLAY_ORDER = [1, 2, 3, 4, 11, 5, 6, 7, 8, 9, 10];
+
+function sortTimersForDisplay(rows) {
+  const sorted = (rows || []).slice().sort((a, b) => {
+    const posA = TIMER_DISPLAY_ORDER.indexOf(Number(a.page_number));
+    const posB = TIMER_DISPLAY_ORDER.indexOf(Number(b.page_number));
+    return (posA === -1 ? 999 : posA) - (posB === -1 ? 999 : posB);
+  });
+  return sorted.map((row, index) => Object.assign({}, row, { display_position: index + 1 }));
+}
+
 function getFallbackTimerRows() {
   return getDefaultTimerRows().map((row) => ({
     timer_id: row.page_number,
@@ -663,7 +709,7 @@ function buildTimerMap(rows) {
   (rows || []).forEach((timer) => {
     const pageNumber = parseInt(timer.page_number || timer.timer_id, 10);
     const durationSeconds = Number(timer.duration_seconds) || 30;
-    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= 10) {
+    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= 11) {
       timerMap[pageNumber] = {
         timer_id: Number(timer.timer_id || pageNumber),
         page_number: pageNumber,
@@ -3319,7 +3365,7 @@ app.get('/admin', requireAuth, async (req, res) => {
        ORDER BY page_number ASC`,
       [accountId]
     );
-    const timers = timerRows || [];
+    const timers = sortTimersForDisplay(timerRows || []);
 
     console.log('Dashboard mode:', dashboardMode);
     console.log('Timers found:', timers.length);

@@ -191,7 +191,8 @@ INSERT INTO `timers` (`timer_id`, `account_id`, `page_number`, `page_name`, `dur
 (7, 1, 7, 'Waste Management', 30, 'particles'),
 (8, 1, 8, 'Media / Video Playback', 1, 'particles'),
 (9, 1, 9, 'Sustainability Highlights', 15, 'particles'),
-(10, 1, 10, 'Thank You / Loop Restart', 5, 'particles');
+(10, 1, 10, 'Thank You / Loop Restart', 5, 'particles'),
+(11, 1, 11, 'Campus Analytics', 75, 'particles');
 
 -- --------------------------------------------------------
 
@@ -395,7 +396,7 @@ ALTER TABLE `dashboard_media`
 -- AUTO_INCREMENT for table `timers`
 --
 ALTER TABLE `timers`
-  MODIFY `timer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `timer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `total_ebills`
