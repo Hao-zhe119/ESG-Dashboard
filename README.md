@@ -7,16 +7,15 @@ Republic Polytechnic ESG dashboard built with Node.js, Express, EJS, MySQL/XAMPP
 1. Install Node.js and XAMPP.
 2. Start MySQL from XAMPP.
 3. Import `esgdashboard.sql` into a MySQL database named `esgdashboard`.
-4. Create the `ESGAdmin` database user with the correct privileges by running `scripts/setup-esgadmin-user.sql` (via phpMyAdmin's SQL tab, or `C:\xampp\mysql\bin\mysql.exe -u root < scripts\setup-esgadmin-user.sql`). This is required — without it, the app can connect but features that create/alter tables (like Assistant Insights) will fail with a `CREATE command denied` error. Safe to re-run any time, on any machine.
-5. Copy `databaseinfo.env.example` to `databaseinfo.env`.
-6. Update `databaseinfo.env` if your MySQL username or password is different.
-7. Install dependencies:
+4. Copy `databaseinfo.env.example` to `databaseinfo.env`.
+5. Update `databaseinfo.env` if your MySQL username or password is different.
+6. Install dependencies:
 
 ```powershell
 npm.cmd install
 ```
 
-8. Start the dashboard:
+7. Start the dashboard:
 
 ```powershell
 npm.cmd run devStart
@@ -73,6 +72,32 @@ Older local XAMPP databases may be missing the timer animation column. Run this 
 ```powershell
 Get-Content scripts\migrate-timers-background-animation.sql | C:\xampp\mysql\bin\mysql.exe -u root esgdashboard
 ```
+
+## Troubleshooting
+
+**`#1142 - CREATE command denied to user 'ESGAdmin'@'localhost'`** (or the console shows "Could not create assistant_questions table")
+
+The `ESGAdmin` MySQL user on this machine is missing `CREATE` privilege. Fix it by running `scripts/setup-esgadmin-user.sql` as `root` — via phpMyAdmin's SQL tab (paste the file's contents into the SQL tab and click Go), or:
+
+```powershell
+C:\xampp\mysql\bin\mysql.exe -u root < scripts\setup-esgadmin-user.sql
+```
+
+Safe to re-run any time, on any machine. Then restart the app.
+
+**`#1030 - Got error 176 "Read page with wrong checksum" from storage engine Aria`** (when running any SQL in phpMyAdmin, including `scripts/setup-esgadmin-user.sql`), or MySQL won't start at all / crashes on startup with an InnoDB assertion failure
+
+This means MariaDB's own internal system tables (in the `mysql` database) are corrupted — it is not caused by this app or by any script you were running. It happens when MySQL is shut down improperly: closing the XAMPP window instead of clicking **Stop**, sleeping/hibernating the laptop while MySQL is running, or a crash/power loss. Once it reaches this state, table-level repair tools (e.g. `aria_chk`) are not reliable and can make it worse (including a full InnoDB crash) — reset the data directory instead:
+
+1. Make sure MySQL is fully stopped (check Task Manager for no `mysqld.exe` process).
+2. Rename the broken data folder so nothing is lost: `ren C:\xampp\mysql\data data_broken`
+3. Restore XAMPP's clean template: `xcopy C:\xampp\mysql\backup C:\xampp\mysql\data /E /I`
+4. Start MySQL in the XAMPP Control Panel — it should come up clean.
+5. In phpMyAdmin, create the `esgdashboard` database and import `esgdashboard.sql` fresh (this already includes every table the app needs, including `assistant_questions`).
+6. Run `scripts/setup-esgadmin-user.sql` as root.
+7. Restart the app.
+
+**To avoid this happening again:** always click **Stop** in the XAMPP Control Panel before closing XAMPP or shutting down/sleeping the laptop — never force-close the window while MySQL is running.
 
 ## Admin Demo Notes
 
