@@ -643,7 +643,7 @@
                 %>
                   <% const timerAnimation = timer.background_animation || 'particles'; %>
                   <div class="timer-row" data-timer-id="<%= timer.timer_id %>" data-page-number="<%= timer.page_number %>">
-                    <div class="timer-page-number"><%= timer.page_number %></div>
+                    <div class="timer-page-number"><%= String(timer.display_position || timer.page_number).padStart(2, '0') %></div>
                     <div class="timer-page-name" title="<%= timer.page_name %>"><%= timer.page_name %></div>
                     <select
                       class="timer-animation-select"

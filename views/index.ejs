@@ -1569,6 +1569,29 @@ body.mode-interactive #page7 .three-panel {
   box-shadow: 0 8px 18px rgba(15,23,42,0.18);
 }
 
+/* Year picker — a distinct pill per available year so switching years reads
+   as switching a filter, not just another mode toggle. Each pill's dot color
+   is generated (oldest = darkest teal, newest = brightest cyan) so more
+   recent years are visually "brighter"/more prominent. */
+.campus-year-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.campus-year-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--yearDot, #0e7c86);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55);
+}
+
+.campus-year-pill.active .campus-year-dot {
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.85);
+}
+
 .campus-building-list {
   flex: 1 1 auto;
   min-height: 0;
@@ -2848,6 +2871,7 @@ body.graph-bg-transparent .three-chart-wrap {
               <p class="multi-building-subtitle"><span id="campusAnalyticsSubtitle">All buildings across all available periods</span></p>
             </div>
             <div class="campus-chart-controls">
+              <div class="campus-chart-control-group campus-year-group" id="campusYearGroup" aria-label="Year"></div>
               <div class="campus-chart-control-group" aria-label="Metric">
                 <button type="button" class="campus-mode-btn active" data-campus-metric="electricity">Electricity</button>
                 <button type="button" class="campus-mode-btn" data-campus-metric="water">Water</button>
@@ -3643,7 +3667,10 @@ body.graph-bg-transparent .three-chart-wrap {
             const width = ctx.measureText(badge).width + 18;
             const height = 24;
             let left = Math.min(area.right - width, Math.max(area.left, pointer.x + 10));
-            let top = Math.max(area.top + 6, pointer.y - height - 8);
+            // Render fully above the plot area (not just near its top edge) so this
+            // badge never overlaps a line, regardless of how close the topmost line
+            // sits to the top of the chart's y-scale.
+            let top = area.top - height - 8;
             ctx.fillStyle = "rgba(15,23,42,0.90)";
             ctx.strokeStyle = "rgba(255,255,255,0.18)";
             ctx.beginPath();
@@ -4334,7 +4361,13 @@ body.graph-bg-transparent .three-chart-wrap {
       const canvasRect = chart.canvas.getBoundingClientRect();
       const parentRect = chart.canvas.parentNode.getBoundingClientRect();
       let left = tooltip.caretX + (canvasRect.left - parentRect.left);
-      let top = tooltip.caretY + (canvasRect.top - parentRect.top);
+      // Anchor to the top of the plot area (not the hovered point's own height) so the
+      // tooltip always floats above the lines instead of covering whichever ones pass
+      // through the same height as the hovered point.
+      const chartAreaTop = (chart.chartArea && typeof chart.chartArea.top === "number")
+        ? chart.chartArea.top
+        : tooltip.caretY;
+      let top = chartAreaTop + (canvasRect.top - parentRect.top);
       const maxLeft = parentRect.width - 12;
       left = Math.max(12, Math.min(maxLeft, left));
       top = Math.max(64, top);
@@ -5543,7 +5576,13 @@ body.graph-bg-transparent .three-chart-wrap {
       forecast: false,
       selected: new Set(),
       focused: null,
-      search: ""
+      search: "",
+      // null = not yet initialized; renderCampusYearPills() defaults this to the
+      // latest available year on first render. Showing every year concatenated
+      // on one timeline was what caused the axis-label crowding and made any
+      // missing month (e.g. not-yet-uploaded data) read as a broken line —
+      // showing one year at a time avoids both.
+      year: null
     };
 
     function dashboardCharts() {
@@ -6736,7 +6775,10 @@ body.graph-bg-transparent .three-chart-wrap {
     }
 
     function campusHistoricalPeriods() {
-      const years = orderedDashboardYears(false);
+      const allYears = orderedDashboardYears(false);
+      const years = (campusAnalyticsState.year != null)
+        ? allYears.filter(year => year === campusAnalyticsState.year)
+        : allYears;
       const labels = [];
       years.forEach(year => {
         for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
@@ -6955,7 +6997,11 @@ body.graph-bg-transparent .three-chart-wrap {
       options.interaction.mode = campusAnalyticsState.chartMode === "bar" ? "nearest" : "index";
       options.scales.x.offset = true;
       options.scales.x.grid.display = false;
-      options.scales.x.ticks.autoSkip = campusAnalyticsState.chartMode !== "bar" && labels.length > 30;
+      // Match the autoSkip threshold to maxTicksLimit (14) below — previously this only
+      // engaged past 30 labels, so ranges of ~15-30 months rendered every tick unrotated
+      // with nothing to prevent wider "Mon YYYY" labels (e.g. "Jan 2026") from overlapping
+      // their neighbors.
+      options.scales.x.ticks.autoSkip = campusAnalyticsState.chartMode !== "bar" && labels.length > 14;
       options.scales.x.ticks.maxTicksLimit = campusAnalyticsState.chartMode === "bar" ? Math.min(24, labels.length) : 14;
       options.scales.x.ticks.callback = function(value) {
         const label = this.getLabelForValue ? this.getLabelForValue(value) : value;
@@ -6971,13 +7017,19 @@ body.graph-bg-transparent .three-chart-wrap {
       };
       options.scales.y.title = makeAxisTitle(campusMetricLabel() + " (" + campusMetricUnit() + ")", campusAnalyticsState.metric === "water" ? ESG_CHART_COLORS.water : ESG_CHART_COLORS.electricity);
       options.scales.y1.display = false;
+      // Reserve room above the plot area for the crosshair's floating value badge
+      // (drawn by enterpriseInteractionPlugin) so it renders above the chart area
+      // entirely instead of overlapping the topmost line.
+      if (campusAnalyticsState.chartMode !== "bar") {
+        options.layout.padding = Object.assign({}, CHART_LAYOUT.padding, { top: 40 });
+      }
       // In quarter/semester/fiscal views the shaded segment row IS the x axis —
       // hide the per-month ticks so the two label rows don't overlap, and leave
       // room below the plot for the segment captions.
       const showSegmentRow = campusAnalyticsState.chartMode !== "bar" && campusAnalyticsState.segment !== "months";
       if (showSegmentRow) {
         options.scales.x.ticks.display = false;
-        options.layout.padding = Object.assign({}, CHART_LAYOUT.padding, { bottom: 44 });
+        options.layout.padding = Object.assign({}, options.layout.padding, { bottom: 44 });
       }
       options.plugins.tooltip.callbacks.label = function(context) {
         const label = displayDatasetLabel(context.dataset && context.dataset.label);
@@ -6985,6 +7037,42 @@ body.graph-bg-transparent .three-chart-wrap {
         return label + ": " + (Number.isFinite(value) ? formatNumber(value) + " " + campusMetricUnit() : context.formattedValue);
       };
       return applyGraphBackgroundToChartOptions(options);
+    }
+
+    // Oldest year = darkest teal, newest = brightest cyan, interpolated across
+    // however many years actually have data (usually 2-4).
+    function campusYearDotColor(index, total) {
+      const darkest = [11, 79, 81];     // #0B4F51
+      const brightest = [34, 195, 230]; // #22C3E6
+      const t = total > 1 ? index / (total - 1) : 1;
+      const rgb = darkest.map((component, channel) => Math.round(component + (brightest[channel] - component) * t));
+      return "#" + rgb.map(value => value.toString(16).padStart(2, "0")).join("");
+    }
+
+    function renderCampusYearPills() {
+      const container = document.getElementById("campusYearGroup");
+      if (!container) return;
+      const years = orderedDashboardYears(false);
+      if (!years.length) {
+        container.innerHTML = "";
+        return;
+      }
+      if (campusAnalyticsState.year == null || !years.includes(campusAnalyticsState.year)) {
+        campusAnalyticsState.year = years[years.length - 1];
+      }
+      container.innerHTML = years.map((year, index) => {
+        const isActive = year === campusAnalyticsState.year;
+        return '<button type="button" class="campus-mode-btn campus-year-pill' + (isActive ? " active" : "") +
+          '" data-campus-year="' + year + '" style="--yearDot:' + campusYearDotColor(index, years.length) + '">' +
+          '<span class="campus-year-dot"></span>' + year + '</button>';
+      }).join("");
+      container.querySelectorAll("[data-campus-year]").forEach(button => {
+        button.addEventListener("click", function () {
+          campusAnalyticsState.year = Number(button.dataset.campusYear);
+          container.querySelectorAll("[data-campus-year]").forEach(item => item.classList.toggle("active", item === button));
+          renderCampusAnalyticsChart();
+        });
+      });
     }
 
     function renderCampusLegend(selectedBuildings) {
@@ -7238,6 +7326,7 @@ body.graph-bg-transparent .three-chart-wrap {
         });
       }
       renderCampusBuildingSelector();
+      renderCampusYearPills();
       renderCampusAnalyticsChart();
       if (!is_auto_mode) { stopProgressBarAnimation(); return; }
       runProgressForPage(11, getPageDuration(11), true);
