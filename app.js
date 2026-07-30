@@ -1686,13 +1686,13 @@ app.post("/admin/automation/hibernate-now", requireAuth, async (req, res) => {
 
 app.post("/admin/automation/hibernate-wake-demo", requireAuth, async (req, res) => {
   try {
-    appendHibernateAttemptLog("Live Demo route clicked.");
+    appendHibernateAttemptLog("Hibernate and Wake Demo route clicked.");
     const config = readRuntimeConfig();
     if (!config.automation.autoHibernateEnabled) {
-      return res.status(400).json({ ok: false, error: "Turn on Auto-Hibernate before running the live demo" });
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Hibernate before running the Hibernate and Wake Demo" });
     }
     if (!config.automation.autoWakeEnabled) {
-      return res.status(400).json({ ok: false, error: "Turn on Auto-Wake before running the live demo" });
+      return res.status(400).json({ ok: false, error: "Turn on Auto-Wake before running the Hibernate and Wake Demo" });
     }
 
     const minutes = Math.max(1, Math.min(30, Number(req.body.wakeInMinutes || 2)));
@@ -1733,11 +1733,11 @@ app.post("/admin/automation/hibernate-wake-demo", requireAuth, async (req, res) 
     });
 
     setTimeout(() => {
-      startWindowsHibernate("Live Demo");
+      startWindowsHibernate("Hibernate and Wake Demo");
     }, 1000);
   } catch (error) {
     console.error("Hibernate wake demo failed:", error);
-    appendHibernateAttemptLog(`Live Demo route failed: ${error.message || "Hibernate wake demo failed"}`);
+    appendHibernateAttemptLog(`Hibernate and Wake Demo route failed: ${error.message || "Hibernate wake demo failed"}`);
     res.status(500).json({
       ok: false,
       error: "Could not register the wake task, so hibernate was not started. Run the app as administrator and check Windows wake timers."

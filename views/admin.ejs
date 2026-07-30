@@ -1247,9 +1247,6 @@
                       </button>
                       <div class="collapse mt-3" id="hibernateAdvancedCollapse">
                         <div class="d-flex flex-wrap gap-2">
-                          <button class="btn btn-outline-warning btn-sm" id="wakeDryRunBtn" type="button">Test Wake Task</button>
-                          <button class="btn btn-outline-info btn-sm" id="registerWakeTaskBtn" type="button">Register Wake Task</button>
-                          <button class="btn btn-outline-light btn-sm" id="shutdownCapabilityBtn" type="button">Check Full Shutdown Support</button>
                           <button class="btn btn-outline-warning btn-sm" id="hibernateDryRunBtn" type="button">Test Hibernate Script</button>
                           <button class="btn btn-danger btn-sm" id="hibernateNowBtn" type="button">Hibernate Now</button>
                         </div>
@@ -1257,10 +1254,10 @@
                           <span class="input-group-text">Wake in</span>
                           <input class="form-control" id="wakeDemoMinutes" type="number" min="1" max="30" value="2">
                           <span class="input-group-text">min</span>
-                          <button class="btn btn-outline-success" id="hibernateWakeDemoBtn" type="button">Live Demo</button>
+                          <button class="btn btn-outline-success" id="hibernateWakeDemoBtn" type="button">Hibernate and Wake Demo</button>
                         </div>
                         <div class="small text-muted mt-2">
-                          Register Wake Task may require administrator permission. Live Demo registers a one-time wake task before hibernating.
+                          Registers a one-time wake task, hibernates this laptop, then wakes it after the selected time. Administrator permission may be required.
                         </div>
                       </div>
                     </div>
@@ -2214,48 +2211,6 @@
       }
     });
 
-    $("#wakeDryRunBtn").on("click", async function() {
-      try {
-        await postJson("/admin/automation/wake-settings", wakeSchedulePayload());
-        const json = await postJson("/admin/automation/wake-dry-run", {});
-        $("#wakeTaskStatus").removeClass("text-danger").addClass("text-success").text((json.message || "Wake dry run successful.") + " " + (json.scriptOutput || ""));
-      } catch (error) {
-        $("#wakeTaskStatus").removeClass("text-success").addClass("text-danger").text(error.message);
-      }
-    });
-
-    $("#registerWakeTaskBtn").on("click", async function() {
-      if (!$("#autoWakeToggle").prop("checked")) {
-        alert("Turn on Auto-Wake before registering the Windows wake task.");
-        return;
-      }
-      if (!confirm("Register a Windows Scheduled Task that can wake this laptop and start the dashboard?")) return;
-      try {
-        await postJson("/admin/automation/wake-settings", wakeSchedulePayload());
-        const json = await postJson("/admin/automation/wake-register", {});
-        $("#wakeTaskStatus").removeClass("text-danger").addClass("text-success").text((json.message || "Wake task registered.") + " " + (json.scriptOutput || ""));
-      } catch (error) {
-        $("#wakeTaskStatus").removeClass("text-success").addClass("text-danger").text(error.message);
-      }
-    });
-
-    $("#shutdownCapabilityBtn").on("click", async function() {
-      try {
-        const response = await fetch("/admin/automation/shutdown-start-capability", {
-          headers: { "Accept": "application/json" },
-          credentials: "same-origin"
-        });
-        const json = await response.json();
-        if (!response.ok || json.ok === false) throw new Error(json.error || "Capability check failed");
-        $("#wakeTaskStatus")
-          .removeClass("text-danger")
-          .addClass("text-warning")
-          .text(json.summary + " Options: " + (json.options || []).join(" "));
-      } catch (error) {
-        $("#wakeTaskStatus").removeClass("text-success").addClass("text-danger").text(error.message);
-      }
-    });
-
     function collectHibernateDays() {
       const days = {};
       $(".hibernate-day-row").each(function() {
@@ -2451,7 +2406,7 @@
 
     $("#hibernateWakeDemoBtn").on("click", async function() {
       if (!$("#autoHibernateToggle").prop("checked") || !$("#autoWakeToggle").prop("checked")) {
-        alert("Turn on both Auto-Hibernate and Auto-Wake before running the live demo.");
+        alert("Turn on both Auto-Hibernate and Auto-Wake before running the Hibernate and Wake Demo.");
         return;
       }
       const minutes = Math.max(1, Math.min(30, Number($("#wakeDemoMinutes").val() || 2)));
@@ -2462,7 +2417,7 @@
         $("#hibernateDryRunStatus")
           .removeClass("text-danger")
           .addClass("text-success")
-          .text((json.message || "Live demo started.") + " " + (json.scriptOutput || ""));
+          .text((json.message || "Hibernate and Wake Demo started.") + " " + (json.scriptOutput || ""));
       } catch (error) {
         $("#hibernateDryRunStatus")
           .removeClass("text-success")
